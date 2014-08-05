@@ -4,6 +4,7 @@ project(gfwk)
 
 include_directories(
     ./src/kernel
+    ./src/menu
     ./src/util
     ./src
     .
@@ -14,6 +15,7 @@ set(CMAKE_C_FLAGS "-Wall -Werror -g -O0")
 add_executable(gfwk
     ./src/kernel/database.c
     ./src/kernel/system.c
+    ./src/menu/menu.c
     ./src/main.c
     )
 

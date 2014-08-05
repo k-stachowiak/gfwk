@@ -73,8 +73,6 @@ static void sys_realtime_loop_step(struct SysClient *client)
 
     frame_weight = accumulator / spf;
     client->draw(frame_weight);
-
-    al_flip_display();
 }
 
 void sys_init(void)
