@@ -16,6 +16,7 @@ add_executable(gfwk
     ./src/kernel/database.c
     ./src/kernel/system.c
     ./src/menu/menu.c
+    ./src/menu/menu_struct.c
     ./src/main.c
     )
 

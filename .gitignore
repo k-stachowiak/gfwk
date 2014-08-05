@@ -25,4 +25,4 @@
 .project
 .settings
 build
-.CMakeLists.txt.swp
+*.swp
