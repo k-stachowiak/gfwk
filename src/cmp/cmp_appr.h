@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 enum CmpApprType {
+    CMP_APPR_STATIC_SPRITE,
     CMP_APPR_ANIM_SPRITE
 };
 
@@ -27,9 +28,12 @@ struct CmpApprAnimSprite {
 struct CmpAppr {
     enum CmpApprType type;
     union {
+        void *static_sprite;
         struct CmpApprAnimSprite anim_sprite;
     } body;
 };
+
+struct CmpAppr *cmp_appr_create_static_sprite(void *sprite);
 
 struct CmpAppr *cmp_appr_create_anim_sprite(
     void **frames, int frames_count,

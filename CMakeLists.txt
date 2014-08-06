@@ -21,6 +21,9 @@ add_executable(gfwk
     ./src/kernel/draw.c
     ./src/kernel/play.c
     ./src/cmp/cmp_appr.c
+    ./src/cmp/cmp_ori.c
+    ./src/cmp/cmp_drv.c
+    ./src/cmp/cmp_operations.c
     ./src/menu/menu.c
     ./src/menu/menu_struct.c
     ./src/demo1/demo1.c

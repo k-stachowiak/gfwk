@@ -137,6 +137,8 @@ static void menu_init(void)
     menu_redraw = true;
     dummy_flag = 0;
 
+    screen_w = db_integer("screen_w");
+
     mp_opts = menu_create_options_page();
     mp_main = menu_create_main_page(mp_opts);
 
@@ -146,7 +148,6 @@ static void menu_init(void)
     nav_enter_sample = res_load_sample("data/beep.ogg");
     nav_move_sample = res_load_sample("data/MenuSelectionClick.ogg");
 
-    screen_w = db_integer("screen_w");
 }
 
 static void menu_deinit(void)

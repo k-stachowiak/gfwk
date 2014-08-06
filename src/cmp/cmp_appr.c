@@ -1,8 +1,23 @@
+/* Copyright (C) 2014 Krzysztof Stachowiak */
+
 #include <stdlib.h>
 
 #include "diagnostics.h"
 #include "resources.h"
 #include "cmp_appr.h"
+
+struct CmpAppr *cmp_appr_create_static_sprite(void *sprite)
+{
+    struct CmpAppr *result = malloc(sizeof(*result));
+    if (!result) {
+        DIAG_ERROR("Allocation failure.\n");
+    }
+
+    result->type = CMP_APPR_STATIC_SPRITE;
+    result->body.static_sprite = sprite;
+
+    return result;
+}
 
 static void cmp_appr_free_anim_sprite(struct CmpApprAnimSprite *anim_sprite)
 {
@@ -77,6 +92,8 @@ struct CmpAppr *cmp_appr_create_anim_sprite(
 void cmp_appr_free(struct CmpAppr *cmp_appr)
 {
     switch(cmp_appr->type) {
+    case CMP_APPR_STATIC_SPRITE:
+        break;
     case CMP_APPR_ANIM_SPRITE:
         cmp_appr_free_anim_sprite(&cmp_appr->body.anim_sprite);
         break;
@@ -89,6 +106,8 @@ void cmp_appr_free(struct CmpAppr *cmp_appr)
 void cmp_appr_update(struct CmpAppr *cmp_appr, double dt)
 {
     switch(cmp_appr->type) {
+    case CMP_APPR_STATIC_SPRITE:
+        break;
     case CMP_APPR_ANIM_SPRITE:
         cmp_appr_update_anim_sprite(&cmp_appr->body.anim_sprite, dt);
         break;
@@ -100,6 +119,8 @@ void cmp_appr_update(struct CmpAppr *cmp_appr, double dt)
 void *cmp_appr_bitmap(struct CmpAppr *cmp_appr)
 {
     switch(cmp_appr->type) {
+    case CMP_APPR_STATIC_SPRITE:
+        return cmp_appr->body.static_sprite;
     case CMP_APPR_ANIM_SPRITE:
         return cmp_appr_bitmap_anim_sprite(&cmp_appr->body.anim_sprite);
     default:
