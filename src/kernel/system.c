@@ -4,6 +4,10 @@
 
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
+#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_ttf.h>
+#include <allegro5/allegro_audio.h>
+#include <allegro5/allegro_acodec.h>
 
 #include "diagnostics.h"
 #include "database.h"
@@ -78,11 +82,20 @@ static void sys_realtime_loop_step(struct SysClient *client)
 void sys_init(void)
 {
     if (!al_init()) {
-        DIAG_ERROR("Failed loading platform wrapper.\n");
+        DIAG_ERROR("Failed initializing platform wrapper.\n");
     }
 
     if (!al_init_image_addon()) {
-        DIAG_ERROR("Failed loading image addon.\n");
+        DIAG_ERROR("Failed initializing image addon.\n");
+    }
+
+    al_init_font_addon();
+    if (!al_init_ttf_addon()) {
+        DIAG_ERROR("Failed initializing TTF addon.\n");
+    }
+
+    if(!al_init_acodec_addon()) {
+        DIAG_ERROR("Failed initializing acodec add-on.\n");
     }
 
     screen_w = db_integer("screen_w");
@@ -92,16 +105,20 @@ void sys_init(void)
 
     display = al_create_display(screen_w, screen_h);
     if (!display) {
-        DIAG_ERROR("Failed initializing display.\n");
+        DIAG_ERROR("Failed creating display.\n");
     }
 
     if (!al_install_keyboard()) {
-        DIAG_ERROR("Failed initializing keyboard.\n");
+        DIAG_ERROR("Failed installing keyboard.\n");
+    }
+
+    if(!al_install_audio()) {
+        DIAG_ERROR("Failed initializing audio.\n");
     }
 
     ev_queue = al_create_event_queue();
     if (!ev_queue) {
-        DIAG_ERROR("Failed initializing event queue.\n");
+        DIAG_ERROR("Failed creating event queue.\n");
     }
 
     al_register_event_source(ev_queue, al_get_display_event_source(display));

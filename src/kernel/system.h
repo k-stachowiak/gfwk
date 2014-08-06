@@ -9,6 +9,7 @@
 
 struct SysClient {
     bool *alive;
+    struct SysClient **next;
     void (*init)(void);
     void (*deinit)(void);
     void (*tick)(double);
