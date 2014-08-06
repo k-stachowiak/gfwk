@@ -1,5 +1,8 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
+#include <math.h>
+
+#include "array.h"
 #include "resources.h"
 #include "cmp_appr.h"
 #include "cmp_ori.h"
@@ -25,11 +28,53 @@ static struct CmpOri *tank_ori;
 static struct CmpDrv *tank_drv;
 static int x_drive, y_drive;
 
+struct Bullet {
+    struct CmpAppr *appr;
+    struct CmpOri *ori;
+    struct CmpDrv *drv;
+};
+
+struct {
+    struct Bullet *data;
+    int size, cap;
+} bullets;
+
 /* Resource handles. */
 static void *tank_sprite;
 static void *ball_sheet;
+static void *bullet_sprite;
 static void *bounce_sample;
+static void *shot_sample;
 static int screen_w;
+static int screen_h;
+
+static void bullet_fire(void)
+{
+    struct PosRot tank_pr;
+    struct Bullet bullet;
+    double bullet_vel = 400.0;
+    double dir_x, dir_y;
+
+    tank_pr = cmp_ori_get(tank_ori);
+    dir_x = cos(tank_pr.theta);
+    dir_y = sin(tank_pr.theta);
+
+    bullet.appr = cmp_appr_create_static_sprite(bullet_sprite);
+    bullet.ori = cmp_ori_create(tank_pr.x, tank_pr.y, tank_pr.theta);
+    bullet.drv = cmp_drv_create_linear(
+            true, dir_x * bullet_vel, dir_y * bullet_vel, 0.0);
+
+    ARRAY_APPEND(bullets, bullet);
+
+    play_sample(shot_sample);
+}
+
+static void bullet_free(int i)
+{
+    cmp_appr_free(bullets.data[i].appr);
+    cmp_ori_free(bullets.data[i].ori);
+    cmp_drv_free(bullets.data[i].drv);
+}
 
 static void demo1_init_ball(void)
 {
@@ -81,6 +126,17 @@ static void demo1_init_tank(void)
 
     x_drive = 0;
     y_drive = 0;
+
+    shot_sample = res_load_sample("data/cg1.ogg");
+}
+
+static void demo1_init_bullets(void)
+{
+    bullets.data = NULL;
+    bullets.size = 0;
+    bullets.cap = 0;
+
+    bullet_sprite = res_load_bitmap("data/bullet.png");
 }
 
 static void demo1_tick_ball(double dt)
@@ -124,6 +180,22 @@ static void demo1_tick_tank(double dt)
     cmp_drive(tank_ori, tank_drv, dt);
 }
 
+static void demo1_tick_bullets(double dt)
+{
+    int i;
+    int margin = 20;
+    for (i = 0; i < bullets.size; ++i) {
+        struct PosRot pr;
+        cmp_drive(bullets.data[i].ori, bullets.data[i].drv, dt);
+        pr = cmp_ori_get(bullets.data[i].ori);
+        if (pr.x < margin || pr.x > (screen_w - margin) ||
+            pr.y < margin || pr.y > (screen_h - margin)) {
+                ARRAY_REMOVE(bullets, i);
+                --i;
+        }
+    }
+}
+
 /* Client API.
  * ===========
  */
@@ -131,16 +203,20 @@ static void demo1_tick_tank(double dt)
 static void demo1_init(void)
 {
     screen_w = db_integer("screen_w");
+    screen_h = db_integer("screen_h");
 
     demo1_alive = true;
     demo1_next = NULL;
 
     demo1_init_ball();
     demo1_init_tank();
+    demo1_init_bullets();
 }
 
 static void demo1_deinit(void)
 {
+    int i;
+
     cmp_appr_free(ball_appr);
     cmp_ori_free(ball_ori);
     cmp_drv_free(ball_drv);
@@ -148,25 +224,38 @@ static void demo1_deinit(void)
     cmp_appr_free(tank_appr);
     cmp_ori_free(tank_ori);
     cmp_drv_free(tank_drv);
+
+    for (i = 0; i < bullets.size; ++i) {
+        bullet_free(i);
+    }
+    ARRAY_FREE(bullets);
 }
 
 static void demo1_tick(double dt)
 {
     demo1_tick_ball(dt);
     demo1_tick_tank(dt);
+    demo1_tick_bullets(dt);
 }
 
 static void demo1_draw(double weight)
 {
+    int i;
+
     al_clear_to_color(al_map_rgb_f(0.25, 0.25, 0.25));
     cmp_draw(ball_ori, ball_appr);
     cmp_draw(tank_ori, tank_appr);
+    for (i = 0; i < bullets.size; ++i) {
+        cmp_draw(bullets.data[i].ori, bullets.data[i].appr);
+    }
     al_flip_display();
 }
 
 static void demo1_key(int key, bool down)
 {
-    if (down && key == ALLEGRO_KEY_ESCAPE) {
+    if (down && key == ALLEGRO_KEY_SPACE) {
+        bullet_fire();
+    } else if (down && key == ALLEGRO_KEY_ESCAPE) {
         demo1_next = menu_get_client();
         demo1_alive = false;
     }
