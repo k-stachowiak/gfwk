@@ -6,7 +6,9 @@
 #include "resources.h"
 #include "cmp_appr.h"
 
-struct CmpAppr *cmp_appr_create_static_sprite(void *sprite)
+struct CmpAppr *cmp_appr_create_static_sprite(
+        double csx, double csy,
+        void *sprite)
 {
     struct CmpAppr *result = malloc(sizeof(*result));
     if (!result) {
@@ -14,6 +16,9 @@ struct CmpAppr *cmp_appr_create_static_sprite(void *sprite)
     }
 
     result->type = CMP_APPR_STATIC_SPRITE;
+    result->csx = csx;
+    result->csy = csy;
+
     result->body.static_sprite = sprite;
 
     return result;
@@ -62,9 +67,10 @@ void *cmp_appr_bitmap_anim_sprite(struct CmpApprAnimSprite *as)
 }
 
 struct CmpAppr *cmp_appr_create_anim_sprite(
-    void **frames, int frames_count,
-    int *frame_indices, double *frame_times, int frame_defs_count,
-    int frame_w, int init_def, int rep_count)
+        double csx, double csy,
+        void **frames, int frames_count,
+        int *frame_indices, double *frame_times, int frame_defs_count,
+        int frame_w, int init_def, int rep_count)
 {
     struct CmpAppr *result = malloc(sizeof(*result));
     if (!result) {
@@ -72,6 +78,8 @@ struct CmpAppr *cmp_appr_create_anim_sprite(
     }
 
     result->type = CMP_APPR_ANIM_SPRITE;
+    result->csx = csx;
+    result->csy = csy;
 
     result->body.anim_sprite.frames = frames;
     result->body.anim_sprite.frames_count = frames_count;

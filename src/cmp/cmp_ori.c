@@ -5,9 +5,23 @@
 #include "diagnostics.h"
 #include "cmp_ori.h"
 
+static float rsqrt(float number)
+{
+    long i;
+    float x2, y;
+    float threehalfs = 1.5f;
+    x2 = number * 0.5f;
+    y = number;
+    i = *(long*) &y;
+    i = 0x5f3759df - (i >> 1);
+    y = *(float*)&i;
+    y = y * (threehalfs - (x2 * y * y));
+    y = y * (threehalfs - (x2 * y * y));
+    return y;
+}
+
 struct CmpOri *cmp_ori_create(double x, double y, double theta)
 {
-    int i;
     struct CmpOri *result = malloc(sizeof(*result));
     struct PosRot init_pr = { x, y, theta };
 
@@ -15,10 +29,8 @@ struct CmpOri *cmp_ori_create(double x, double y, double theta)
         DIAG_ERROR("Allocation failure.\n");
     }
 
-    result->prb_top = 0;
-    for (i = 0; i < CMP_ORI_BUF_SIZE; ++i) {
-        result->pr_buffer[i] = init_pr;
-    }
+    result->current = init_pr;
+    result->prev = init_pr;
 
     return result;
 }
@@ -32,22 +44,33 @@ void cmp_ori_shift_rotate(
         struct CmpOri *cmp_ori,
         double dx, double dy, double dtheta)
 {
-    int prev = cmp_ori->prb_top;
-    int curr = (prev + 1) % CMP_ORI_BUF_SIZE;
-    cmp_ori->pr_buffer[curr] = cmp_ori->pr_buffer[prev];
-    cmp_ori->pr_buffer[curr].x += dx;
-    cmp_ori->pr_buffer[curr].y += dy;
-    cmp_ori->pr_buffer[curr].theta += dtheta;
-    cmp_ori->prb_top = curr;
+    cmp_ori->prev = cmp_ori->current;
+    cmp_ori->current.x += dx;
+    cmp_ori->current.y += dy;
+    cmp_ori->current.theta += dtheta;
+}
+
+void cmp_ori_cancel_x(struct CmpOri *cmp_ori)
+{
+    cmp_ori->current.x = cmp_ori->prev.x;
+}
+
+void cmp_ori_cancel_y(struct CmpOri *cmp_ori)
+{
+    cmp_ori->current.x = cmp_ori->prev.x;
 }
 
 struct PosRot cmp_ori_get(struct CmpOri *cmp_ori)
 {
-    return cmp_ori->pr_buffer[cmp_ori->prb_top];
+    return cmp_ori->current;
 }
 
-struct PosRot cmp_ori_get_prev(struct CmpOri *cmp_ori, int delta)
+double cmp_ori_distance(struct CmpOri *a, struct CmpOri *b)
 {
-    int index = (cmp_ori->prb_top - delta) % CMP_ORI_BUF_SIZE;
-    return cmp_ori->pr_buffer[index];
+    struct PosRot pra = cmp_ori_get(a);
+    struct PosRot prb = cmp_ori_get(b);
+    double dx = prb.x - pra.x;
+    double dy = prb.y - pra.y;
+    return 1.0 / rsqrt(dx * dx + dy * dy);
 }
+

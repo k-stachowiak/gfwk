@@ -11,7 +11,20 @@ struct Vel {
 
 enum CmpDrvType {
     CMP_DRV_LINEAR,
-    CMP_DRV_INPUT_8DIR
+    CMP_DRV_INPUT_8DIR,
+    CMP_DRV_PLATFORM
+};
+
+struct CmpDrvI8d {
+    double vel;
+    int *inx, *iny;
+};
+
+struct CmpDrvPlat {
+    struct Vel vel;
+    int *inx;
+    bool *jump_req;
+    bool *standing;
 };
 
 struct CmpDrv {
@@ -19,10 +32,8 @@ struct CmpDrv {
     bool affect_rot;
     union {
         struct Vel lin;
-        struct {
-            double vel;
-            int *inx, *iny;
-        } i8d;
+        struct CmpDrvI8d i8d;
+        struct CmpDrvPlat plat;
     } body;
 };
 
@@ -36,7 +47,12 @@ struct CmpDrv *cmp_drv_create_input_8dir(
         double vel,
         int *inx, int *iny);
 
+struct CmpDrv *cmp_drv_create_platform(
+        int *inx, bool *jump_req, bool *standing);
+
 void cmp_drv_free(struct CmpDrv *cmp_drv);
+void cmp_drv_update(struct CmpDrv *cmp_drv, double dt);
+void cmp_drv_stop(struct CmpDrv *cmp_drv);
 struct Vel cmp_drv_vel(struct CmpDrv *cmp_drv);
 
 #endif

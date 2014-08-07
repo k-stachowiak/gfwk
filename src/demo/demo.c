@@ -11,11 +11,11 @@
 #include "play.h"
 #include "database.h"
 #include "menu.h"
-#include "demo1.h"
+#include "demo.h"
 
 /* Local state. */
-static bool demo1_alive;
-static struct SysClient *demo1_next;
+static bool demo_alive;
+static struct SysClient *demo_next;
 
 static struct CmpAppr *ball_appr;
 static struct CmpOri *ball_ori;
@@ -59,7 +59,7 @@ static void bullet_fire(void)
     dir_x = cos(tank_pr.theta);
     dir_y = sin(tank_pr.theta);
 
-    bullet.appr = cmp_appr_create_static_sprite(bullet_sprite);
+    bullet.appr = cmp_appr_create_static_sprite(0.0, 0.0, bullet_sprite);
     bullet.ori = cmp_ori_create(tank_pr.x, tank_pr.y, tank_pr.theta);
     bullet.drv = cmp_drv_create_linear(
             true, dir_x * bullet_vel, dir_y * bullet_vel, 0.0);
@@ -76,7 +76,7 @@ static void bullet_free(int i)
     cmp_drv_free(bullets.data[i].drv);
 }
 
-static void demo1_init_ball(void)
+static void demo_init_ball(void)
 {
     int i;
 
@@ -104,6 +104,7 @@ static void demo1_init_ball(void)
     }
 
     ball_appr = cmp_appr_create_anim_sprite(
+        0.0, 0.0,
         frames, frames_count,
         frame_indices, frame_times, frame_defs_count,
         frame_w, 3, -1);
@@ -116,11 +117,11 @@ static void demo1_init_ball(void)
     bounce_accumulator = 0.0;
 }
 
-static void demo1_init_tank(void)
+static void demo_init_tank(void)
 {
     tank_sprite = res_load_bitmap("data/KV-2.png");
 
-    tank_appr = cmp_appr_create_static_sprite(tank_sprite);
+    tank_appr = cmp_appr_create_static_sprite(0.0, 0.0, tank_sprite);
     tank_ori = cmp_ori_create(400.0, 400.0, 0);
     tank_drv = cmp_drv_create_input_8dir(true, 100, &x_drive, &y_drive);
 
@@ -130,7 +131,7 @@ static void demo1_init_tank(void)
     shot_sample = res_load_sample("data/cg1.ogg");
 }
 
-static void demo1_init_bullets(void)
+static void demo_init_bullets(void)
 {
     bullets.data = NULL;
     bullets.size = 0;
@@ -139,7 +140,7 @@ static void demo1_init_bullets(void)
     bullet_sprite = res_load_bitmap("data/bullet.png");
 }
 
-static void demo1_tick_ball(double dt)
+static void demo_tick_ball(double dt)
 {
     struct PosRot ball_pr;
 
@@ -159,7 +160,7 @@ static void demo1_tick_ball(double dt)
     }
 }
 
-static void demo1_tick_tank(double dt)
+static void demo_tick_tank(double dt)
 {
     x_drive = 0;
     if (sys_keys[ALLEGRO_KEY_LEFT]) {
@@ -180,7 +181,7 @@ static void demo1_tick_tank(double dt)
     cmp_drive(tank_ori, tank_drv, dt);
 }
 
-static void demo1_tick_bullets(double dt)
+static void demo_tick_bullets(double dt)
 {
     int i;
     int margin = 20;
@@ -200,20 +201,20 @@ static void demo1_tick_bullets(double dt)
  * ===========
  */
 
-static void demo1_init(void)
+static void demo_init(void)
 {
     screen_w = db_integer("screen_w");
     screen_h = db_integer("screen_h");
 
-    demo1_alive = true;
-    demo1_next = NULL;
+    demo_alive = true;
+    demo_next = NULL;
 
-    demo1_init_ball();
-    demo1_init_tank();
-    demo1_init_bullets();
+    demo_init_ball();
+    demo_init_tank();
+    demo_init_bullets();
 }
 
-static void demo1_deinit(void)
+static void demo_deinit(void)
 {
     int i;
 
@@ -231,48 +232,66 @@ static void demo1_deinit(void)
     ARRAY_FREE(bullets);
 }
 
-static void demo1_tick(double dt)
+static void demo_tick(double dt)
 {
-    demo1_tick_ball(dt);
-    demo1_tick_tank(dt);
-    demo1_tick_bullets(dt);
+    int i;
+
+    demo_tick_ball(dt);
+    demo_tick_tank(dt);
+    demo_tick_bullets(dt);
+
+    if (cmp_ori_distance(ball_ori, tank_ori) < 100.0) {
+        goto termination;
+    }
+
+    for (i = 0; i < bullets.size; ++i) {
+        if (cmp_ori_distance(ball_ori, bullets.data[i].ori) < 100.0) {
+            goto termination;
+        }
+    }
+
+    return;
+
+termination:
+    demo_next = menu_get_client();
+    demo_alive = false;
 }
 
-static void demo1_draw(double weight)
+static void demo_draw(double weight)
 {
     int i;
 
     al_clear_to_color(al_map_rgb_f(0.25, 0.25, 0.25));
-    cmp_draw(ball_ori, ball_appr);
-    cmp_draw(tank_ori, tank_appr);
+    cmp_draw(ball_ori, ball_appr, 0.0, 0.0);
+    cmp_draw(tank_ori, tank_appr, 0.0, 0.0);
     for (i = 0; i < bullets.size; ++i) {
-        cmp_draw(bullets.data[i].ori, bullets.data[i].appr);
+        cmp_draw(bullets.data[i].ori, bullets.data[i].appr, 0.0, 0.0);
     }
     al_flip_display();
 }
 
-static void demo1_key(int key, bool down)
+static void demo_key(int key, bool down)
 {
     if (down && key == ALLEGRO_KEY_SPACE) {
         bullet_fire();
     } else if (down && key == ALLEGRO_KEY_ESCAPE) {
-        demo1_next = menu_get_client();
-        demo1_alive = false;
+        demo_next = menu_get_client();
+        demo_alive = false;
     }
 }
 
-static struct SysClient demo1_client = {
-    &demo1_alive,
-    &demo1_next,
-    &demo1_init,
-    &demo1_deinit,
-    &demo1_tick,
-    &demo1_draw,
-    &demo1_key
+static struct SysClient demo_client = {
+    &demo_alive,
+    &demo_next,
+    &demo_init,
+    &demo_deinit,
+    &demo_tick,
+    &demo_draw,
+    &demo_key
 };
 
-struct SysClient *demo1_get_client(void)
+struct SysClient *demo_get_client(void)
 {
-    return &demo1_client;
+    return &demo_client;
 }
 

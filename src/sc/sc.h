@@ -1,10 +1,10 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
-#ifndef DEMO1_H
-#define DEMO1_H
+#ifndef SC_H
+#define SC_H
 
 #include "system.h"
 
-struct SysClient *demo1_get_client(void);
+struct SysClient *sc_get_client(void);
 
 #endif

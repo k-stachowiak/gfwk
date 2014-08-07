@@ -10,9 +10,10 @@
 #include "menu_struct.h"
 #include "resources.h"
 #include "database.h"
-#include "demo1.h"
+#include "demo.h"
 #include "draw.h"
 #include "play.h"
+#include "sc.h"
 
 /* Local state. */
 static bool menu_alive;
@@ -27,16 +28,16 @@ static void *nav_move_sample;
 static void *nav_enter_sample;
 static int screen_w;
 
-static void menu_demo_1_callback(void)
+static void menu_demo_callback(void)
 {
-    menu_next = demo1_get_client();
+    menu_next = demo_get_client();
     menu_alive = false;
 }
 
-static void menu_demo_2_callback(void)
+static void menu_game_callback(void)
 {
-    printf("Demo 2 selected.\n");
-    exit(7);
+    menu_next = sc_get_client();
+    menu_alive = false;
 }
 
 static void menu_quit_callback(void)
@@ -55,13 +56,13 @@ static struct MenuPage *menu_create_options_page(void)
 
 static struct MenuPage *menu_create_main_page(struct MenuPage *options_page)
 {
-    struct MenuItem *mi_demo_1 = menu_item_create_action(
-            "Demo 1",
-            menu_demo_1_callback);
+    struct MenuItem *mi_demo = menu_item_create_action(
+            "Demo",
+            menu_demo_callback);
 
-    struct MenuItem *mi_demo_2 = menu_item_create_action(
-            "Demo 2",
-            menu_demo_2_callback);
+    struct MenuItem *mi_game = menu_item_create_action(
+            "Game",
+            menu_game_callback);
 
     struct MenuItem *mi_options = menu_item_create_ref(
             "Options",
@@ -71,11 +72,11 @@ static struct MenuPage *menu_create_main_page(struct MenuPage *options_page)
             "Quit",
             menu_quit_callback);
 
-    mi_demo_1->next = mi_demo_2;
-    mi_demo_2->next = mi_options;
+    mi_demo->next = mi_game;
+    mi_game->next = mi_options;
     mi_options->next = mi_quit;
 
-    return menu_page_create("+ Main menu", mi_demo_1);
+    return menu_page_create("+ Main menu", mi_demo);
 }
 
 void menu_draw_page(struct MenuPage *page)

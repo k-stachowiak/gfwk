@@ -6,8 +6,9 @@ include_directories(
     ./src/kernel
     ./src/cmp
     ./src/menu
-    ./src/demo1
+    ./src/demo
     ./src/util
+    ./src/sc
     ./src
     .
     )
@@ -26,7 +27,11 @@ add_executable(gfwk
     ./src/cmp/cmp_operations.c
     ./src/menu/menu.c
     ./src/menu/menu_struct.c
-    ./src/demo1/demo1.c
+    ./src/demo/demo.c
+    ./src/sc/sc.c
+    ./src/sc/sc_data.c
+    ./src/sc/sc_hunter.c
+    ./src/sc/sc_level.c
     ./src/main.c
     )
 

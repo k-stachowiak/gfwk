@@ -10,7 +10,8 @@ struct PosRot {
 };
 
 struct CmpOri {
-    struct PosRot pr_buffer[CMP_ORI_BUF_SIZE];
+    struct PosRot current;
+    struct PosRot prev;
     int prb_top;
 };
 
@@ -21,7 +22,10 @@ void cmp_ori_shift_rotate(
         struct CmpOri *cmp_ori,
         double dx, double dy, double dtheta);
 
+void cmp_ori_cancel_x(struct CmpOri *cmp_ori);
+void cmp_ori_cancel_y(struct CmpOri *cmp_ori);
+
 struct PosRot cmp_ori_get(struct CmpOri *cmp_ori);
-struct PosRot cmp_ori_get_prev(struct CmpOri *cmp_ori, int delta);
+double cmp_ori_distance(struct CmpOri *a, struct CmpOri *b);
 
 #endif

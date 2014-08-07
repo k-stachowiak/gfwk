@@ -8,6 +8,7 @@
 #include <allegro5/allegro_ttf.h>
 #include <allegro5/allegro_audio.h>
 #include <allegro5/allegro_acodec.h>
+#include <allegro5/allegro_primitives.h>
 
 #include "diagnostics.h"
 #include "database.h"
@@ -96,6 +97,10 @@ void sys_init(void)
 
     if(!al_init_acodec_addon()) {
         DIAG_ERROR("Failed initializing acodec add-on.\n");
+    }
+
+    if(!al_init_primitives_addon()) {
+        DIAG_ERROR("Failed initializing primitives add-on.\n");
     }
 
     screen_w = db_integer("screen_w");
