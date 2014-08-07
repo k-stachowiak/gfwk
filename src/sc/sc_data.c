@@ -16,7 +16,6 @@ int sc_tile_w;
 
 struct WorldPos sc_cam_shift;
 struct AABB sc_screen_aabb;
-struct AABB sc_last_hunter_aabb;
 
 struct WorldPos pos_tile_to_world(struct TilePos tile_pos)
 {
@@ -34,6 +33,19 @@ struct ScreenPos pos_world_to_screen(struct WorldPos world_pos)
         world_pos.y - sc_cam_shift.y + sc_screen_h / 2.0
     };
     return result;
+}
+
+void vline_to_screen(
+    struct VLine vline,
+    double *x, double *y1, double *y2)
+{
+    struct WorldPos wp1 = { vline.x, vline.y1 };
+    struct WorldPos wp2 = { vline.x, vline.y2 };
+    struct ScreenPos sp1 = pos_world_to_screen(wp1);
+    struct ScreenPos sp2 = pos_world_to_screen(wp2);
+    *x = sp1.x;
+    *y1 = sp1.y;
+    *y2 = sp2.y;
 }
 
 void aabb_to_screen(
@@ -56,11 +68,17 @@ bool aabb_point(struct AABB aabb, double x, double y)
     return x < aabb.bx && x > aabb.ax && y < aabb.by && y > aabb.ay;
 }
 
+bool aabb_vline(struct AABB aabb, struct VLine vline)
+{
+    return
+        vline.x < aabb.bx && vline.x > aabb.ax &&
+        vline.y1 < aabb.by && vline.y2 > aabb.ay;
+}
+
 bool aabb_aabb(struct AABB lhs, struct AABB rhs)
 {
     return
         lhs.ax < rhs.bx && lhs.bx > rhs.ax &&
         lhs.ay < rhs.by && lhs.by > rhs.ay;
 }
-
 

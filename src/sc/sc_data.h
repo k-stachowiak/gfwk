@@ -17,6 +17,10 @@ struct VLine {
     double y1, y2;
 };
 
+void vline_to_screen(
+    struct VLine vline,
+    double *x, double *y1, double *y2);
+
 struct AABB {
     double ax, ay, bx, by;
 };
@@ -27,6 +31,7 @@ void aabb_to_screen(
     double *x2, double *y2);
 
 bool aabb_point(struct AABB aabb, double x, double y);
+bool aabb_vline(struct AABB aabb, struct VLine vline);
 bool aabb_aabb(struct AABB lhs, struct AABB rhs);
 
 extern void *sc_rock_tile;
@@ -38,6 +43,5 @@ extern int sc_tile_w;
 
 extern struct WorldPos sc_cam_shift;
 extern struct AABB sc_screen_aabb;
-extern struct AABB sc_last_hunter_aabb;
 
 #endif

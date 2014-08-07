@@ -102,7 +102,7 @@ void cmp_drv_update(struct CmpDrv *cmp_drv, double dt)
     }
 }
 
-void cmp_drv_stop(struct CmpDrv *cmp_drv)
+void cmp_drv_stop(struct CmpDrv *cmp_drv, bool x, bool y)
 {
     switch (cmp_drv->type) {
     case CMP_DRV_LINEAR:
@@ -112,13 +112,26 @@ void cmp_drv_stop(struct CmpDrv *cmp_drv)
         DIAG_WARNING("Attempt to stop input 8dir driver component.\n");
         break;
     case CMP_DRV_PLATFORM:
-        cmp_drv->body.plat.vel.vx = 0.0;
-        cmp_drv->body.plat.vel.vy = 0.0;
-        cmp_drv->body.plat.vel.vtheta = 0.0;
+        if (x) {
+            cmp_drv->body.plat.vel.vx = 0.0;
+        }
+        if (y) {
+            cmp_drv->body.plat.vel.vy = 0.0;
+        }
         break;
     default:
         DIAG_ERROR("Unhandled driver component type.\n");
     }
+}
+
+void cmp_drv_stop_x(struct CmpDrv *cmp_drv)
+{
+    cmp_drv_stop(cmp_drv, true, false);
+}
+
+void cmp_drv_stop_y(struct CmpDrv *cmp_drv)
+{
+    cmp_drv_stop(cmp_drv, false, true);
 }
 
 struct Vel cmp_drv_vel(struct CmpDrv *cmp_drv)

@@ -52,7 +52,9 @@ struct CmpDrv *cmp_drv_create_platform(
 
 void cmp_drv_free(struct CmpDrv *cmp_drv);
 void cmp_drv_update(struct CmpDrv *cmp_drv, double dt);
-void cmp_drv_stop(struct CmpDrv *cmp_drv);
+void cmp_drv_stop(struct CmpDrv *cmp_drv, bool x, bool y);
+void cmp_drv_stop_x(struct CmpDrv *cmp_drv);
+void cmp_drv_stop_y(struct CmpDrv *cmp_drv);
 struct Vel cmp_drv_vel(struct CmpDrv *cmp_drv);
 
 #endif

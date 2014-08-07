@@ -46,9 +46,6 @@ void hunter_draw(struct Hunter *hunter)
     cmp_draw(hunter->ori, hunter->appr, -zero_sp.x, -zero_sp.y);
 
     /* DEBUG */
-    double x1, y1, x2, y2;
-    aabb_to_screen(sc_last_hunter_aabb, &x1, &y1, &x2, &y2);
-    al_draw_rectangle(x1, y1, x2, y2, al_map_rgb_f(1, 0, 1), 1.0);
     al_draw_filled_circle(hunter_sp.x, hunter_sp.y, 5, al_map_rgb_f(0, 0, 1));
 }
 

@@ -23,7 +23,76 @@ static struct SysClient *sc_next;
 struct Level lvl;
 struct Hunter hunter;
 
-int minx, miny, maxx, maxy;
+struct CollisionContext {
+    struct AABB bbox;
+    struct VLine lsline, rsline;
+    int utiles[3];
+    int btiles[3];
+    int ltiles[3];
+    int rtiles[3];
+    struct AABB utile_aabbs[3];
+    struct AABB btile_aabbs[3];
+    struct AABB ltile_aabbs[3];
+    struct AABB rtile_aabbs[3];
+} cc_last;
+
+static struct AABB cc_tile_aabb(int x, int y)
+{
+    struct TilePos tp = { x, y };
+    struct WorldPos wp = pos_tile_to_world(tp);
+    struct AABB aabb = { wp.x, wp.y, wp.x + sc_tile_w, wp.y + sc_tile_w };
+    return aabb;
+}
+
+static struct CollisionContext cc_analyze(struct PosRot pr, double w, double h)
+{
+    struct TilePos tp = { pr.x / sc_tile_w, pr.y / sc_tile_w };
+    struct CollisionContext result;
+
+    /* Bottom collision box. */
+    result.bbox.ax = pr.x - w / 2.0;
+    result.bbox.ay = pr.y + h / 2.0 + 2.0;
+    result.bbox.bx = pr.x + w / 2.0;
+    result.bbox.by = pr.y + h / 2.0 + 6.0;
+
+    /* Left and right scan lines. */
+    result.lsline.x = pr.x - w / 2.0;
+    result.lsline.y1 = pr.y - h / 2.0;
+    result.lsline.y2 = pr.y + h / 2.0;
+    result.rsline.x = pr.x + w / 2.0;
+    result.rsline.y1 = pr.y - h / 2.0;
+    result.rsline.y2 = pr.y + h / 2.0;
+
+    /* Surrounding tile field values. */
+    result.utiles[0] = lvl_get_tile(&lvl, tp.x, tp.y - 1);
+    result.utiles[1] = lvl_get_tile(&lvl, tp.x - 1, tp.y - 1);
+    result.utiles[2] = lvl_get_tile(&lvl, tp.x + 1, tp.y - 1);
+    result.btiles[0] = lvl_get_tile(&lvl, tp.x, tp.y + 1);
+    result.btiles[1] = lvl_get_tile(&lvl, tp.x - 1, tp.y + 1);
+    result.btiles[2] = lvl_get_tile(&lvl, tp.x + 1, tp.y + 1);
+    result.ltiles[0] = lvl_get_tile(&lvl, tp.x - 1, tp.y);
+    result.ltiles[1] = lvl_get_tile(&lvl, tp.x - 1, tp.y - 1);
+    result.ltiles[2] = lvl_get_tile(&lvl, tp.x - 1, tp.y + 1);
+    result.rtiles[0] = lvl_get_tile(&lvl, tp.x + 1, tp.y);
+    result.rtiles[1] = lvl_get_tile(&lvl, tp.x + 1, tp.y - 1);
+    result.rtiles[2] = lvl_get_tile(&lvl, tp.x + 1, tp.y + 1);
+
+    /* Surrounding tile bounding boxes. */
+    result.utile_aabbs[0] = cc_tile_aabb(tp.x, tp.y - 1);
+    result.utile_aabbs[1] = cc_tile_aabb(tp.x - 1, tp.y - 1);
+    result.utile_aabbs[2] = cc_tile_aabb(tp.x + 1, tp.y - 1);
+    result.btile_aabbs[0] = cc_tile_aabb(tp.x, tp.y + 1);
+    result.btile_aabbs[1] = cc_tile_aabb(tp.x - 1, tp.y + 1);
+    result.btile_aabbs[2] = cc_tile_aabb(tp.x + 1, tp.y + 1);
+    result.ltile_aabbs[0] = cc_tile_aabb(tp.x - 1, tp.y);
+    result.ltile_aabbs[1] = cc_tile_aabb(tp.x - 1, tp.y - 1);
+    result.ltile_aabbs[2] = cc_tile_aabb(tp.x - 1, tp.y + 1);
+    result.rtile_aabbs[0] = cc_tile_aabb(tp.x + 1, tp.y);
+    result.rtile_aabbs[1] = cc_tile_aabb(tp.x + 1, tp.y - 1);
+    result.rtile_aabbs[2] = cc_tile_aabb(tp.x + 1, tp.y + 1);
+
+    return result;
+}
 
 static void sc_update_screen_aabb(void)
 {
@@ -41,64 +110,85 @@ static void sc_tick_camera(double dt)
     sc_update_screen_aabb();
 }
 
+static void sc_handle_collisions_vertical(struct CollisionContext *cc)
+{
+    if ((cc->ltiles[0] == '#' && aabb_vline(cc->ltile_aabbs[0], cc->lsline)) ||
+        (cc->ltiles[1] == '#' && aabb_vline(cc->ltile_aabbs[1], cc->lsline)) ||
+        (cc->ltiles[2] == '#' && aabb_vline(cc->ltile_aabbs[2], cc->lsline))) {
+            cmp_drv_stop_x(hunter.drv);
+            hunter.ori->current.x =
+                cc->ltile_aabbs[0].bx +
+                hunter.box_w / 2.0 +
+                2.0;
+    }
+    if ((cc->rtiles[0] == '#' && aabb_vline(cc->ltile_aabbs[0], cc->rsline)) ||
+        (cc->rtiles[1] == '#' && aabb_vline(cc->ltile_aabbs[1], cc->rsline)) ||
+        (cc->rtiles[2] == '#' && aabb_vline(cc->ltile_aabbs[2], cc->rsline))) {
+            cmp_drv_stop_x(hunter.drv);
+            hunter.ori->current.x =
+                cc->rtile_aabbs[0].ax -
+                hunter.box_w / 2.0 -
+                2.0;
+    }
+}
+
+static void sc_handle_collisions_standing(struct CollisionContext *cc)
+{
+    if ((cc->btiles[0] != '#' || !aabb_aabb(cc->bbox, cc->btile_aabbs[0])) &&
+        (cc->btiles[1] != '#' || !aabb_aabb(cc->bbox, cc->btile_aabbs[1])) &&
+        (cc->btiles[2] != '#' || !aabb_aabb(cc->bbox, cc->btile_aabbs[2]))) {
+            hunter.standing = false;
+    }
+}
+
+static void sc_handle_collisions_midair(struct CollisionContext *cc)
+{
+    if ((cc->utiles[0] == '#' && (aabb_vline(cc->utile_aabbs[0], cc->lsline) ||
+                                  aabb_vline(cc->utile_aabbs[0], cc->rsline))) ||
+        (cc->utiles[1] == '#' && (aabb_vline(cc->utile_aabbs[1], cc->lsline) ||
+                                  aabb_vline(cc->utile_aabbs[1], cc->rsline))) ||
+        (cc->utiles[2] == '#' && (aabb_vline(cc->utile_aabbs[2], cc->lsline) ||
+                                  aabb_vline(cc->utile_aabbs[2], cc->rsline)))) {
+        cmp_drv_stop_y(hunter.drv);
+        hunter.ori->current.y =
+            cc->utile_aabbs[0].by +
+            hunter.box_h / 2.0 +
+            2.0;
+    }
+
+    if ((cc->btiles[0] == '#' && (aabb_vline(cc->btile_aabbs[0], cc->lsline) ||
+                                  aabb_vline(cc->btile_aabbs[0], cc->rsline))) ||
+        (cc->btiles[1] == '#' && (aabb_vline(cc->btile_aabbs[1], cc->lsline) ||
+                                  aabb_vline(cc->btile_aabbs[1], cc->rsline))) ||
+        (cc->btiles[2] == '#' && (aabb_vline(cc->btile_aabbs[2], cc->lsline) ||
+                                  aabb_vline(cc->btile_aabbs[2], cc->rsline)))) {
+            /* TODO: consider getting dir of the move cancelling operation. */
+            hunter.standing = true;
+            cmp_drv_stop_y(hunter.drv);
+            hunter.ori->current.y =
+                cc->btile_aabbs[0].ay -
+                hunter.box_h / 2.0 -
+                2.0;
+    }
+}
+
 static void sc_handle_collisions(void)
 {
-    int x, y;
-    bool collided = false;
-    bool floor_collided = false;
+    /* TODO: remove hunteraabb if possible. */
+    /* TODO: revise all globals for usages. */
+
+    /* Common values. */
     struct PosRot hunter_pr = cmp_ori_get(hunter.ori);
-    struct AABB hunter_aabb = {
-        hunter_pr.x - hunter.box_w / 2.0,
-        hunter_pr.y - hunter.box_h / 2.0,
-        hunter_pr.x + hunter.box_w / 2.0,
-        hunter_pr.y + hunter.box_h / 2.0
-    };
+    struct CollisionContext cc = cc_analyze(
+            hunter_pr, hunter.box_w, hunter.box_h);
+    cc_last = cc;
 
-    sc_last_hunter_aabb = hunter_aabb;
-
-    minx = (hunter_pr.x / sc_tile_w) - 1;
-    maxx = minx + 2;
-    miny = (hunter_pr.y / sc_tile_w) - 1;
-    maxy = miny + 2;
-
-
-    for (x = minx; x <= maxx; ++x) {
-        for (y = miny; y <= maxy; ++y) {
-
-            struct TilePos tp;
-            struct WorldPos wp;
-            struct AABB tile_aabb;
-            int c = lvl_get_tile(&lvl, x, y);
-
-            if (c != '#' || (hunter.standing && y == maxy)) {
-                continue;
-            }
-
-            tp.x = x;
-            tp.y = y;
-            wp = pos_tile_to_world(tp);
-            tile_aabb.ax = wp.x;
-            tile_aabb.ay = wp.y;
-            tile_aabb.bx = wp.x + sc_tile_w;
-            tile_aabb.by = wp.y + sc_tile_w;
-
-            if (aabb_aabb(tile_aabb, hunter_aabb)) {
-                collided = true;
-                if (y == maxy) {
-                    floor_collided = true;
-                }
-            }
-        }
-    }
-
-    if (collided) {
-        cmp_ori_cancel_x(hunter.ori);
-        cmp_ori_cancel_y(hunter.ori);
-        cmp_drv_stop(hunter.drv);
-    }
-
-    if (floor_collided) {
-        hunter.standing = true;
+    /* Actual collision cases dispatch. */
+    sc_handle_collisions_vertical(&cc);
+    if (hunter.standing) {
+        sc_handle_collisions_standing(&cc);
+    } else {
+        sc_handle_collisions_midair(&cc);
     }
 }
 
@@ -141,6 +231,26 @@ static void sc_tick(double dt)
     hunter.jump_req = sys_keys[ALLEGRO_KEY_UP];
 }
 
+static void sc_draw_aabb(
+        struct AABB aabb, bool fill,
+        double r, double g, double b)
+{
+    double x1, y1, x2, y2;
+    aabb_to_screen(aabb, &x1, &y1, &x2, &y2);
+    if (fill) {
+        al_draw_filled_rectangle(x1, y1, x2, y2, al_map_rgb_f(r, g, b));
+    } else {
+        al_draw_rectangle(x1, y1, x2, y2, al_map_rgb_f(r, g, b), 1.0);
+    }
+}
+
+static void sc_draw_vline(struct VLine vline, double r, double g, double b)
+{
+    double x, y1, y2;
+    vline_to_screen(vline, &x, &y1, &y2);
+    al_draw_line(x, y1, x, y2, al_map_rgb_f(r, g, b), 1.0);
+}
+
 static void sc_draw(double weight)
 {
     al_clear_to_color(al_map_rgb_f(0.0, 0.0, 0.0));
@@ -148,15 +258,17 @@ static void sc_draw(double weight)
     hunter_draw(&hunter);
 
     /* begin debug */
-    double x1, y1, x2, y2;
-    struct AABB test_aabb = {
-        minx * sc_tile_w,
-        miny * sc_tile_w,
-        maxx * sc_tile_w,
-        maxy * sc_tile_w
-    };
-    aabb_to_screen(test_aabb, &x1, &y1, &x2, &y2);
-    al_draw_rectangle(x1, y1, x2, y2, al_map_rgb_f(1, 0, 0), 1.0);
+    sc_draw_aabb(cc_last.bbox, true, 1, 1, 0);
+    sc_draw_vline(cc_last.lsline, 1, 1, 0);
+    sc_draw_vline(cc_last.rsline, 1, 1, 0);
+    sc_draw_aabb(cc_last.utile_aabbs[0], cc_last.utiles[0] == '#', 0, 1, 1);
+    sc_draw_aabb(cc_last.utile_aabbs[1], cc_last.utiles[1] == '#', 0, 1, 1);
+    sc_draw_aabb(cc_last.utile_aabbs[2], cc_last.utiles[2] == '#', 0, 1, 1);
+    sc_draw_aabb(cc_last.btile_aabbs[0], cc_last.btiles[0] == '#', 0, 1, 1);
+    sc_draw_aabb(cc_last.btile_aabbs[1], cc_last.btiles[1] == '#', 0, 1, 1);
+    sc_draw_aabb(cc_last.btile_aabbs[2], cc_last.btiles[2] == '#', 0, 1, 1);
+    sc_draw_aabb(cc_last.ltile_aabbs[0], cc_last.ltiles[0] == '#', 1, 0, 1);
+    sc_draw_aabb(cc_last.rtile_aabbs[0], cc_last.rtiles[0] == '#', 1, 0, 1);
     /* end debug */
 
     al_flip_display();
@@ -168,7 +280,6 @@ static void sc_key(int key, bool down)
         sc_next = menu_get_client();
         sc_alive = false;
     }
-
 }
 
 static struct SysClient sc_client = {
