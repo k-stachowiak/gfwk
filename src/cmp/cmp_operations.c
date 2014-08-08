@@ -11,11 +11,7 @@ void cmp_draw(struct CmpOri *ori, struct CmpAppr *appr, double vsx, double vsy)
 {
     struct PosRot pr = cmp_ori_get(ori);
     void *bitmap = cmp_appr_bitmap(appr);
-    draw_bitmap(
-            bitmap,
-            pr.x - vsx, pr.y - vsy,
-            appr->csx, appr->csy,
-            pr.theta);
+    draw_bitmap(bitmap, pr.x - vsx, pr.y - vsy, pr.theta);
 }
 
 void cmp_drive(struct CmpOri *ori, struct CmpDrv *drv, double dt)

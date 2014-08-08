@@ -5,11 +5,7 @@
 
 #include <stdbool.h>
 
-void draw_bitmap(
-        void *bitmap,
-        double x, double y,
-        double csx, double csy,
-        double theta);
+void draw_bitmap(void *bitmap, double x, double y, double theta);
 
 void draw_text(
         void *font,

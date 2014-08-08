@@ -27,19 +27,15 @@ struct CmpApprAnimSprite {
 
 struct CmpAppr {
     enum CmpApprType type;
-    double csx, csy;
     union {
         void *static_sprite;
         struct CmpApprAnimSprite anim_sprite;
     } body;
 };
 
-struct CmpAppr *cmp_appr_create_static_sprite(
-        double csx, double csy,
-        void *sprite);
+struct CmpAppr *cmp_appr_create_static_sprite(void *sprite);
 
 struct CmpAppr *cmp_appr_create_anim_sprite(
-        double csx, double csy,
         void **frames, int frames_count,
         int *frame_indices, double *frame_times, int frame_defs_count,
         int frame_w, int init_def, int rep_count);

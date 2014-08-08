@@ -35,7 +35,12 @@ bool aabb_vline(struct AABB aabb, struct VLine vline);
 bool aabb_aabb(struct AABB lhs, struct AABB rhs);
 
 extern void *sc_rock_tile;
-extern void *sc_hunter_stand;
+extern void *sc_hunter_stand_right;
+extern void *sc_hunter_stand_left;
+extern void *sc_hunter_walk_right;
+extern void *sc_hunter_walk_left;
+extern void *sc_bow_bitmap;
+extern void *sc_arrow_bitmap;
 
 extern int sc_screen_w;
 extern int sc_screen_h;

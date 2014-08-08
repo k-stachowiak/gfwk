@@ -8,7 +8,12 @@
 #include "sc_data.h"
 
 void *sc_rock_tile;
-void *sc_hunter_stand;
+void *sc_hunter_stand_right;
+void *sc_hunter_stand_left;
+void *sc_hunter_walk_right;
+void *sc_hunter_walk_left;
+void *sc_bow_bitmap;
+void *sc_arrow_bitmap;
 
 int sc_screen_w;
 int sc_screen_h;

@@ -35,14 +35,7 @@ static void lvl_draw_tile(struct TilePos tile_pos, char c)
         sc_rock_tile,
         screen_pos.x + sc_tile_w / 2,
         screen_pos.y + sc_tile_w / 2,
-        0.0, 0.0,
         0.0);
-
-    /* DEBUG */
-    double x1, y1, x2, y2;
-    aabb_to_screen(tile_aabb, &x1, &y1, &x2, &y2);
-    al_draw_rectangle(x1, y1, x2, y2, al_map_rgb_f(1, 0, 1), 1.0);
-    al_draw_filled_circle(screen_pos.x, screen_pos.y, 5, al_map_rgb_f(0, 0, 1));
 }
 
 

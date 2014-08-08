@@ -4,20 +4,12 @@
 
 #include "draw.h"
 
-void draw_bitmap(
-        void *bitmap,
-        double x, double y,
-        double csx, double csy,
-        double theta)
+void draw_bitmap(void *bitmap, double x, double y, double theta)
 {
     int w = al_get_bitmap_width((ALLEGRO_BITMAP*)bitmap);
     int h = al_get_bitmap_height((ALLEGRO_BITMAP*)bitmap);
     al_draw_rotated_bitmap(
-            (ALLEGRO_BITMAP*)bitmap,
-            w / 2 + csx, h / 2 + csy,
-            x, y,
-            theta,
-            0);
+        (ALLEGRO_BITMAP*)bitmap, w / 2, h / 2, x, y, theta, 0);
 }
 
 void draw_text(

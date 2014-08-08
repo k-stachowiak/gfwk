@@ -59,7 +59,7 @@ static void bullet_fire(void)
     dir_x = cos(tank_pr.theta);
     dir_y = sin(tank_pr.theta);
 
-    bullet.appr = cmp_appr_create_static_sprite(0.0, 0.0, bullet_sprite);
+    bullet.appr = cmp_appr_create_static_sprite(bullet_sprite);
     bullet.ori = cmp_ori_create(tank_pr.x, tank_pr.y, tank_pr.theta);
     bullet.drv = cmp_drv_create_linear(
             true, dir_x * bullet_vel, dir_y * bullet_vel, 0.0);
@@ -104,7 +104,6 @@ static void demo_init_ball(void)
     }
 
     ball_appr = cmp_appr_create_anim_sprite(
-        0.0, 0.0,
         frames, frames_count,
         frame_indices, frame_times, frame_defs_count,
         frame_w, 3, -1);
@@ -121,7 +120,7 @@ static void demo_init_tank(void)
 {
     tank_sprite = res_load_bitmap("data/KV-2.png");
 
-    tank_appr = cmp_appr_create_static_sprite(0.0, 0.0, tank_sprite);
+    tank_appr = cmp_appr_create_static_sprite(tank_sprite);
     tank_ori = cmp_ori_create(400.0, 400.0, 0);
     tank_drv = cmp_drv_create_input_8dir(true, 100, &x_drive, &y_drive);
 

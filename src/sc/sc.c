@@ -4,6 +4,7 @@
 
 #include <allegro5/allegro_primitives.h>
 
+#include "array.h"
 #include "sc.h"
 #include "sc_data.h"
 #include "sc_hunter.h"
@@ -22,6 +23,11 @@ static struct SysClient *sc_next;
 
 struct Level lvl;
 struct Hunter hunter;
+
+struct {
+    struct Arrow *data;
+    int size, cap;
+} arrows;
 
 struct CollisionContext {
     struct AABB bbox;
@@ -94,6 +100,21 @@ static struct CollisionContext cc_analyze(struct PosRot pr, double w, double h)
     return result;
 }
 
+static void sc_shoot_arrow(void)
+{
+    struct Arrow arrow;
+    struct PosRot hunter_pr = cmp_ori_get(hunter.ori);
+    struct WorldPos hunter_wp = { hunter_pr.x, hunter_pr.y };
+
+    arrow_init(
+        &arrow,
+        hunter_wp.x, hunter_wp.y - 15.0,
+        hunter.aim_angle,
+        sc_arrow_bitmap);
+
+    ARRAY_APPEND(arrows, arrow);
+}
+
 static void sc_update_screen_aabb(void)
 {
     sc_screen_aabb.ax = sc_cam_shift.x - sc_screen_w / 2;
@@ -108,6 +129,29 @@ static void sc_tick_camera(double dt)
     sc_cam_shift.x = hunter_pr.x;
     sc_cam_shift.y = hunter_pr.y;
     sc_update_screen_aabb();
+}
+
+static void sc_tick_arrows(double dt)
+{
+    int i;
+    int margin = 20;
+    for (i = 0; i < arrows.size; ++i) {
+        struct PosRot pr;
+        struct WorldPos wp;
+        struct ScreenPos sp;
+
+        cmp_drive(arrows.data[i].ori, arrows.data[i].drv, dt);
+        pr = cmp_ori_get(arrows.data[i].ori);
+        wp.x = pr.x;
+        wp.y = pr.y;
+        sp = pos_world_to_screen(wp);
+
+        if (sp.x < margin || sp.x > (sc_screen_w - margin) ||
+            sp.y < margin || sp.y > (sc_screen_h - margin)) {
+                ARRAY_REMOVE(arrows, i);
+                --i;
+        }
+    }
 }
 
 static void sc_handle_collisions_vertical(struct CollisionContext *cc)
@@ -174,9 +218,6 @@ static void sc_handle_collisions_midair(struct CollisionContext *cc)
 
 static void sc_handle_collisions(void)
 {
-    /* TODO: remove hunteraabb if possible. */
-    /* TODO: revise all globals for usages. */
-
     /* Common values. */
     struct PosRot hunter_pr = cmp_ori_get(hunter.ori);
     struct CollisionContext cc = cc_analyze(
@@ -199,7 +240,12 @@ static void sc_handle_collisions(void)
 static void sc_init(void)
 {
     sc_rock_tile = res_load_bitmap("data/rock_tile.png");
-    sc_hunter_stand = res_load_bitmap("data/hunter_stand.png");
+    sc_hunter_stand_right = res_load_bitmap("data/hunter_stand_right.png");
+    sc_hunter_stand_left = res_load_bitmap("data/hunter_stand_left.png");
+    sc_hunter_walk_right = res_load_bitmap("data/hunter_walk_right_w106.png");
+    sc_hunter_walk_left = res_load_bitmap("data/hunter_walk_left_w106.png");
+    sc_bow_bitmap = res_load_bitmap("data/bow.png");
+    sc_arrow_bitmap = res_load_bitmap("data/arrow.png");
 
     sc_alive = true;
     sc_next = NULL;
@@ -209,7 +255,16 @@ static void sc_init(void)
     sc_tile_w = 64;
 
     lvl_load(&lvl, "data/map");
-    hunter_init(&hunter, sc_hunter_stand);
+    hunter_init(
+        &hunter,
+        sc_hunter_stand_right,
+        sc_hunter_stand_left,
+        sc_hunter_walk_right,
+        sc_hunter_walk_left);
+
+    arrows.data = NULL;
+    arrows.size = 0;
+    arrows.cap = 0;
 
     sc_cam_shift.x = 0.0;
     sc_cam_shift.y = 0.0;
@@ -219,16 +274,45 @@ static void sc_init(void)
 static void sc_deinit(void)
 {
     lvl_unload(&lvl);
+    hunter_deinit(&hunter);
 }
 
 static void sc_tick(double dt)
 {
     sc_tick_camera(dt);
     hunter_tick(&hunter, dt);
+    sc_tick_arrows(dt);
     sc_handle_collisions();
 
     hunter.inx = sys_keys[ALLEGRO_KEY_RIGHT] - sys_keys[ALLEGRO_KEY_LEFT];
     hunter.jump_req = sys_keys[ALLEGRO_KEY_UP];
+
+    /* TODO: move into the hunter module. */
+    if (hunter.standing) {
+
+        if (hunter.inx == 1) {
+            if (hunter.appr == hunter.appr_walk_left ||
+                hunter.appr == hunter.appr_stand_left) {
+                    hunter.aim_angle = 3.1415 - hunter.aim_angle;
+            }
+            hunter.appr = hunter.appr_walk_right;
+
+        } else if (hunter.inx == -1) {
+            if (hunter.appr == hunter.appr_walk_right ||
+                hunter.appr == hunter.appr_stand_right) {
+                    hunter.aim_angle = 3.1415 - hunter.aim_angle;
+            }
+            hunter.appr = hunter.appr_walk_left;
+        }
+
+        if (hunter.inx == 0) {
+            if (hunter.appr == hunter.appr_walk_left) {
+                hunter.appr = hunter.appr_stand_left;
+            } else if (hunter.appr == hunter.appr_walk_right) {
+                hunter.appr = hunter.appr_stand_right;
+            }
+        }
+    }
 }
 
 static void sc_draw_aabb(
@@ -253,22 +337,35 @@ static void sc_draw_vline(struct VLine vline, double r, double g, double b)
 
 static void sc_draw(double weight)
 {
+    int i;
+    struct WorldPos zero_wp = { 0.0, 0.0 };
+    struct ScreenPos zero_sp = pos_world_to_screen(zero_wp);
+
     al_clear_to_color(al_map_rgb_f(0.0, 0.0, 0.0));
     lvl_draw(&lvl);
     hunter_draw(&hunter);
 
+    for (i = 0; i < arrows.size; ++i) {
+        cmp_draw(
+            arrows.data[i].ori,
+            arrows.data[i].appr,
+            -zero_sp.x, -zero_sp.y);
+    }
+
     /* begin debug */
-    sc_draw_aabb(cc_last.bbox, true, 1, 1, 0);
-    sc_draw_vline(cc_last.lsline, 1, 1, 0);
-    sc_draw_vline(cc_last.rsline, 1, 1, 0);
-    sc_draw_aabb(cc_last.utile_aabbs[0], cc_last.utiles[0] == '#', 0, 1, 1);
-    sc_draw_aabb(cc_last.utile_aabbs[1], cc_last.utiles[1] == '#', 0, 1, 1);
-    sc_draw_aabb(cc_last.utile_aabbs[2], cc_last.utiles[2] == '#', 0, 1, 1);
-    sc_draw_aabb(cc_last.btile_aabbs[0], cc_last.btiles[0] == '#', 0, 1, 1);
-    sc_draw_aabb(cc_last.btile_aabbs[1], cc_last.btiles[1] == '#', 0, 1, 1);
-    sc_draw_aabb(cc_last.btile_aabbs[2], cc_last.btiles[2] == '#', 0, 1, 1);
-    sc_draw_aabb(cc_last.ltile_aabbs[0], cc_last.ltiles[0] == '#', 1, 0, 1);
-    sc_draw_aabb(cc_last.rtile_aabbs[0], cc_last.rtiles[0] == '#', 1, 0, 1);
+    if (sys_keys[ALLEGRO_KEY_F1]) {
+        sc_draw_aabb(cc_last.bbox, true, 1, 1, 0);
+        sc_draw_vline(cc_last.lsline, 1, 1, 0);
+        sc_draw_vline(cc_last.rsline, 1, 1, 0);
+        sc_draw_aabb(cc_last.utile_aabbs[0], cc_last.utiles[0] == '#', 0, 1, 1);
+        sc_draw_aabb(cc_last.utile_aabbs[1], cc_last.utiles[1] == '#', 0, 1, 1);
+        sc_draw_aabb(cc_last.utile_aabbs[2], cc_last.utiles[2] == '#', 0, 1, 1);
+        sc_draw_aabb(cc_last.btile_aabbs[0], cc_last.btiles[0] == '#', 0, 1, 1);
+        sc_draw_aabb(cc_last.btile_aabbs[1], cc_last.btiles[1] == '#', 0, 1, 1);
+        sc_draw_aabb(cc_last.btile_aabbs[2], cc_last.btiles[2] == '#', 0, 1, 1);
+        sc_draw_aabb(cc_last.ltile_aabbs[0], cc_last.ltiles[0] == '#', 1, 0, 1);
+        sc_draw_aabb(cc_last.rtile_aabbs[0], cc_last.rtiles[0] == '#', 1, 0, 1);
+    }
     /* end debug */
 
     al_flip_display();
@@ -279,6 +376,10 @@ static void sc_key(int key, bool down)
     if (down && key == ALLEGRO_KEY_ESCAPE) {
         sc_next = menu_get_client();
         sc_alive = false;
+    }
+
+    if (down && key == ALLEGRO_KEY_SPACE) {
+        sc_shoot_arrow();
     }
 }
 
