@@ -14,6 +14,10 @@ void *sc_hunter_walk_right;
 void *sc_hunter_walk_left;
 void *sc_bow_bitmap;
 void *sc_arrow_bitmap;
+void *sc_soul_stand_right;
+void *sc_soul_stand_left;
+void *sc_soul_walk_right;
+void *sc_soul_walk_left;
 
 int sc_screen_w;
 int sc_screen_h;

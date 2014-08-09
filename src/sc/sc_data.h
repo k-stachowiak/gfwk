@@ -41,6 +41,10 @@ extern void *sc_hunter_walk_right;
 extern void *sc_hunter_walk_left;
 extern void *sc_bow_bitmap;
 extern void *sc_arrow_bitmap;
+extern void *sc_soul_stand_right;
+extern void *sc_soul_stand_left;
+extern void *sc_soul_walk_right;
+extern void *sc_soul_walk_left;
 
 extern int sc_screen_w;
 extern int sc_screen_h;

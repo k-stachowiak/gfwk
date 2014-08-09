@@ -31,8 +31,9 @@ add_executable(gfwk
     ./src/sc/sc.c
     ./src/sc/sc_data.c
     ./src/sc/sc_hunter.c
+    ./src/sc/sc_soul.c
     ./src/sc/sc_level.c
     ./src/main.c
     )
 
-target_link_libraries(gfwk allegro_monolith)
+target_link_libraries(gfwk m allegro_monolith)

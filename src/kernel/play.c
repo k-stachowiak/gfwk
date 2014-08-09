@@ -50,7 +50,17 @@ static void sample_id_assign(ALLEGRO_SAMPLE *sample, ALLEGRO_SAMPLE_ID id)
 
 void play_init(void)
 {
-    al_reserve_samples(16);
+    al_reserve_samples(5);
+}
+
+void play_deinit(void)
+{
+    struct SampleIdNode *temp;
+    while (sample_id_map) {
+        temp = sample_id_map->next;
+        free(sample_id_map);
+        sample_id_map = temp;
+    }
 }
 
 void play_sample(void *sample)

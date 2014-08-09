@@ -190,6 +190,7 @@ static void demo_tick_bullets(double dt)
         pr = cmp_ori_get(bullets.data[i].ori);
         if (pr.x < margin || pr.x > (screen_w - margin) ||
             pr.y < margin || pr.y > (screen_h - margin)) {
+                bullet_free(i);
                 ARRAY_REMOVE(bullets, i);
                 --i;
         }

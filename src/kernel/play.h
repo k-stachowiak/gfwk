@@ -4,6 +4,7 @@
 #define PLAY_H
 
 void play_init(void);
+void play_deinit(void);
 void play_sample(void *sample);
 
 #endif

@@ -94,10 +94,12 @@ void hunter_deinit(struct Hunter *hunter)
 void hunter_tick(struct Hunter *hunter, double dt)
 {
     double rot_speed = 3.1415 / 2.0;
-    int rot = sys_keys[ALLEGRO_KEY_Z] - sys_keys[ALLEGRO_KEY_X];
+    int rot = sys_keys[ALLEGRO_KEY_UP] - sys_keys[ALLEGRO_KEY_DOWN];
+
+    cmp_appr_update(hunter->appr, dt);
+    cmp_drv_update(hunter->drv, dt);
 
     cmp_drive(hunter->ori, hunter->drv, dt);
-    cmp_appr_update(hunter->appr, dt);
 
     if (hunter->appr == hunter->appr_walk_right ||
         hunter->appr == hunter->appr_stand_right) {
@@ -124,12 +126,12 @@ void arrow_init(
         double x, double y, double angle,
         void *arrow_bitmap)
 {
-    double vel = 500.0;
+    double vel = 600.0;
 
     arrow->appr = cmp_appr_create_static_sprite(arrow_bitmap);
     arrow->ori = cmp_ori_create(x, y, angle);
-    arrow->drv = cmp_drv_create_linear(
-        true, cos(angle) * vel, sin(angle) * vel, 0.0);
+    arrow->drv = cmp_drv_create_ballistic(
+        true, cos(angle) * vel, sin(angle) * vel);
 }
 
 void arrow_deinit(struct Arrow *arrow)

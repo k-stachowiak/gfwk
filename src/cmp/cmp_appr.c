@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 
+#include <allegro5/allegro.h>
+
 #include "diagnostics.h"
 #include "resources.h"
 #include "cmp_appr.h"
@@ -23,7 +25,7 @@ static void cmp_appr_free_anim_sprite(struct CmpApprAnimSprite *anim_sprite)
 {
     int i;
     for (i = 0; i < anim_sprite->frames_count; ++i) {
-        res_dispose_bitmap(anim_sprite->frames[i]);
+        al_destroy_bitmap((ALLEGRO_BITMAP*)anim_sprite->frames[i]);
     }
     free(anim_sprite->frames);
     free(anim_sprite->frame_indices);

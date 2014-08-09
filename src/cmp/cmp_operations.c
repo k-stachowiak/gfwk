@@ -18,7 +18,6 @@ void cmp_drive(struct CmpOri *ori, struct CmpDrv *drv, double dt)
 {
     struct Vel vel;
 
-    cmp_drv_update(drv, dt);
     vel = cmp_drv_vel(drv);
 
     if (drv->affect_rot && (vel.vx != 0 || vel.vy != 0)) {

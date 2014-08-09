@@ -76,6 +76,27 @@ void db_init(void)
     db_insert_real("fps", 50.0);
 }
 
+void db_deinit(void)
+{
+    struct ConfigNodeInt *itemp;
+    struct ConfigNodeReal *rtemp;
+
+    while (integers) {
+        itemp = integers->next;
+        free(integers->key);
+        free(integers);
+        integers = itemp;
+    }
+
+    while (reals) {
+        rtemp = reals->next;
+        free(reals->key);
+        free(reals);
+        reals = rtemp;
+    }
+}
+
+
 long db_integer(char *key)
 {
     struct ConfigNodeInt *current;

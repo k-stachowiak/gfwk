@@ -3,6 +3,8 @@
 #ifndef RESOURCES_H
 #define RESOURCES_H
 
+void res_deinit(void);
+
 void *res_load_bitmap(char *path);
 void res_dispose_bitmap(void *bitmap);
 void res_cut_frame_sheet(

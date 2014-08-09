@@ -14,7 +14,22 @@ struct ResNodeBitmap {
     struct ResNodeBitmap *next;
 };
 
+struct ResNodeSample {
+    char *path;
+    ALLEGRO_SAMPLE *value;
+    struct ResNodeSample *next;
+};
+
+struct ResNodeFont {
+    char *path;
+    int size;
+    ALLEGRO_FONT *value;
+    struct ResNodeFont *next;
+};
+
 static struct ResNodeBitmap *bitmaps;
+static struct ResNodeSample *samples;
+static struct ResNodeFont *fonts;
 
 static struct ResNodeBitmap *res_find_bitmap(char *path)
 {
@@ -28,6 +43,61 @@ static struct ResNodeBitmap *res_find_bitmap(char *path)
     return NULL;
 }
 
+static struct ResNodeSample *res_find_sample(char *path)
+{
+    struct ResNodeSample *current = samples;
+    while (current) {
+        if (strcmp(current->path, path) == 0) {
+            return current;
+        }
+        current = current->next;
+    }
+    return NULL;
+}
+
+static struct ResNodeFont *res_find_font(char *path, int size)
+{
+    struct ResNodeFont *current = fonts;
+    while (current) {
+        if (strcmp(current->path, path) == 0 && current->size == size) {
+            return current;
+        }
+        current = current->next;
+    }
+    return NULL;
+}
+
+void res_deinit(void)
+{
+    struct ResNodeBitmap *btemp;
+    struct ResNodeFont *ftemp;
+    struct ResNodeSample *stemp;
+
+    while (bitmaps) {
+        btemp = bitmaps->next;
+        free(bitmaps->path);
+        al_destroy_bitmap(bitmaps->value);
+        free(bitmaps);
+        bitmaps = btemp;
+    }
+
+    while (samples) {
+        stemp = samples->next;
+        free(samples->path);
+        al_destroy_sample(samples->value);
+        free(samples);
+        samples = stemp;
+    }
+
+    while (fonts) {
+        ftemp = fonts->next;
+        free(fonts->path);
+        al_destroy_font(fonts->value);
+        free(fonts);
+        fonts = ftemp;
+    }
+}
+
 void *res_load_bitmap(char *path)
 {
     int path_len;
@@ -37,7 +107,6 @@ void *res_load_bitmap(char *path)
     ALLEGRO_BITMAP *value;
 
     if ((duplicate = res_find_bitmap(path))) {
-        DIAG_WARNING("Attempted loading already loaded bitmap \"%s\".\n", path);
         return (void*)duplicate->value;
     }
 
@@ -52,6 +121,8 @@ void *res_load_bitmap(char *path)
     if (!(value = al_load_bitmap(path))) {
         DIAG_ERROR("Failed loading bitmap \"%s\".\n", path);
     }
+
+    memcpy(path_copy, path, path_len + 1);
 
     new_node->path = path_copy;
     new_node->value = value;
@@ -82,10 +153,13 @@ void res_dispose_bitmap(void *bitmap)
             al_destroy_bitmap(curr->value);
             prev->next = curr->next;
             free(curr);
+            return;
         }
         prev = curr;
         curr = curr->next;
     }
+
+    DIAG_ERROR("Failed finding bitmap to destroy.\n");
 }
 
 void res_cut_frame_sheet(
@@ -113,26 +187,6 @@ void res_cut_frame_sheet(
     }
 }
 
-struct ResNodeSample {
-    char *path;
-    ALLEGRO_SAMPLE *value;
-    struct ResNodeSample *next;
-};
-
-static struct ResNodeSample *samples;
-
-static struct ResNodeSample *res_find_sample(char *path)
-{
-    struct ResNodeSample *current = samples;
-    while (current) {
-        if (strcmp(current->path, path) == 0) {
-            return current;
-        }
-        current = current->next;
-    }
-    return NULL;
-}
-
 void *res_load_sample(char *path)
 {
     int path_len;
@@ -142,7 +196,6 @@ void *res_load_sample(char *path)
     ALLEGRO_SAMPLE *value;
 
     if ((duplicate = res_find_sample(path))) {
-        DIAG_WARNING("Attempted loading already loaded sample \"%s\".\n", path);
         return (void*)duplicate->value;
     }
 
@@ -158,33 +211,14 @@ void *res_load_sample(char *path)
         DIAG_ERROR("Failed loading sample \"%s\".\n", path);
     }
 
+    memcpy(path_copy, path, path_len + 1);
+
     new_node->path = path_copy;
     new_node->value = value;
     new_node->next = samples;
     samples = new_node;
 
     return (void*)value;
-}
-
-struct ResNodeFont {
-    char *path;
-    int size;
-    ALLEGRO_FONT *value;
-    struct ResNodeFont *next;
-};
-
-static struct ResNodeFont *fonts;
-
-static struct ResNodeFont *res_find_font(char *path, int size)
-{
-    struct ResNodeFont *current = fonts;
-    while (current) {
-        if (strcmp(current->path, path) == 0 && current->size == size) {
-            return current;
-        }
-        current = current->next;
-    }
-    return NULL;
 }
 
 void *res_load_font(char *path, int size)
@@ -196,7 +230,6 @@ void *res_load_font(char *path, int size)
     ALLEGRO_FONT *value;
 
     if ((duplicate = res_find_font(path, size))) {
-        DIAG_WARNING("Attempted loading already loaded font \"%s\".\n", path);
         return (void*)duplicate->value;
     }
 
@@ -211,6 +244,8 @@ void *res_load_font(char *path, int size)
     if (!(value = al_load_font(path, -size, 0))) {
         DIAG_ERROR("Failed loading font \"%s\".\n", path);
     }
+
+    memcpy(path_copy, path, path_len + 1);
 
     new_node->path = path_copy;
     new_node->size = size;

@@ -8,6 +8,7 @@
 #include "sc.h"
 #include "sc_data.h"
 #include "sc_hunter.h"
+#include "sc_soul.h"
 #include "sc_level.h"
 #include "resources.h"
 #include "database.h"
@@ -23,6 +24,7 @@ static struct SysClient *sc_next;
 
 struct Level lvl;
 struct Hunter hunter;
+struct Soul soul;
 
 struct {
     struct Arrow *data;
@@ -57,9 +59,9 @@ static struct CollisionContext cc_analyze(struct PosRot pr, double w, double h)
 
     /* Bottom collision box. */
     result.bbox.ax = pr.x - w / 2.0;
-    result.bbox.ay = pr.y + h / 2.0 + 2.0;
+    result.bbox.ay = pr.y + h / 2.0 + 1.0;
     result.bbox.bx = pr.x + w / 2.0;
-    result.bbox.by = pr.y + h / 2.0 + 6.0;
+    result.bbox.by = pr.y + h / 2.0 + 3.0;
 
     /* Left and right scan lines. */
     result.lsline.x = pr.x - w / 2.0;
@@ -140,7 +142,9 @@ static void sc_tick_arrows(double dt)
         struct WorldPos wp;
         struct ScreenPos sp;
 
+        cmp_drv_update(arrows.data[i].drv, dt);
         cmp_drive(arrows.data[i].ori, arrows.data[i].drv, dt);
+
         pr = cmp_ori_get(arrows.data[i].ori);
         wp.x = pr.x;
         wp.y = pr.y;
@@ -148,6 +152,7 @@ static void sc_tick_arrows(double dt)
 
         if (sp.x < margin || sp.x > (sc_screen_w - margin) ||
             sp.y < margin || sp.y > (sc_screen_h - margin)) {
+                arrow_deinit(arrows.data + i);
                 ARRAY_REMOVE(arrows, i);
                 --i;
         }
@@ -163,7 +168,7 @@ static void sc_handle_collisions_vertical(struct CollisionContext *cc)
             hunter.ori->current.x =
                 cc->ltile_aabbs[0].bx +
                 hunter.box_w / 2.0 +
-                2.0;
+                1.0;
     }
     if ((cc->rtiles[0] == '#' && aabb_vline(cc->ltile_aabbs[0], cc->rsline)) ||
         (cc->rtiles[1] == '#' && aabb_vline(cc->ltile_aabbs[1], cc->rsline)) ||
@@ -172,7 +177,7 @@ static void sc_handle_collisions_vertical(struct CollisionContext *cc)
             hunter.ori->current.x =
                 cc->rtile_aabbs[0].ax -
                 hunter.box_w / 2.0 -
-                2.0;
+                1.0;
     }
 }
 
@@ -197,7 +202,7 @@ static void sc_handle_collisions_midair(struct CollisionContext *cc)
         hunter.ori->current.y =
             cc->utile_aabbs[0].by +
             hunter.box_h / 2.0 +
-            2.0;
+            1.0;
     }
 
     if ((cc->btiles[0] == '#' && (aabb_vline(cc->btile_aabbs[0], cc->lsline) ||
@@ -212,7 +217,7 @@ static void sc_handle_collisions_midair(struct CollisionContext *cc)
             hunter.ori->current.y =
                 cc->btile_aabbs[0].ay -
                 hunter.box_h / 2.0 -
-                2.0;
+                1.0;
     }
 }
 
@@ -246,6 +251,10 @@ static void sc_init(void)
     sc_hunter_walk_left = res_load_bitmap("data/hunter_walk_left_w106.png");
     sc_bow_bitmap = res_load_bitmap("data/bow.png");
     sc_arrow_bitmap = res_load_bitmap("data/arrow.png");
+    sc_soul_stand_right = res_load_bitmap("data/soul_stand_right.png");
+    sc_soul_stand_left = res_load_bitmap("data/soul_stand_left.png");
+    sc_soul_walk_right = res_load_bitmap("data/soul_walk_right_w74.png");
+    sc_soul_walk_left = res_load_bitmap("data/soul_walk_left_w74.png");
 
     sc_alive = true;
     sc_next = NULL;
@@ -262,6 +271,13 @@ static void sc_init(void)
         sc_hunter_walk_right,
         sc_hunter_walk_left);
 
+    soul_init(
+        &soul, 100.0, 100.0,
+        sc_soul_stand_right,
+        sc_soul_stand_left,
+        sc_soul_walk_right,
+        sc_soul_walk_left);
+
     arrows.data = NULL;
     arrows.size = 0;
     arrows.cap = 0;
@@ -275,17 +291,19 @@ static void sc_deinit(void)
 {
     lvl_unload(&lvl);
     hunter_deinit(&hunter);
+    soul_deinit(&soul);
 }
 
 static void sc_tick(double dt)
 {
     sc_tick_camera(dt);
     hunter_tick(&hunter, dt);
+    soul_tick(&soul, dt);
     sc_tick_arrows(dt);
     sc_handle_collisions();
 
     hunter.inx = sys_keys[ALLEGRO_KEY_RIGHT] - sys_keys[ALLEGRO_KEY_LEFT];
-    hunter.jump_req = sys_keys[ALLEGRO_KEY_UP];
+    hunter.jump_req = sys_keys[ALLEGRO_KEY_Z];
 
     /* TODO: move into the hunter module. */
     if (hunter.standing) {
@@ -344,6 +362,7 @@ static void sc_draw(double weight)
     al_clear_to_color(al_map_rgb_f(0.0, 0.0, 0.0));
     lvl_draw(&lvl);
     hunter_draw(&hunter);
+    soul_draw(&soul);
 
     for (i = 0; i < arrows.size; ++i) {
         cmp_draw(
@@ -378,7 +397,7 @@ static void sc_key(int key, bool down)
         sc_alive = false;
     }
 
-    if (down && key == ALLEGRO_KEY_SPACE) {
+    if (down && key == ALLEGRO_KEY_X) {
         sc_shoot_arrow();
     }
 }
