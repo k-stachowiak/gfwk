@@ -69,9 +69,7 @@ void hunter_init(
     hunter->appr = hunter->appr_stand_right;
     hunter->ori = cmp_ori_create(0.0, 0.0, 0.0);
     hunter->drv = cmp_drv_create_platform(
-            &hunter->inx,
-            &hunter->jump_req,
-            &hunter->standing);
+            &hunter->inx, &hunter->jump_req, &hunter->standing);
 
     hunter->aim_angle = 0.0;
     hunter->box_w = 30.0;
@@ -91,15 +89,10 @@ void hunter_deinit(struct Hunter *hunter)
     cmp_appr_free(hunter->appr_walk_left);
 }
 
-void hunter_tick(struct Hunter *hunter, double dt)
+static void hunter_tick_input(struct Hunter *hunter, double dt)
 {
     double rot_speed = 3.1415 / 2.0;
     int rot = sys_keys[ALLEGRO_KEY_UP] - sys_keys[ALLEGRO_KEY_DOWN];
-
-    cmp_appr_update(hunter->appr, dt);
-    cmp_drv_update(hunter->drv, dt);
-
-    cmp_drive(hunter->ori, hunter->drv, dt);
 
     if (hunter->appr == hunter->appr_walk_right ||
         hunter->appr == hunter->appr_stand_right) {
@@ -107,6 +100,41 @@ void hunter_tick(struct Hunter *hunter, double dt)
     } else {
             hunter->aim_angle += rot * rot_speed * dt;
     }
+
+    hunter->inx = sys_keys[ALLEGRO_KEY_RIGHT] - sys_keys[ALLEGRO_KEY_LEFT];
+    hunter->jump_req = sys_keys[ALLEGRO_KEY_Z];
+
+	if (hunter->standing) {
+		if (hunter->inx == 1) {
+			if (hunter->appr == hunter->appr_walk_left ||
+				hunter->appr == hunter->appr_stand_left) {
+					hunter->aim_angle = 3.1415 - hunter->aim_angle;
+			}
+			hunter->appr = hunter->appr_walk_right;
+
+		} else if (hunter->inx == -1) {
+			if (hunter->appr == hunter->appr_walk_right ||
+				hunter->appr == hunter->appr_stand_right) {
+					hunter->aim_angle = 3.1415 - hunter->aim_angle;
+			}
+			hunter->appr = hunter->appr_walk_left;
+		}
+		if (hunter->inx == 0) {
+			if (hunter->appr == hunter->appr_walk_left) {
+				hunter->appr = hunter->appr_stand_left;
+			} else if (hunter->appr == hunter->appr_walk_right) {
+				hunter->appr = hunter->appr_stand_right;
+			}
+		}
+	}
+}
+
+void hunter_tick(struct Hunter *hunter, double dt)
+{
+    cmp_appr_update(hunter->appr, dt);
+    cmp_drv_update(hunter->drv, dt);
+    cmp_drive(hunter->ori, hunter->drv, dt);
+    hunter_tick_input(hunter, dt);
 }
 
 void hunter_draw(struct Hunter *hunter)

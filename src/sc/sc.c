@@ -23,6 +23,7 @@ static bool sc_alive;
 static struct SysClient *sc_next;
 
 struct Level lvl;
+struct LvlGraph lgph;
 struct Hunter hunter;
 struct Soul soul;
 
@@ -100,63 +101,6 @@ static struct CollisionContext cc_analyze(struct PosRot pr, double w, double h)
     result.rtile_aabbs[2] = cc_tile_aabb(tp.x + 1, tp.y + 1);
 
     return result;
-}
-
-static void sc_shoot_arrow(void)
-{
-    struct Arrow arrow;
-    struct PosRot hunter_pr = cmp_ori_get(hunter.ori);
-    struct WorldPos hunter_wp = { hunter_pr.x, hunter_pr.y };
-
-    arrow_init(
-        &arrow,
-        hunter_wp.x, hunter_wp.y - 15.0,
-        hunter.aim_angle,
-        sc_arrow_bitmap);
-
-    ARRAY_APPEND(arrows, arrow);
-}
-
-static void sc_update_screen_aabb(void)
-{
-    sc_screen_aabb.ax = sc_cam_shift.x - sc_screen_w / 2;
-    sc_screen_aabb.ay = sc_cam_shift.y - sc_screen_h / 2;
-    sc_screen_aabb.bx = sc_screen_aabb.ax + sc_screen_w;
-    sc_screen_aabb.by = sc_screen_aabb.ay + sc_screen_h;
-}
-
-static void sc_tick_camera(double dt)
-{
-    struct PosRot hunter_pr = cmp_ori_get(hunter.ori);
-    sc_cam_shift.x = hunter_pr.x;
-    sc_cam_shift.y = hunter_pr.y;
-    sc_update_screen_aabb();
-}
-
-static void sc_tick_arrows(double dt)
-{
-    int i;
-    int margin = 20;
-    for (i = 0; i < arrows.size; ++i) {
-        struct PosRot pr;
-        struct WorldPos wp;
-        struct ScreenPos sp;
-
-        cmp_drv_update(arrows.data[i].drv, dt);
-        cmp_drive(arrows.data[i].ori, arrows.data[i].drv, dt);
-
-        pr = cmp_ori_get(arrows.data[i].ori);
-        wp.x = pr.x;
-        wp.y = pr.y;
-        sp = pos_world_to_screen(wp);
-
-        if (sp.x < margin || sp.x > (sc_screen_w - margin) ||
-            sp.y < margin || sp.y > (sc_screen_h - margin)) {
-                arrow_deinit(arrows.data + i);
-                ARRAY_REMOVE(arrows, i);
-                --i;
-        }
-    }
 }
 
 static void sc_handle_collisions_vertical(struct CollisionContext *cc)
@@ -238,6 +182,63 @@ static void sc_handle_collisions(void)
     }
 }
 
+static void sc_shoot_arrow(void)
+{
+    struct Arrow arrow;
+    struct PosRot hunter_pr = cmp_ori_get(hunter.ori);
+    struct WorldPos hunter_wp = { hunter_pr.x, hunter_pr.y };
+
+    arrow_init(
+        &arrow,
+        hunter_wp.x, hunter_wp.y - 15.0,
+        hunter.aim_angle,
+        sc_arrow_bitmap);
+
+    ARRAY_APPEND(arrows, arrow);
+}
+
+static void sc_update_screen_aabb(void)
+{
+    sc_screen_aabb.ax = sc_cam_shift.x - sc_screen_w / 2;
+    sc_screen_aabb.ay = sc_cam_shift.y - sc_screen_h / 2;
+    sc_screen_aabb.bx = sc_screen_aabb.ax + sc_screen_w;
+    sc_screen_aabb.by = sc_screen_aabb.ay + sc_screen_h;
+}
+
+static void sc_tick_camera(double dt)
+{
+    struct PosRot hunter_pr = cmp_ori_get(hunter.ori);
+    sc_cam_shift.x = hunter_pr.x;
+    sc_cam_shift.y = hunter_pr.y;
+    sc_update_screen_aabb();
+}
+
+static void sc_tick_arrows(double dt)
+{
+    int i;
+    int margin = 20;
+    for (i = 0; i < arrows.size; ++i) {
+        struct PosRot pr;
+        struct WorldPos wp;
+        struct ScreenPos sp;
+
+        cmp_drv_update(arrows.data[i].drv, dt);
+        cmp_drive(arrows.data[i].ori, arrows.data[i].drv, dt);
+
+        pr = cmp_ori_get(arrows.data[i].ori);
+        wp.x = pr.x;
+        wp.y = pr.y;
+        sp = pos_world_to_screen(wp);
+
+        if (sp.x < margin || sp.x > (sc_screen_w - margin) ||
+            sp.y < margin || sp.y > (sc_screen_h - margin)) {
+                arrow_deinit(arrows.data + i);
+                ARRAY_REMOVE(arrows, i);
+                --i;
+        }
+    }
+}
+
 /* Client API.
  * ===========
  */
@@ -263,7 +264,9 @@ static void sc_init(void)
     sc_screen_h = db_integer("screen_h");
     sc_tile_w = 64;
 
-    lvl_load(&lvl, "data/map");
+    lvl_load(&lvl, "data/map2");
+    lgph = lgph_init(&lvl);
+
     hunter_init(
         &hunter,
         sc_hunter_stand_right,
@@ -289,6 +292,7 @@ static void sc_init(void)
 
 static void sc_deinit(void)
 {
+    lgph_deinit(&lgph);
     lvl_unload(&lvl);
     hunter_deinit(&hunter);
     soul_deinit(&soul);
@@ -301,36 +305,6 @@ static void sc_tick(double dt)
     soul_tick(&soul, dt);
     sc_tick_arrows(dt);
     sc_handle_collisions();
-
-    hunter.inx = sys_keys[ALLEGRO_KEY_RIGHT] - sys_keys[ALLEGRO_KEY_LEFT];
-    hunter.jump_req = sys_keys[ALLEGRO_KEY_Z];
-
-    /* TODO: move into the hunter module. */
-    if (hunter.standing) {
-
-        if (hunter.inx == 1) {
-            if (hunter.appr == hunter.appr_walk_left ||
-                hunter.appr == hunter.appr_stand_left) {
-                    hunter.aim_angle = 3.1415 - hunter.aim_angle;
-            }
-            hunter.appr = hunter.appr_walk_right;
-
-        } else if (hunter.inx == -1) {
-            if (hunter.appr == hunter.appr_walk_right ||
-                hunter.appr == hunter.appr_stand_right) {
-                    hunter.aim_angle = 3.1415 - hunter.aim_angle;
-            }
-            hunter.appr = hunter.appr_walk_left;
-        }
-
-        if (hunter.inx == 0) {
-            if (hunter.appr == hunter.appr_walk_left) {
-                hunter.appr = hunter.appr_stand_left;
-            } else if (hunter.appr == hunter.appr_walk_right) {
-                hunter.appr = hunter.appr_stand_right;
-            }
-        }
-    }
 }
 
 static void sc_draw_aabb(
@@ -353,6 +327,42 @@ static void sc_draw_vline(struct VLine vline, double r, double g, double b)
     al_draw_line(x, y1, x, y2, al_map_rgb_f(r, g, b), 1.0);
 }
 
+static void sc_draw_debug_collisions(void)
+{
+    sc_draw_aabb(cc_last.bbox, true, 1, 1, 0);
+    sc_draw_vline(cc_last.lsline, 1, 1, 0);
+    sc_draw_vline(cc_last.rsline, 1, 1, 0);
+    sc_draw_aabb(cc_last.utile_aabbs[0], cc_last.utiles[0] == '#', 0, 1, 1);
+    sc_draw_aabb(cc_last.utile_aabbs[1], cc_last.utiles[1] == '#', 0, 1, 1);
+    sc_draw_aabb(cc_last.utile_aabbs[2], cc_last.utiles[2] == '#', 0, 1, 1);
+    sc_draw_aabb(cc_last.btile_aabbs[0], cc_last.btiles[0] == '#', 0, 1, 1);
+    sc_draw_aabb(cc_last.btile_aabbs[1], cc_last.btiles[1] == '#', 0, 1, 1);
+    sc_draw_aabb(cc_last.btile_aabbs[2], cc_last.btiles[2] == '#', 0, 1, 1);
+    sc_draw_aabb(cc_last.ltile_aabbs[0], cc_last.ltiles[0] == '#', 1, 0, 1);
+    sc_draw_aabb(cc_last.rtile_aabbs[0], cc_last.rtiles[0] == '#', 1, 0, 1);
+}
+
+static void sc_draw_debug_graph(void)
+{
+    int i;
+
+    for (i = 0; i < lgph.nodes_count; ++i) {
+        int *adj;
+        struct TilePos atp = lgph.nodes[i];
+        struct WorldPos awp = pos_tile_to_world(atp);
+        struct ScreenPos asp = pos_world_to_screen(awp);
+        for (adj = lgph.adjacency[i]; *adj != -1; ++adj) {
+            struct TilePos btp = lgph.nodes[*adj];
+            struct WorldPos bwp = pos_tile_to_world(btp);
+            struct ScreenPos bsp = pos_world_to_screen(bwp);
+            al_draw_line(
+                asp.x + sc_tile_w / 2.0, asp.y + sc_tile_w / 2.0,
+                bsp.x + sc_tile_w / 2.0, bsp.y + sc_tile_w / 2.0,
+                al_map_rgb_f(0, 1, 0), 1.0);
+        }
+    }
+}
+
 static void sc_draw(double weight)
 {
     int i;
@@ -371,21 +381,10 @@ static void sc_draw(double weight)
             -zero_sp.x, -zero_sp.y);
     }
 
-    /* begin debug */
     if (sys_keys[ALLEGRO_KEY_F1]) {
-        sc_draw_aabb(cc_last.bbox, true, 1, 1, 0);
-        sc_draw_vline(cc_last.lsline, 1, 1, 0);
-        sc_draw_vline(cc_last.rsline, 1, 1, 0);
-        sc_draw_aabb(cc_last.utile_aabbs[0], cc_last.utiles[0] == '#', 0, 1, 1);
-        sc_draw_aabb(cc_last.utile_aabbs[1], cc_last.utiles[1] == '#', 0, 1, 1);
-        sc_draw_aabb(cc_last.utile_aabbs[2], cc_last.utiles[2] == '#', 0, 1, 1);
-        sc_draw_aabb(cc_last.btile_aabbs[0], cc_last.btiles[0] == '#', 0, 1, 1);
-        sc_draw_aabb(cc_last.btile_aabbs[1], cc_last.btiles[1] == '#', 0, 1, 1);
-        sc_draw_aabb(cc_last.btile_aabbs[2], cc_last.btiles[2] == '#', 0, 1, 1);
-        sc_draw_aabb(cc_last.ltile_aabbs[0], cc_last.ltiles[0] == '#', 1, 0, 1);
-        sc_draw_aabb(cc_last.rtile_aabbs[0], cc_last.rtiles[0] == '#', 1, 0, 1);
+        sc_draw_debug_collisions();
+        sc_draw_debug_graph();
     }
-    /* end debug */
 
     al_flip_display();
 }

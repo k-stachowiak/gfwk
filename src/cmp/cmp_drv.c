@@ -220,7 +220,7 @@ void cmp_drv_stop_y(struct CmpDrv *cmp_drv)
 
 struct Vel cmp_drv_vel(struct CmpDrv *cmp_drv)
 {
-    struct Vel result;
+    struct Vel result = { 0.0, 0.0, 0.0 };
 
     switch (cmp_drv->type) {
     case CMP_DRV_LINEAR:
@@ -229,7 +229,6 @@ struct Vel cmp_drv_vel(struct CmpDrv *cmp_drv)
     case CMP_DRV_INPUT_8DIR:
         result.vx = *cmp_drv->body.i8d.inx * cmp_drv->body.i8d.vel;
         result.vy = *cmp_drv->body.i8d.iny * cmp_drv->body.i8d.vel;
-        result.vtheta = 0.0;
         break;
     case CMP_DRV_PLATFORM:
         result = cmp_drv->body.plat.vel;
@@ -239,7 +238,6 @@ struct Vel cmp_drv_vel(struct CmpDrv *cmp_drv)
         break;
     case CMP_DRV_PATROL:
         result.vx = cmp_drv->body.patr.v;
-        result.vy = 0.0;
         break;
     default:
         DIAG_ERROR("Unhandled driver component type.\n");

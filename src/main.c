@@ -8,6 +8,11 @@
 #include "menu.h"
 #include "resources.h"
 
+/*
+ * TODO:
+ * - Build graph of the level.
+ */
+
 int main(void)
 {
 	struct SysClient *client;
