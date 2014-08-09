@@ -113,6 +113,7 @@ void menu_draw_page(struct MenuPage *page)
 
             } else {
                 DIAG_ERROR("Unhandled value menu item type.\n");
+                exit(1);
             }
         } else {
             memcpy(text, item->caption, cap_len + 1);

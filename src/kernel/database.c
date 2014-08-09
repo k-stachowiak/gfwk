@@ -31,12 +31,14 @@ static void db_insert_integer(char *key, long value)
     key_copy = malloc(key_len + 1);
     if (!key_copy) {
         DIAG_ERROR("Allocation failed.\n");
+        exit(1);
     }
     memcpy(key_copy, key, key_len + 1);
 
     new_node = malloc(sizeof(*new_node));
     if (!new_node) {
         DIAG_ERROR("Allocation failed.\n");
+        exit(1);
     }
 
     new_node->key = key_copy;
@@ -55,12 +57,14 @@ static void db_insert_real(char *key, double value)
     key_copy = malloc(key_len + 1);
     if (!key_copy) {
         DIAG_ERROR("Allocation failed.\n");
+        exit(1);
     }
     memcpy(key_copy, key, key_len + 1);
 
     new_node = malloc(sizeof(*new_node));
     if (!new_node) {
         DIAG_ERROR("Allocation failed.\n");
+        exit(1);
     }
 
     new_node->key = key_copy;
@@ -107,6 +111,7 @@ long db_integer(char *key)
     }
 
     DIAG_ERROR("Invalid key requested.\n");
+    exit(1);
 }
 
 double db_real(char *key)
@@ -119,5 +124,6 @@ double db_real(char *key)
     }
 
     DIAG_ERROR("Invalid key requested.\n");
+    exit(1);
 }
 

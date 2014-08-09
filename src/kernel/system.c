@@ -84,23 +84,28 @@ void sys_init(void)
 {
     if (!al_init()) {
         DIAG_ERROR("Failed initializing platform wrapper.\n");
+        exit(1);
     }
 
     if (!al_init_image_addon()) {
         DIAG_ERROR("Failed initializing image addon.\n");
+        exit(1);
     }
 
     al_init_font_addon();
     if (!al_init_ttf_addon()) {
         DIAG_ERROR("Failed initializing TTF addon.\n");
+        exit(1);
     }
 
     if(!al_init_acodec_addon()) {
         DIAG_ERROR("Failed initializing acodec add-on.\n");
+        exit(1);
     }
 
     if(!al_init_primitives_addon()) {
         DIAG_ERROR("Failed initializing primitives add-on.\n");
+        exit(1);
     }
 
     screen_w = db_integer("screen_w");
@@ -111,19 +116,23 @@ void sys_init(void)
     display = al_create_display(screen_w, screen_h);
     if (!display) {
         DIAG_ERROR("Failed creating display.\n");
+        exit(1);
     }
 
     if (!al_install_keyboard()) {
         DIAG_ERROR("Failed installing keyboard.\n");
+        exit(1);
     }
 
     if(!al_install_audio()) {
         DIAG_ERROR("Failed initializing audio.\n");
+        exit(1);
     }
 
     ev_queue = al_create_event_queue();
     if (!ev_queue) {
         DIAG_ERROR("Failed creating event queue.\n");
+        exit(1);
     }
 
     al_register_event_source(ev_queue, al_get_display_event_source(display));

@@ -27,6 +27,7 @@ struct CmpOri *cmp_ori_create(double x, double y, double theta)
 
     if (!result) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     result->current = init_pr;

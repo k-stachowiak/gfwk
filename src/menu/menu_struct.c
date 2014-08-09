@@ -41,6 +41,7 @@ struct Menu *menu_create(struct MenuPage *main_page)
 
     if (!result) {
         DIAG_ERROR("Allocation error.\n");
+        exit(1);
     }
 
     result->main_page = main_page;
@@ -129,6 +130,7 @@ bool menu_input_incr(struct Menu *menu)
             *(item->body.ptr.real) += 1.0;
         } else {
             DIAG_ERROR("Unhandled menu value type.\n");
+            exit(1);
         }
         break;
 
@@ -152,6 +154,7 @@ bool menu_input_decr(struct Menu *menu)
             *(item->body.ptr.real) -= 1.0;
         } else {
             DIAG_ERROR("Unhandled menu value type.\n");
+            exit(1);
         }
         break;
 
@@ -173,6 +176,7 @@ struct MenuPage *menu_page_create(
 
     if (!result || !caption) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     memcpy(caption_copy, caption, len + 1);
@@ -219,6 +223,7 @@ struct MenuItem *menu_page_current_item(struct MenuPage *menu_page)
     DIAG_ERROR(
         "Data corruption - current item (%d) out of item list bounds.\n",
         menu_page->current_item);
+    exit(1);
 }
 
 struct MenuItem *menu_item_create_value(
@@ -232,10 +237,12 @@ struct MenuItem *menu_item_create_value(
 
     if (!result || !caption) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     if ((!!integer) + (!!real) != 1) {
         DIAG_ERROR("Only one pointer can be set for value menu item.\n");
+        exit(1);
     }
 
     memcpy(caption_copy, caption, len + 1);
@@ -250,6 +257,7 @@ struct MenuItem *menu_item_create_value(
         result->body.ptr.real = real;
     } else {
         DIAG_ERROR("Unhandled value menu item case.\n");
+        exit(1);
     }
 
     return result;
@@ -265,6 +273,7 @@ struct MenuItem *menu_item_create_ref(
 
     if (!result || !caption) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     memcpy(caption_copy, caption, len + 1);
@@ -287,6 +296,7 @@ struct MenuItem *menu_item_create_action(
 
     if (!result || !caption) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     memcpy(caption_copy, caption, len + 1);

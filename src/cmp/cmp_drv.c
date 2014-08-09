@@ -46,6 +46,7 @@ struct CmpDrv *cmp_drv_create_linear(
 
     if (!result) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     result->type = CMP_DRV_LINEAR;
@@ -66,6 +67,7 @@ struct CmpDrv *cmp_drv_create_input_8dir(
 
     if (!result) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     result->type = CMP_DRV_INPUT_8DIR;
@@ -84,6 +86,7 @@ struct CmpDrv *cmp_drv_create_platform(
 
     if (!result) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     result->type = CMP_DRV_PLATFORM;
@@ -104,6 +107,7 @@ struct CmpDrv *cmp_drv_create_ballistic(bool affect_rot, double vx, double vy)
 
     if (!result) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     result->type = CMP_DRV_BALLISTIC;
@@ -124,6 +128,7 @@ struct CmpDrv *cmp_drv_create_patrol(
 
     if (!result) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     result->type = CMP_DRV_PATROL;
@@ -160,6 +165,7 @@ void cmp_drv_update(struct CmpDrv *cmp_drv, double dt)
         break;
     default:
         DIAG_ERROR("Unhandled driver component type.\n");
+        exit(1);
     }
 }
 
@@ -198,6 +204,7 @@ void cmp_drv_stop(struct CmpDrv *cmp_drv, bool x, bool y)
         break;
     default:
         DIAG_ERROR("Unhandled driver component type.\n");
+        exit(1);
     }
 }
 
@@ -236,6 +243,7 @@ struct Vel cmp_drv_vel(struct CmpDrv *cmp_drv)
         break;
     default:
         DIAG_ERROR("Unhandled driver component type.\n");
+        exit(1);
     }
 
     return result;

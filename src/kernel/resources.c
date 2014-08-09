@@ -116,10 +116,12 @@ void *res_load_bitmap(char *path)
 
     if (!new_node || !path_copy) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     if (!(value = al_load_bitmap(path))) {
         DIAG_ERROR("Failed loading bitmap \"%s\".\n", path);
+        exit(1);
     }
 
     memcpy(path_copy, path, path_len + 1);
@@ -160,6 +162,7 @@ void res_dispose_bitmap(void *bitmap)
     }
 
     DIAG_ERROR("Failed finding bitmap to destroy.\n");
+    exit(1);
 }
 
 void res_cut_frame_sheet(
@@ -175,6 +178,7 @@ void res_cut_frame_sheet(
 
     if (!(*frames)) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     for(i = 0; i < *frames_count; ++i) {
@@ -182,6 +186,7 @@ void res_cut_frame_sheet(
             (ALLEGRO_BITMAP*)bitmap, i * frame_w, 0, frame_w, bitmap_h);
         if (!frame_bitmap) {
             DIAG_ERROR("Failed creating sub-bitmap from spritesheet.\n");
+            exit(1);
         }
         (*frames)[i] = frame_bitmap;
     }
@@ -205,10 +210,12 @@ void *res_load_sample(char *path)
 
     if (!new_node || !path_copy) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     if (!(value = al_load_sample(path))) {
         DIAG_ERROR("Failed loading sample \"%s\".\n", path);
+        exit(1);
     }
 
     memcpy(path_copy, path, path_len + 1);
@@ -239,10 +246,12 @@ void *res_load_font(char *path, int size)
 
     if (!new_node || !path_copy) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     if (!(value = al_load_font(path, -size, 0))) {
         DIAG_ERROR("Failed loading font \"%s\".\n", path);
+        exit(1);
     }
 
     memcpy(path_copy, path, path_len + 1);

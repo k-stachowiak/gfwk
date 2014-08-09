@@ -39,6 +39,7 @@ static void sample_id_assign(ALLEGRO_SAMPLE *sample, ALLEGRO_SAMPLE_ID id)
 
     if (!node) {
         DIAG_ERROR("Allocation failed.\n");
+        exit(1);
     }
 
     node->key = sample;

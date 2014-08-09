@@ -13,6 +13,7 @@ struct CmpAppr *cmp_appr_create_static_sprite(void *sprite)
     struct CmpAppr *result = malloc(sizeof(*result));
     if (!result) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     result->type = CMP_APPR_STATIC_SPRITE;
@@ -71,6 +72,7 @@ struct CmpAppr *cmp_appr_create_anim_sprite(
     struct CmpAppr *result = malloc(sizeof(*result));
     if (!result) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
 
     result->type = CMP_APPR_ANIM_SPRITE;
@@ -101,6 +103,7 @@ void cmp_appr_free(struct CmpAppr *cmp_appr)
         break;
     default:
         DIAG_ERROR("Unhandled apprarance component type.\n");
+        exit(1);
     }
     free(cmp_appr);
 }
@@ -115,6 +118,7 @@ void cmp_appr_update(struct CmpAppr *cmp_appr, double dt)
         break;
     default:
         DIAG_ERROR("Unhandled apprarance component type.\n");
+        exit(1);
     }
 }
 
@@ -127,6 +131,7 @@ void *cmp_appr_bitmap(struct CmpAppr *cmp_appr)
         return cmp_appr_bitmap_anim_sprite(&cmp_appr->body.anim_sprite);
     default:
         DIAG_ERROR("Unhandled apprarance component type.\n");
+        exit(1);
     }
 }
 

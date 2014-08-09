@@ -55,6 +55,7 @@ static int lvl_load_read_line(FILE *f, char **buffer, int *length)
     *buffer = malloc(result.size);
     if (!(*buffer)) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
     memcpy(*buffer, result.data, result.size);
 
@@ -71,6 +72,7 @@ void lvl_load(struct Level *lvl, char *filename)
 
     if (!in) {
         DIAG_ERROR("Failed opening a file \"%s\".\n", filename);
+        exit(1);
     }
 
     c = lvl_load_read_line(in, &line, &line_length);
@@ -80,6 +82,7 @@ void lvl_load(struct Level *lvl, char *filename)
     map = malloc(map_cap);
     if (!map) {
         DIAG_ERROR("Allocation failure.\n");
+        exit(1);
     }
     memcpy(map, line, line_length);
     free(line);
@@ -92,6 +95,7 @@ void lvl_load(struct Level *lvl, char *filename)
             map = realloc(map, map_cap);
             if (!map) {
                 DIAG_ERROR("Allocation failure.\n");
+                exit(1);
             }
             memcpy(map + map_size, line, line_length);
             map_size = map_cap;
