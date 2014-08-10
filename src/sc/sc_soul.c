@@ -62,9 +62,20 @@ void soul_init(
     soul->appr_stand_left =
         cmp_appr_create_static_sprite(stand_left_bitmap);
 
+    double *hack_points = malloc(6 * sizeof(*hack_points));
+    hack_points[0] = 0.0;
+    hack_points[1] = 0.0;
+    hack_points[2] = 100.0;
+    hack_points[3] = 100.0;
+    hack_points[4] = 200.0;
+    hack_points[5] = 100.0;
+
     soul->appr = soul->appr_walk_right;
     soul->ori = cmp_ori_create(x, y, 0.0);
-    soul->drv = cmp_drv_create_patrol(0.0, 100.0, 0.0, 100.0, &(soul->turn_flag));
+    soul->drv = cmp_drv_create_waypoint(
+            hack_points, 3, true, 50.0,
+            &soul->turn_flag,
+            &soul->step_flag);
 
     soul->box_w = 30.0;
     soul->box_h = 60.0;

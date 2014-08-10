@@ -14,6 +14,7 @@ struct Soul {
 
     double box_w, box_h;
     bool turn_flag;
+    bool step_flag;
 };
 
 void soul_init(

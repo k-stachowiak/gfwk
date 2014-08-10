@@ -175,10 +175,8 @@ static void lgph_find_platform_edges(
             tp.y = y - 1;
             tp.x = x1;
             ARRAY_APPEND(*result, tp);
-            DIAG_DEBUG("Platform node (%d, %d)", tp.x, tp.y);
             tp.x = x2;
             ARRAY_APPEND(*result, tp);
-            DIAG_DEBUG("Platform node (%d, %d)", tp.x, tp.y);
         }
     }
 }
@@ -202,10 +200,6 @@ static void lgph_add_descent(
     int i;
     bool replaced = false;;
 
-    DIAG_DEBUG(
-        "Adding descent (%d, %d) -> (%d, %d).",
-        upper.x, upper.y, lower.x, lower.y);
-
     for (i = 0; i < result->size; i += 2) {
 
         int y, x1, x2;
@@ -214,24 +208,16 @@ static void lgph_add_descent(
         if (result->data[i].y != lower.y || result->data[i + 1].y != lower.y) {
             continue;
         } else {
-            DIAG_DEBUG("Found link on the same level.");
             y = lower.y;
         }
 
         x1 = min(result->data[i].x, result->data[i + 1].x);
         x2 = max(result->data[i].x, result->data[i + 1].x);
 
-        DIAG_DEBUG(
-            "Check if crossing link (%d, %d) -> (%d, %d).",
-            result->data[i].x, result->data[i].y,
-            result->data[i + 1].x, result->data[i + 1].y);
-
         if (lower.x <= x1 || lower.x >= x2) {
-            DIAG_DEBUG("Not crossed.");
             continue;
         } else {
             replaced = true;
-            DIAG_DEBUG("Crossed.");
         }
 
         result->data[i] = upper;
@@ -244,9 +230,6 @@ static void lgph_add_descent(
         new_pos.x = lower.x;
         new_pos.y = y;
         ARRAY_APPEND(*result, new_pos);
-        DIAG_DEBUG(
-            "Replacing with (1) (%d, %d) -> (%d, %d).",
-            x1, y, lower.x, y);
 
         new_pos.x = lower.x;
         new_pos.y = y;
@@ -255,9 +238,6 @@ static void lgph_add_descent(
         new_pos.x = x2;
         new_pos.y = y;
         ARRAY_APPEND(*result, new_pos);
-        DIAG_DEBUG(
-            "Replacing with (2) (%d, %d) -> (%d, %d).",
-            lower.x, y, x2, y);
     }
 
     if (!replaced) {
@@ -393,10 +373,9 @@ struct LvlGraph lgph_init(struct Level *lvl)
 
     ARRAY_COPY(plat_nodes, all_nodes);
     lgph_find_jump_edges(lvl, &plat_nodes, &all_nodes);
-    /* ... */
+    /* TODO: Also generate jumps over ledges (?) */
 
     uniques = lgph_find_unique_nodes(&all_nodes);
-    DIAG_DEBUG("Unique nodes size = %d.", all_nodes.size);
 
     adjacency = malloc(uniques.size * sizeof(*adjacency));
     if (!adjacency) {

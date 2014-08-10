@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include "mymath.h"
 #include "diagnostics.h"
 #include "cmp_drv.h"
 
@@ -24,17 +25,103 @@ static void cmp_drv_update_platform(struct CmpDrvPlat *plat, double dt)
     *plat->jump_req = false;
 }
 
-void cmp_drv_update_patrol(struct CmpDrvPatr *patr, double dt)
+static void cmp_drv_waypoint_local_points(
+        struct CmpDrvWaypoint *wayp,
+        double *x0, double *y0,
+        double *x1, double *y1)
 {
-    patr->x += patr->v * dt;
+    if (!wayp->patrol || wayp->flag) {
+       *x0 = wayp->points[2 * wayp->step + 0];
+       *y0 = wayp->points[2 * wayp->step + 1];
+       *x1 = wayp->points[2 * wayp->step + 2];
+       *y1 = wayp->points[2 * wayp->step + 3];
+   } else {
+       *x0 = wayp->points[2 * wayp->step + 0];
+       *y0 = wayp->points[2 * wayp->step + 1];
+       *x1 = wayp->points[2 * wayp->step - 2];
+       *y1 = wayp->points[2 * wayp->step - 1];
+   }
+}
 
-    if ((patr->v > 0.0 && patr->x >= patr->x2) ||
-        (patr->v <= 0.0 && patr->x <= patr->x1)) {
-            *patr->turn_flag = true;
-            patr->v *= -1;
+static void cmp_drv_waypoint_step(struct CmpDrvWaypoint *wayp)
+{
+    wayp->step_degree = 0.0;
+    *wayp->step_flag = true;
+
+    if (wayp->patrol) {
+        if (wayp->flag) {
+            ++wayp->step;
+            if(wayp->step >= (wayp->points_count - 1)) {
+                wayp->flag = false;
+                *wayp->turn_flag = true;
+            }
+        } else {
+            --wayp->step;
+            if(wayp->step <= 0) {
+                wayp->flag = true;
+                *wayp->turn_flag = true;
+            }
+        }
+
     } else {
-        *patr->turn_flag = false;
+        ++wayp->step;
+        if(wayp->step >= (wayp->points_count - 1)) {
+            DIAG_DEBUG("Path finished (non-patrol).");
+            wayp->flag = true;
+        }
     }
+}
+
+void cmp_drv_update_waypoint(struct CmpDrvWaypoint *wayp, double dt)
+{
+    double x0, y0, x1, y1;
+    double dx, dy;
+    double step_len, step_inc;
+
+    *wayp->turn_flag = false;
+    *wayp->step_flag = false;
+
+    if (!wayp->patrol && wayp->flag) {
+        return;
+    }
+
+    cmp_drv_waypoint_local_points(wayp, &x0, &y0, &x1, &y1);
+
+    dx = x1 - x0;
+    dy = y1 - y0;
+
+    step_len = 1.0 / rsqrt(dx * dx + dy * dy);
+    step_inc = (wayp->velocity * dt) / step_len;
+
+    wayp->step_degree += step_inc;
+    if (wayp->step_degree > 1.0) {
+        cmp_drv_waypoint_step(wayp);
+    }
+}
+
+struct Vel cmp_drv_vel_waypoint(struct CmpDrvWaypoint *wayp)
+{
+    struct Vel result = { 0.0, 0.0, 0.0 };
+
+    double x0, y0, x1, y1;
+    double dx, dy;
+    double rev_sqrt;
+
+    if (!wayp->patrol && wayp->flag) {
+        return result;
+    }
+
+    cmp_drv_waypoint_local_points(wayp, &x0, &y0, &x1, &y1);
+
+    dx = x1 - x0;
+    dy = y1 - y0;
+
+    rev_sqrt = rsqrt(dx * dx + dy * dy);
+
+    result.vx = dx * rev_sqrt * wayp->velocity;
+    result.vy = dy * rev_sqrt * wayp->velocity;
+
+    return result;
 }
 
 struct CmpDrv *cmp_drv_create_linear(
@@ -119,10 +206,10 @@ struct CmpDrv *cmp_drv_create_ballistic(bool affect_rot, double vx, double vy)
     return result;
 }
 
-struct CmpDrv *cmp_drv_create_patrol(
-        double x1, double x2,
-        double y, double v,
-        bool *turn_flag)
+struct CmpDrv *cmp_drv_create_waypoint(
+        double *points, int points_count,
+        bool patrol, double velocity,
+        bool *turn_flag, bool *step_flag)
 {
     struct CmpDrv *result = malloc(sizeof(*result));
 
@@ -131,20 +218,26 @@ struct CmpDrv *cmp_drv_create_patrol(
         exit(1);
     }
 
-    result->type = CMP_DRV_PATROL;
+    result->type = CMP_DRV_WAYPOINT;
     result->affect_rot = false;
-    result->body.patr.x1 = x1;
-    result->body.patr.x2 = x2;
-    result->body.patr.y = y;
-    result->body.patr.x = x1;
-    result->body.patr.v = v;
-    result->body.patr.turn_flag = turn_flag;
+    result->body.wayp.points = points;
+    result->body.wayp.points_count = points_count;
+    result->body.wayp.patrol = patrol;
+    result->body.wayp.velocity = velocity;
+    result->body.wayp.turn_flag = turn_flag;
+    result->body.wayp.step_flag = step_flag;
+    result->body.wayp.step = 0;
+    result->body.wayp.step_degree = 0.0;
+    result->body.wayp.flag = patrol;
 
     return result;
 }
 
 void cmp_drv_free(struct CmpDrv *cmp_drv)
 {
+    if (cmp_drv->type == CMP_DRV_WAYPOINT) {
+        free(cmp_drv->body.wayp.points);
+    }
     free(cmp_drv);
 }
 
@@ -160,8 +253,8 @@ void cmp_drv_update(struct CmpDrv *cmp_drv, double dt)
     case CMP_DRV_BALLISTIC:
         cmp_drv->body.bal.vy += 10.0 * cmp_drv_tile_factor * dt;
         break;
-    case CMP_DRV_PATROL:
-        cmp_drv_update_patrol(&cmp_drv->body.patr, dt);
+    case CMP_DRV_WAYPOINT:
+        cmp_drv_update_waypoint(&cmp_drv->body.wayp, dt);
         break;
     default:
         DIAG_ERROR("Unhandled driver component type.");
@@ -194,9 +287,9 @@ void cmp_drv_stop(struct CmpDrv *cmp_drv, bool x, bool y)
             cmp_drv->body.bal.vy = 0.0;
         }
         break;
-    case CMP_DRV_PATROL:
+    case CMP_DRV_WAYPOINT:
         if (x) {
-            cmp_drv->body.patr.v = 0.0;
+            cmp_drv->body.wayp.velocity = 0.0;
         }
         if (y) {
             DIAG_WARNING("Attempt to y stop patrol driver component.");
@@ -236,8 +329,8 @@ struct Vel cmp_drv_vel(struct CmpDrv *cmp_drv)
     case CMP_DRV_BALLISTIC:
         result = cmp_drv->body.bal;
         break;
-    case CMP_DRV_PATROL:
-        result.vx = cmp_drv->body.patr.v;
+    case CMP_DRV_WAYPOINT:
+        result = cmp_drv_vel_waypoint(&cmp_drv->body.wayp);
         break;
     default:
         DIAG_ERROR("Unhandled driver component type.");
