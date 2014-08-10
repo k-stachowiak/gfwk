@@ -54,7 +54,7 @@ static int lvl_load_read_line(FILE *f, char **buffer, int *length)
     *length = result.size;
     *buffer = malloc(result.size);
     if (!(*buffer)) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
     memcpy(*buffer, result.data, result.size);
@@ -71,7 +71,7 @@ void lvl_load(struct Level *lvl, char *filename)
     FILE *in = fopen(filename, "r");
 
     if (!in) {
-        DIAG_ERROR("Failed opening a file \"%s\".\n", filename);
+        DIAG_ERROR("Failed opening a file \"%s\".", filename);
         exit(1);
     }
 
@@ -81,7 +81,7 @@ void lvl_load(struct Level *lvl, char *filename)
     map_cap = line_length;
     map = malloc(map_cap);
     if (!map) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
     memcpy(map, line, line_length);
@@ -94,7 +94,7 @@ void lvl_load(struct Level *lvl, char *filename)
             map_cap += line_length;
             map = realloc(map, map_cap);
             if (!map) {
-                DIAG_ERROR("Allocation failure.\n");
+                DIAG_ERROR("Allocation failure.");
                 exit(1);
             }
             memcpy(map + map_size, line, line_length);
@@ -148,7 +148,9 @@ struct NodeArray {
     int size, cap;
 };
 
-static void lgph_find_vert_nodes(struct Level *lvl, struct NodeArray *ns)
+static void lgph_find_platform_edges(
+        struct Level *lvl,
+        struct NodeArray *result)
 {
     int y;
     for (y = 0; y < lvl->height; ++y) {
@@ -172,9 +174,119 @@ static void lgph_find_vert_nodes(struct Level *lvl, struct NodeArray *ns)
 
             tp.y = y - 1;
             tp.x = x1;
-            ARRAY_APPEND(*ns, tp);
+            ARRAY_APPEND(*result, tp);
+            DIAG_DEBUG("Platform node (%d, %d)", tp.x, tp.y);
             tp.x = x2;
-            ARRAY_APPEND(*ns, tp);
+            ARRAY_APPEND(*result, tp);
+            DIAG_DEBUG("Platform node (%d, %d)", tp.x, tp.y);
+        }
+    }
+}
+
+static inline double min(double a, double b)
+{
+    return (a < b) ? a : b;
+}
+
+static inline double max(double a, double b)
+{
+    return (a < b) ? b : a;
+}
+
+static void lgph_add_descent(
+        struct Level *lvl,
+        struct TilePos upper,
+        struct TilePos lower,
+        struct NodeArray *result)
+{
+    int i;
+    bool replaced = false;;
+
+    DIAG_DEBUG(
+        "Adding descent (%d, %d) -> (%d, %d).",
+        upper.x, upper.y, lower.x, lower.y);
+
+    for (i = 0; i < result->size; i += 2) {
+
+        int y, x1, x2;
+        struct TilePos new_pos;
+
+        if (result->data[i].y != lower.y || result->data[i + 1].y != lower.y) {
+            continue;
+        } else {
+            DIAG_DEBUG("Found link on the same level.");
+            y = lower.y;
+        }
+
+        x1 = min(result->data[i].x, result->data[i + 1].x);
+        x2 = max(result->data[i].x, result->data[i + 1].x);
+
+        DIAG_DEBUG(
+            "Check if crossing link (%d, %d) -> (%d, %d).",
+            result->data[i].x, result->data[i].y,
+            result->data[i + 1].x, result->data[i + 1].y);
+
+        if (lower.x <= x1 || lower.x >= x2) {
+            DIAG_DEBUG("Not crossed.");
+            continue;
+        } else {
+            replaced = true;
+            DIAG_DEBUG("Crossed.");
+        }
+
+        result->data[i] = upper;
+        result->data[i + 1] = lower;
+
+        new_pos.x = x1;
+        new_pos.y = y;
+        ARRAY_APPEND(*result, new_pos);
+
+        new_pos.x = lower.x;
+        new_pos.y = y;
+        ARRAY_APPEND(*result, new_pos);
+        DIAG_DEBUG(
+            "Replacing with (1) (%d, %d) -> (%d, %d).",
+            x1, y, lower.x, y);
+
+        new_pos.x = lower.x;
+        new_pos.y = y;
+        ARRAY_APPEND(*result, new_pos);
+
+        new_pos.x = x2;
+        new_pos.y = y;
+        ARRAY_APPEND(*result, new_pos);
+        DIAG_DEBUG(
+            "Replacing with (2) (%d, %d) -> (%d, %d).",
+            lower.x, y, x2, y);
+    }
+
+    if (!replaced) {
+        ARRAY_APPEND(*result, upper);
+        ARRAY_APPEND(*result, lower);
+    }
+}
+
+static void lgph_find_jump_edges(
+        struct Level *lvl,
+        struct NodeArray *plat,
+        struct NodeArray *result)
+{
+    int i;
+    for (i = 0; i < plat->size; ++i) {
+        struct TilePos lower, upper = plat->data[i];
+        if (lvl_get_tile(lvl, upper.x + 1, upper.y + 1) == ' ' &&
+            lvl_get_tile(lvl, upper.x + 1, upper.y + 2) == ' ' &&
+            lvl_get_tile(lvl, upper.x + 1, upper.y + 3) == '#') {
+                lower.x = upper.x + 1;
+                lower.y = upper.y + 2;
+                lgph_add_descent(lvl, upper, lower, result);
+        }
+        if (lvl_get_tile(lvl, upper.x - 1, upper.y + 1) == ' ' &&
+            lvl_get_tile(lvl, upper.x - 1, upper.y + 2) == ' ' &&
+            lvl_get_tile(lvl, upper.x - 1, upper.y + 3) == '#') {
+                lower.x = upper.x - 1;
+                lower.y = upper.y + 2;
+                lgph_add_descent(lvl, upper, lower, result);
         }
     }
 }
@@ -215,90 +327,87 @@ static struct NodeArray lgph_find_unique_nodes(struct NodeArray *in)
     return uniques;
 }
 
-static int *lgph_find_adjacency(
+static struct LvlAdj *lgph_find_adjacency(
         struct TilePos n,
         struct NodeArray *unique,
         struct NodeArray *all)
 {
     int i;
-    bool found, is_first, is_second;
+
     struct {
-        int *data;
+        struct LvlAdj *data;
         int size, cap;
     } result = { NULL, 0, 0 };
+
+    struct LvlAdj adj;
 
     for (i = 0; i < all->size; i += 2) {
 
         int j;
-        is_first = n.x == all->data[i].x && n.y == all->data[i].y;
-        is_second = n.x == all->data[i + 1].x && n.y == all->data[i + 1].y;
+
+        bool is_first = n.x == all->data[i].x && n.y == all->data[i].y;
+        bool is_second = n.x == all->data[i + 1].x && n.y == all->data[i + 1].y;
+        bool is_vertical = all->data[i].y != all->data[i + 1].y;
 
         if (is_first && !is_second) {
-            found = false;
             for (j = 0; j < unique->size; ++j) {
-                if (all->data[i + 1].x == unique->data[j].x &&
+                if (i != j &&
+                    all->data[i + 1].x == unique->data[j].x &&
                     all->data[i + 1].y == unique->data[j].y) {
-                        ARRAY_APPEND(result, j);
-                        found = true;
+                        adj.neighbor = j;
+                        adj.type = is_vertical ? LVL_ADJ_JUMP : LVL_ADJ_WALK;
+                        ARRAY_APPEND(result, adj);
                         break;
                 }
-            }
-            if (!found) {
-                DIAG_ERROR("Data corruption. Neighbor not found.\n");
-                exit(1);
             }
         } else if (!is_first && is_second) {
-            found = false;
             for (j = 0; j < unique->size; ++j) {
-                if (all->data[i].x == unique->data[j].x &&
+                if ((i + 1) != j &&
+                    all->data[i].x == unique->data[j].x &&
                     all->data[i].y == unique->data[j].y) {
-                        ARRAY_APPEND(result, j);
-                        found = true;
+                        adj.neighbor = j;
+                        adj.type = is_vertical ? LVL_ADJ_JUMP : LVL_ADJ_WALK;
+                        ARRAY_APPEND(result, adj);
                         break;
                 }
             }
-            if (!found) {
-                DIAG_ERROR("Data corruption. Neighbor not found.\n");
-                exit(1);
-            }
         } else {
-            DIAG_DEBUG("Pair in the same tile found.\n");
+            DIAG_TRACE("Pair in the same tile found.");
         }
     }
 
-    ARRAY_APPEND(result, -1);
+    adj.neighbor = -1;
+    ARRAY_APPEND(result, adj);
 
     return result.data;
 }
 
 struct LvlGraph lgph_init(struct Level *lvl)
 {
-    /*
-     * [v] Find and draw all the basic vertical edges (w. nodes)
-     * [ ] Find and draw all the vertical edges (w. connectors to the upper edge(s))
-     * [ ] Break the vertical edges with horizontal ones.
-     */
-
     int i;
     struct LvlGraph result;
-    struct NodeArray uniques, nodes = { NULL, 0, 0 };
-    int **adjacency;
+    struct NodeArray uniques, plat_nodes, all_nodes = { NULL, 0, 0 };
+    struct LvlAdj **adjacency;
 
-    lgph_find_vert_nodes(lvl, &nodes);
+    lgph_find_platform_edges(lvl, &all_nodes);
+
+    ARRAY_COPY(plat_nodes, all_nodes);
+    lgph_find_jump_edges(lvl, &plat_nodes, &all_nodes);
     /* ... */
 
-    uniques = lgph_find_unique_nodes(&nodes);
+    uniques = lgph_find_unique_nodes(&all_nodes);
+    DIAG_DEBUG("Unique nodes size = %d.", all_nodes.size);
 
     adjacency = malloc(uniques.size * sizeof(*adjacency));
     if (!adjacency) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
     for (i = 0; i < uniques.size; ++i) {
-        adjacency[i] = lgph_find_adjacency(uniques.data[i], &uniques, &nodes);
+        adjacency[i] = lgph_find_adjacency(uniques.data[i], &uniques, &all_nodes);
     }
 
-    ARRAY_FREE(nodes);
+    ARRAY_FREE(all_nodes);
 
     result.nodes_count = uniques.size;
     result.nodes = uniques.data;

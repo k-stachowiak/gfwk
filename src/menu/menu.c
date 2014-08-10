@@ -112,7 +112,7 @@ void menu_draw_page(struct MenuPage *page)
                 sprintf(text, "%s (%f)", item->caption, val);
 
             } else {
-                DIAG_ERROR("Unhandled value menu item type.\n");
+                DIAG_ERROR("Unhandled value menu item type.");
                 exit(1);
             }
         } else {

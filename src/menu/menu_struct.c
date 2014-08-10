@@ -40,7 +40,7 @@ struct Menu *menu_create(struct MenuPage *main_page)
     struct Menu *result = malloc(sizeof(*result));
 
     if (!result) {
-        DIAG_ERROR("Allocation error.\n");
+        DIAG_ERROR("Allocation error.");
         exit(1);
     }
 
@@ -129,7 +129,7 @@ bool menu_input_incr(struct Menu *menu)
         } else if (item->body.ptr.real) {
             *(item->body.ptr.real) += 1.0;
         } else {
-            DIAG_ERROR("Unhandled menu value type.\n");
+            DIAG_ERROR("Unhandled menu value type.");
             exit(1);
         }
         break;
@@ -153,7 +153,7 @@ bool menu_input_decr(struct Menu *menu)
         } else if (item->body.ptr.real) {
             *(item->body.ptr.real) -= 1.0;
         } else {
-            DIAG_ERROR("Unhandled menu value type.\n");
+            DIAG_ERROR("Unhandled menu value type.");
             exit(1);
         }
         break;
@@ -175,7 +175,7 @@ struct MenuPage *menu_page_create(
     char *caption_copy = malloc(len + 1);
 
     if (!result || !caption) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 
@@ -221,7 +221,7 @@ struct MenuItem *menu_page_current_item(struct MenuPage *menu_page)
     }
 
     DIAG_ERROR(
-        "Data corruption - current item (%d) out of item list bounds.\n",
+        "Data corruption - current item (%d) out of item list bounds.",
         menu_page->current_item);
     exit(1);
 }
@@ -236,12 +236,12 @@ struct MenuItem *menu_item_create_value(
     char *caption_copy = malloc(len + 1);
 
     if (!result || !caption) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 
     if ((!!integer) + (!!real) != 1) {
-        DIAG_ERROR("Only one pointer can be set for value menu item.\n");
+        DIAG_ERROR("Only one pointer can be set for value menu item.");
         exit(1);
     }
 
@@ -256,7 +256,7 @@ struct MenuItem *menu_item_create_value(
     } else if (real) {
         result->body.ptr.real = real;
     } else {
-        DIAG_ERROR("Unhandled value menu item case.\n");
+        DIAG_ERROR("Unhandled value menu item case.");
         exit(1);
     }
 
@@ -272,7 +272,7 @@ struct MenuItem *menu_item_create_ref(
     char *caption_copy = malloc(len + 1);
 
     if (!result || !caption) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 
@@ -295,7 +295,7 @@ struct MenuItem *menu_item_create_action(
     char *caption_copy = malloc(len + 1);
 
     if (!result || !caption) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 

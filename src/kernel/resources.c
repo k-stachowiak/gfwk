@@ -115,12 +115,12 @@ void *res_load_bitmap(char *path)
     new_node = malloc(sizeof(*new_node));
 
     if (!new_node || !path_copy) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 
     if (!(value = al_load_bitmap(path))) {
-        DIAG_ERROR("Failed loading bitmap \"%s\".\n", path);
+        DIAG_ERROR("Failed loading bitmap \"%s\".", path);
         exit(1);
     }
 
@@ -161,7 +161,7 @@ void res_dispose_bitmap(void *bitmap)
         curr = curr->next;
     }
 
-    DIAG_ERROR("Failed finding bitmap to destroy.\n");
+    DIAG_ERROR("Failed finding bitmap to destroy.");
     exit(1);
 }
 
@@ -177,7 +177,7 @@ void res_cut_frame_sheet(
     *frames = malloc(*frames_count * sizeof(**frames));
 
     if (!(*frames)) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 
@@ -185,7 +185,7 @@ void res_cut_frame_sheet(
         ALLEGRO_BITMAP* frame_bitmap = al_create_sub_bitmap(
             (ALLEGRO_BITMAP*)bitmap, i * frame_w, 0, frame_w, bitmap_h);
         if (!frame_bitmap) {
-            DIAG_ERROR("Failed creating sub-bitmap from spritesheet.\n");
+            DIAG_ERROR("Failed creating sub-bitmap from spritesheet.");
             exit(1);
         }
         (*frames)[i] = frame_bitmap;
@@ -209,12 +209,12 @@ void *res_load_sample(char *path)
     new_node = malloc(sizeof(*new_node));
 
     if (!new_node || !path_copy) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 
     if (!(value = al_load_sample(path))) {
-        DIAG_ERROR("Failed loading sample \"%s\".\n", path);
+        DIAG_ERROR("Failed loading sample \"%s\".", path);
         exit(1);
     }
 
@@ -245,12 +245,12 @@ void *res_load_font(char *path, int size)
     new_node = malloc(sizeof(*new_node));
 
     if (!new_node || !path_copy) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 
     if (!(value = al_load_font(path, -size, 0))) {
-        DIAG_ERROR("Failed loading font \"%s\".\n", path);
+        DIAG_ERROR("Failed loading font \"%s\".", path);
         exit(1);
     }
 

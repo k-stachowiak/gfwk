@@ -45,7 +45,7 @@ struct CmpDrv *cmp_drv_create_linear(
     struct CmpDrv *result = malloc(sizeof(*result));
 
     if (!result) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 
@@ -66,7 +66,7 @@ struct CmpDrv *cmp_drv_create_input_8dir(
     struct CmpDrv *result = malloc(sizeof(*result));
 
     if (!result) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 
@@ -85,7 +85,7 @@ struct CmpDrv *cmp_drv_create_platform(
     struct CmpDrv *result = malloc(sizeof(*result));
 
     if (!result) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 
@@ -106,7 +106,7 @@ struct CmpDrv *cmp_drv_create_ballistic(bool affect_rot, double vx, double vy)
     struct CmpDrv *result = malloc(sizeof(*result));
 
     if (!result) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 
@@ -127,7 +127,7 @@ struct CmpDrv *cmp_drv_create_patrol(
     struct CmpDrv *result = malloc(sizeof(*result));
 
     if (!result) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 
@@ -164,7 +164,7 @@ void cmp_drv_update(struct CmpDrv *cmp_drv, double dt)
         cmp_drv_update_patrol(&cmp_drv->body.patr, dt);
         break;
     default:
-        DIAG_ERROR("Unhandled driver component type.\n");
+        DIAG_ERROR("Unhandled driver component type.");
         exit(1);
     }
 }
@@ -173,10 +173,10 @@ void cmp_drv_stop(struct CmpDrv *cmp_drv, bool x, bool y)
 {
     switch (cmp_drv->type) {
     case CMP_DRV_LINEAR:
-        DIAG_WARNING("Attempt to stop linear driver component.\n");
+        DIAG_WARNING("Attempt to stop linear driver component.");
         break;
     case CMP_DRV_INPUT_8DIR:
-        DIAG_WARNING("Attempt to stop input 8dir driver component.\n");
+        DIAG_WARNING("Attempt to stop input 8dir driver component.");
         break;
     case CMP_DRV_PLATFORM:
         if (x) {
@@ -199,11 +199,11 @@ void cmp_drv_stop(struct CmpDrv *cmp_drv, bool x, bool y)
             cmp_drv->body.patr.v = 0.0;
         }
         if (y) {
-            DIAG_WARNING("Attempt to y stop patrol driver component.\n");
+            DIAG_WARNING("Attempt to y stop patrol driver component.");
         }
         break;
     default:
-        DIAG_ERROR("Unhandled driver component type.\n");
+        DIAG_ERROR("Unhandled driver component type.");
         exit(1);
     }
 }
@@ -240,7 +240,7 @@ struct Vel cmp_drv_vel(struct CmpDrv *cmp_drv)
         result.vx = cmp_drv->body.patr.v;
         break;
     default:
-        DIAG_ERROR("Unhandled driver component type.\n");
+        DIAG_ERROR("Unhandled driver component type.");
         exit(1);
     }
 

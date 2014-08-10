@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define ARRAY_FREE(MACRO_ARRAY) \
     do { \
@@ -13,6 +14,15 @@
         (MACRO_ARRAY).size = 0; \
         (MACRO_ARRAY).cap = 0; \
     } while(0)
+
+#define ARRAY_COPY(dst, src) \
+    do { \
+        int size = src.cap * sizeof(*dst.data); \
+        dst.data = malloc(size); \
+        memcpy(dst.data, src.data, size); \
+        dst.size = src.size; \
+        dst.cap = src.cap; \
+    } while (0)
 
 #define ARRAY_FIND(MACRO_ARRAY, MACRO_ELEMENT, MACRO_RESULT) \
     do { \

@@ -26,7 +26,7 @@ struct CmpOri *cmp_ori_create(double x, double y, double theta)
     struct PosRot init_pr = { x, y, theta };
 
     if (!result) {
-        DIAG_ERROR("Allocation failure.\n");
+        DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 

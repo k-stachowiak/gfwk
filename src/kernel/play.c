@@ -38,7 +38,7 @@ static void sample_id_assign(ALLEGRO_SAMPLE *sample, ALLEGRO_SAMPLE_ID id)
     node = malloc(sizeof(*node));
 
     if (!node) {
-        DIAG_ERROR("Allocation failed.\n");
+        DIAG_ERROR("Allocation failed.");
         exit(1);
     }
 

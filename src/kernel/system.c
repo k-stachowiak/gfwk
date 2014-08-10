@@ -83,28 +83,28 @@ static void sys_realtime_loop_step(struct SysClient *client)
 void sys_init(void)
 {
     if (!al_init()) {
-        DIAG_ERROR("Failed initializing platform wrapper.\n");
+        DIAG_ERROR("Failed initializing platform wrapper.");
         exit(1);
     }
 
     if (!al_init_image_addon()) {
-        DIAG_ERROR("Failed initializing image addon.\n");
+        DIAG_ERROR("Failed initializing image addon.");
         exit(1);
     }
 
     al_init_font_addon();
     if (!al_init_ttf_addon()) {
-        DIAG_ERROR("Failed initializing TTF addon.\n");
+        DIAG_ERROR("Failed initializing TTF addon.");
         exit(1);
     }
 
     if(!al_init_acodec_addon()) {
-        DIAG_ERROR("Failed initializing acodec add-on.\n");
+        DIAG_ERROR("Failed initializing acodec add-on.");
         exit(1);
     }
 
     if(!al_init_primitives_addon()) {
-        DIAG_ERROR("Failed initializing primitives add-on.\n");
+        DIAG_ERROR("Failed initializing primitives add-on.");
         exit(1);
     }
 
@@ -115,23 +115,23 @@ void sys_init(void)
 
     display = al_create_display(screen_w, screen_h);
     if (!display) {
-        DIAG_ERROR("Failed creating display.\n");
+        DIAG_ERROR("Failed creating display.");
         exit(1);
     }
 
     if (!al_install_keyboard()) {
-        DIAG_ERROR("Failed installing keyboard.\n");
+        DIAG_ERROR("Failed installing keyboard.");
         exit(1);
     }
 
     if(!al_install_audio()) {
-        DIAG_ERROR("Failed initializing audio.\n");
+        DIAG_ERROR("Failed initializing audio.");
         exit(1);
     }
 
     ev_queue = al_create_event_queue();
     if (!ev_queue) {
-        DIAG_ERROR("Failed creating event queue.\n");
+        DIAG_ERROR("Failed creating event queue.");
         exit(1);
     }
 

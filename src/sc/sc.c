@@ -347,18 +347,36 @@ static void sc_draw_debug_graph(void)
     int i;
 
     for (i = 0; i < lgph.nodes_count; ++i) {
-        int *adj;
+
+        struct LvlAdj *adj;
         struct TilePos atp = lgph.nodes[i];
         struct WorldPos awp = pos_tile_to_world(atp);
         struct ScreenPos asp = pos_world_to_screen(awp);
-        for (adj = lgph.adjacency[i]; *adj != -1; ++adj) {
-            struct TilePos btp = lgph.nodes[*adj];
+
+        for (adj = lgph.adjacency[i]; adj->neighbor != -1; ++adj) {
+
+            struct TilePos btp = lgph.nodes[adj->neighbor];
             struct WorldPos bwp = pos_tile_to_world(btp);
             struct ScreenPos bsp = pos_world_to_screen(bwp);
-            al_draw_line(
-                asp.x + sc_tile_w / 2.0, asp.y + sc_tile_w / 2.0,
-                bsp.x + sc_tile_w / 2.0, bsp.y + sc_tile_w / 2.0,
-                al_map_rgb_f(0, 1, 0), 1.0);
+
+            double x1 = asp.x + sc_tile_w / 2.0;
+            double y1 = asp.y + sc_tile_w / 2.0;
+            double x2 = bsp.x + sc_tile_w / 2.0;
+            double y2 = bsp.y + sc_tile_w / 2.0;
+
+            ALLEGRO_COLOR color;
+            switch (adj->type) {
+            case LVL_ADJ_WALK:
+                color = al_map_rgb_f(0.5f, 1.0f, 0.5f);
+                break;
+            case LVL_ADJ_JUMP:
+                color = al_map_rgb_f(0.5f, 0.5f, 1.0f);
+                break;
+            }
+
+            al_draw_line(x1, y1, x2, y2, color, 1.0);
+            al_draw_filled_circle(x1 - 4.0, y1, 5.0, color);
+            al_draw_circle(x2 + 4.0, y2, 5.0, color, 1.0);
         }
     }
 }

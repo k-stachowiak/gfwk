@@ -14,10 +14,20 @@ void lvl_for_each_tile(struct Level *lvl, void (*f)(struct TilePos, char));
 int lvl_get_tile(struct Level *lvl, int x, int y);
 void lvl_draw(struct Level *lvl);
 
+enum LvlAdjType {
+    LVL_ADJ_WALK,
+    LVL_ADJ_JUMP,
+};
+
+struct LvlAdj {
+    enum LvlAdjType type;
+    int neighbor;
+};
+
 struct LvlGraph {
 	int nodes_count;
 	struct TilePos *nodes;
-	int **adjacency;
+	struct LvlAdj **adjacency;
 };
 
 struct LvlGraph lgph_init(struct Level *lvl);
