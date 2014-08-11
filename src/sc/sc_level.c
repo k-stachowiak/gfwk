@@ -2,12 +2,14 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <float.h>
 
 #include <allegro5/allegro_primitives.h>
 
 #include "draw.h"
 #include "array.h"
 #include "diagnostics.h"
+#include "mymath.h"
 #include "sc_level.h"
 
 static void lvl_draw_tile(struct TilePos tile_pos, char c)
@@ -15,8 +17,13 @@ static void lvl_draw_tile(struct TilePos tile_pos, char c)
     struct WorldPos world_pos;
     struct ScreenPos screen_pos;
     struct AABB tile_aabb;
+    void *bitmap;
 
-    if (c == ' ') {
+    if (c == '#') {
+        bitmap = sc_tile;
+    } else if (c == 's') {
+        bitmap = sc_soulbooth;
+    } else {
         return;
     }
 
@@ -32,7 +39,7 @@ static void lvl_draw_tile(struct TilePos tile_pos, char c)
     screen_pos = pos_world_to_screen(world_pos);
 
     draw_bitmap(
-        sc_rock_tile,
+        bitmap,
         screen_pos.x + sc_tile_w / 2,
         screen_pos.y + sc_tile_w / 2,
         0.0);
@@ -254,15 +261,15 @@ static void lgph_find_jump_edges(
     int i;
     for (i = 0; i < plat->size; ++i) {
         struct TilePos lower, upper = plat->data[i];
-        if (lvl_get_tile(lvl, upper.x + 1, upper.y + 1) == ' ' &&
-            lvl_get_tile(lvl, upper.x + 1, upper.y + 2) == ' ' &&
+        if (lvl_get_tile(lvl, upper.x + 1, upper.y + 1) != '#' &&
+            lvl_get_tile(lvl, upper.x + 1, upper.y + 2) != '#' &&
             lvl_get_tile(lvl, upper.x + 1, upper.y + 3) == '#') {
                 lower.x = upper.x + 1;
                 lower.y = upper.y + 2;
                 lgph_add_descent(lvl, upper, lower, result);
         }
-        if (lvl_get_tile(lvl, upper.x - 1, upper.y + 1) == ' ' &&
-            lvl_get_tile(lvl, upper.x - 1, upper.y + 2) == ' ' &&
+        if (lvl_get_tile(lvl, upper.x - 1, upper.y + 1) != '#' &&
+            lvl_get_tile(lvl, upper.x - 1, upper.y + 2) != '#' &&
             lvl_get_tile(lvl, upper.x - 1, upper.y + 3) == '#') {
                 lower.x = upper.x - 1;
                 lower.y = upper.y + 2;
@@ -403,4 +410,150 @@ void lgph_deinit(struct LvlGraph *lgph)
         free(lgph->adjacency[i]);
     }
     free(lgph->adjacency);
+}
+
+int lgph_find_index(struct LvlGraph *lgph, struct TilePos pos)
+{
+    int index;
+    for (index = 0; index < lgph->nodes_count; ++index) {
+        if (lgph->nodes[index].x == pos.x && lgph->nodes[index].y == pos.y) {
+            return index;
+        }
+    }
+
+    DIAG_ERROR("Requested index of node not in graph.");
+    exit(1);
+}
+
+int lgph_find_farthest(struct LvlGraph *lgph, struct TilePos bad)
+{
+    double max_dist = 0.0;
+    int index, max;
+
+    for (index = 0; index < lgph->nodes_count; ++index) {
+        struct TilePos pos = lgph->nodes[index];
+        double dx = pos.x - bad.x, dy = pos.y - bad.y;
+        double distance = 1.0 / rsqrt(dx * dx + dy * dy);
+        if (distance > max_dist) {
+            max_dist = distance;
+            max = index;
+        }
+    }
+
+    return max;
+}
+
+void lgph_runaway_path(
+        struct LvlGraph *lgph, struct TilePos src, struct TilePos bad,
+        struct TilePos **points, int *points_count)
+{
+    struct { struct TilePos *data; int cap, size; } result = { 0 };
+    int u, i, dst, *preds;
+    double *lens;
+    bool *visit;
+
+    if (!(preds = malloc(lgph->nodes_count * sizeof(*preds))) ||
+         (lens = malloc(lgph->nodes_count * sizeof(*lens))) ||
+         (visit = malloc(lgph->nodes_count * sizeof(*visit)))) {
+            DIAG_ERROR("Allocation failure.");
+            exit(1);
+    }
+
+    for (i = 0; i < lgph->nodes_count; ++i) {
+        preds[i] = i;
+        lens[i] = DBL_MAX;
+        visit[i] = false;
+    }
+
+    u = lgph_find_index(lgph, src);
+    lens[u] = 0;
+
+    dst = lgph_find_farthest(lgph, src);
+
+    while (u != dst) {
+
+        struct LvlAdj *adj;
+        struct TilePos u_pos = lgph->nodes[u];
+        double min_len = DBL_MAX;
+
+        visit[u] = true;
+
+        for (adj = lgph->adjacency[u]; adj->neighbor != -1; ++adj) {
+            int v = adj->neighbor;
+            struct TilePos v_pos = lgph->nodes[v];
+            double dx = v_pos.x - u_pos.x, dy = v_pos.y - u_pos.y;
+            double distance = 1.0 / rsqrt(dx * dx + dy * dy);
+
+            if (lens[u] + distance < lens[v]) {
+                lens[v] = lens[u] + distance;
+                preds[v] = u;
+            }
+        }
+
+        for (i = 0; i < lgph->nodes_count; ++i) {
+            if (!visit[i] && lens[i] < min_len) {
+                min_len = lens[i];
+                u = i;
+            }
+        }
+    }
+
+    dst = lgph_find_index(lgph, src);
+    while (u != dst) {
+        ARRAY_APPEND(result, lgph->nodes[u]);
+        u = preds[u];
+    }
+    ARRAY_APPEND(result, src);
+
+    free(preds);
+    free(lens);
+    free(visit);
+
+    *points = result.data;
+    *points_count = result.size;
+}
+
+void lgph_arbitrary_path(
+        struct LvlGraph *lgph, struct TilePos src,
+        struct TilePos **points, int *points_count)
+{
+    struct { struct TilePos *data; int cap, size; } result = { 0 };
+    int current = lgph_find_index(lgph, src);
+    bool can_visit = true;
+    bool *visit;
+    int i;
+
+    if (!(visit = malloc(lgph->nodes_count * sizeof(*visit)))) {
+        DIAG_ERROR("Allocation failure.");
+        exit(1);
+    }
+
+    for (i = 0; i < lgph->nodes_count; ++i) {
+        visit[i] = false;
+    }
+
+    while (can_visit) {
+
+       struct LvlAdj *adj;
+
+       visit[current] = true;
+       ARRAY_APPEND(result, lgph->nodes[current]);
+
+       for (adj = lgph->adjacency[current]; adj->neighbor != -1; ++adj) {
+           if (!visit[adj->neighbor]) {
+               break;
+           }
+       }
+
+       if (adj->neighbor == -1) {
+           can_visit = false;
+       } else {
+           current = adj->neighbor;
+       }
+    }
+
+    *points = result.data;
+    *points_count = result.size;
+
+    free(visit);
 }

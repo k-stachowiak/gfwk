@@ -245,7 +245,8 @@ static void sc_tick_arrows(double dt)
 
 static void sc_init(void)
 {
-    sc_rock_tile = res_load_bitmap("data/rock_tile.png");
+    sc_tile = res_load_bitmap("data/brick_tile.png");
+    sc_soulbooth = res_load_bitmap("data/soul_booth.png");
     sc_hunter_stand_right = res_load_bitmap("data/hunter_stand_right.png");
     sc_hunter_stand_left = res_load_bitmap("data/hunter_stand_left.png");
     sc_hunter_walk_right = res_load_bitmap("data/hunter_walk_right_w106.png");
@@ -264,7 +265,7 @@ static void sc_init(void)
     sc_screen_h = db_integer("screen_h");
     sc_tile_w = 64;
 
-    lvl_load(&lvl, "data/map2");
+    lvl_load(&lvl, "data/map");
     lgph = lgph_init(&lvl);
 
     hunter_init(
@@ -275,7 +276,7 @@ static void sc_init(void)
         sc_hunter_walk_left);
 
     soul_init(
-        &soul, 100.0, 100.0,
+        &soul, &lgph, lgph.nodes[10],
         sc_soul_stand_right,
         sc_soul_stand_left,
         sc_soul_walk_right,

@@ -1,5 +1,8 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
+#ifndef SC_LEVEL_H
+#define SC_LEVEL_H
+
 #include "sc_data.h"
 
 struct Level {
@@ -32,3 +35,15 @@ struct LvlGraph {
 
 struct LvlGraph lgph_init(struct Level *lvl);
 void lgph_deinit(struct LvlGraph *lgph);
+int lgph_find_index(struct LvlGraph *lgph, struct TilePos pos);
+int lgph_find_farthest(struct LvlGraph *lgph, struct TilePos bad);
+
+void lgph_runaway_path(
+        struct LvlGraph *lgph, struct TilePos src, struct TilePos bad,
+        struct TilePos **points, int *points_count);
+
+void lgph_arbitrary_path(
+        struct LvlGraph *lgph, struct TilePos src,
+        struct TilePos **points, int *points_count);
+
+#endif

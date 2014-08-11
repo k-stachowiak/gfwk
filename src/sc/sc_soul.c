@@ -8,6 +8,7 @@
 #include "cmp_operations.h"
 #include "sc_soul.h"
 
+#include "diagnostics.h"
 #include "resources.h"
 
 static struct CmpAppr *soul_init_walk_appr(struct Soul *soul, void *walk_sheet)
@@ -49,10 +50,17 @@ static struct CmpAppr *soul_init_walk_appr(struct Soul *soul, void *walk_sheet)
 }
 
 void soul_init(
-        struct Soul *soul, double x, double y,
+        struct Soul *soul,
+        struct LvlGraph *lgph, struct TilePos soul_tp,
         void *stand_right_bitmap, void *stand_left_bitmap,
         void *walk_right_sheet, void *walk_left_sheet)
 {
+    int i;
+    struct WorldPos wp = pos_tile_to_world(soul_tp);
+    struct TilePos *points;
+    int points_count;
+    double *coords;
+
     soul->appr_walk_right = soul_init_walk_appr(soul, walk_right_sheet);
     soul->appr_walk_left = soul_init_walk_appr(soul, walk_left_sheet);
 
@@ -62,20 +70,22 @@ void soul_init(
     soul->appr_stand_left =
         cmp_appr_create_static_sprite(stand_left_bitmap);
 
-    double *hack_points = malloc(6 * sizeof(*hack_points));
-    hack_points[0] = 0.0;
-    hack_points[1] = 0.0;
-    hack_points[2] = 100.0;
-    hack_points[3] = 100.0;
-    hack_points[4] = 200.0;
-    hack_points[5] = 100.0;
+    lgph_arbitrary_path(lgph, soul_tp, &points, &points_count);
+    coords = malloc(sizeof(*coords) * points_count * 2);
+    if (!coords) {
+        DIAG_ERROR("Allocation failure.\n");
+        exit(1);
+    }
+    for (i = 0; i < points_count; ++i) {
+        struct WorldPos coord_wp = pos_tile_to_world(points[i]);
+        coords[2 * i + 0] = coord_wp.x;
+        coords[2 * i + 1] = coord_wp.y;
+    }
+    free(points);
 
     soul->appr = soul->appr_walk_right;
-    soul->ori = cmp_ori_create(x, y, 0.0);
-    soul->drv = cmp_drv_create_waypoint(
-            hack_points, 3, true, 50.0,
-            &soul->turn_flag,
-            &soul->step_flag);
+    soul->ori = cmp_ori_create(wp.x + sc_tile_w / 2, wp.y + sc_tile_w / 2, 0.0);
+    soul->drv = cmp_drv_create_waypoint(coords, points_count, true, 150.0);
 
     soul->box_w = 30.0;
     soul->box_h = 60.0;
@@ -93,15 +103,17 @@ void soul_deinit(struct Soul *soul)
 
 void soul_tick(struct Soul *soul, double dt)
 {
+    struct Vel vel;
+
     cmp_appr_update(soul->appr, dt);
     cmp_drv_update(soul->drv, dt);
 
-    if (soul->turn_flag) {
-        if (soul->appr == soul->appr_walk_right) {
-            soul->appr = soul->appr_walk_left;
-        } else if (soul->appr == soul->appr_walk_left) {
-            soul->appr = soul->appr_walk_right;
-        }
+    vel = cmp_drv_vel(soul->drv);
+
+    if (vel.vx > 0) {
+        soul->appr = soul->appr_walk_right;
+    } else if (vel.vx < 0) {
+        soul->appr = soul->appr_walk_left;
     }
 
     cmp_drive(soul->ori, soul->drv, dt);

@@ -34,8 +34,6 @@ struct CmpDrvWaypoint {
     int points_count;
     bool patrol;
     double velocity;
-    bool *turn_flag;
-    bool *step_flag;
     int step;
     double step_degree;
     bool flag;
@@ -71,8 +69,7 @@ struct CmpDrv *cmp_drv_create_ballistic(
 
 struct CmpDrv *cmp_drv_create_waypoint(
         double *points, int points_count,
-        bool patrol, double velocity,
-        bool *turn_flag, bool *step_flag);
+        bool patrol, double velocity);
 
 void cmp_drv_free(struct CmpDrv *cmp_drv);
 void cmp_drv_update(struct CmpDrv *cmp_drv, double dt);

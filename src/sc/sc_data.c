@@ -7,7 +7,8 @@
 #include "diagnostics.h"
 #include "sc_data.h"
 
-void *sc_rock_tile;
+void *sc_tile;
+void *sc_soulbooth;
 void *sc_hunter_stand_right;
 void *sc_hunter_stand_left;
 void *sc_hunter_walk_right;

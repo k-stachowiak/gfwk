@@ -5,19 +5,17 @@
 #include "mymath.h"
 #include "diagnostics.h"
 #include "cmp_drv.h"
-
-/* TODO: Handle the tile factor more elegantly. */
-static double cmp_drv_tile_factor = 64.0;
+#include "sc_data.h"
 
 static void cmp_drv_update_platform(struct CmpDrvPlat *plat, double dt)
 {
     if (*(plat->standing)) {
         if (*plat->jump_req == true) {
             *plat->standing = false;
-            plat->vel.vy = -7.0 * cmp_drv_tile_factor;
+            plat->vel.vy = -7.0 * sc_tile_w;
         }
     } else {
-        plat->vel.vy += 10.0 * cmp_drv_tile_factor * dt;
+        plat->vel.vy += 10.0 * sc_tile_w * dt;
     }
 
     plat->vel.vx = *plat->inx * 100.0;
@@ -46,27 +44,23 @@ static void cmp_drv_waypoint_local_points(
 static void cmp_drv_waypoint_step(struct CmpDrvWaypoint *wayp)
 {
     wayp->step_degree = 0.0;
-    *wayp->step_flag = true;
 
     if (wayp->patrol) {
         if (wayp->flag) {
             ++wayp->step;
             if(wayp->step >= (wayp->points_count - 1)) {
                 wayp->flag = false;
-                *wayp->turn_flag = true;
             }
         } else {
             --wayp->step;
             if(wayp->step <= 0) {
                 wayp->flag = true;
-                *wayp->turn_flag = true;
             }
         }
 
     } else {
         ++wayp->step;
         if(wayp->step >= (wayp->points_count - 1)) {
-            DIAG_DEBUG("Path finished (non-patrol).");
             wayp->flag = true;
         }
     }
@@ -77,9 +71,6 @@ void cmp_drv_update_waypoint(struct CmpDrvWaypoint *wayp, double dt)
     double x0, y0, x1, y1;
     double dx, dy;
     double step_len, step_inc;
-
-    *wayp->turn_flag = false;
-    *wayp->step_flag = false;
 
     if (!wayp->patrol && wayp->flag) {
         return;
@@ -208,8 +199,7 @@ struct CmpDrv *cmp_drv_create_ballistic(bool affect_rot, double vx, double vy)
 
 struct CmpDrv *cmp_drv_create_waypoint(
         double *points, int points_count,
-        bool patrol, double velocity,
-        bool *turn_flag, bool *step_flag)
+        bool patrol, double velocity)
 {
     struct CmpDrv *result = malloc(sizeof(*result));
 
@@ -224,8 +214,6 @@ struct CmpDrv *cmp_drv_create_waypoint(
     result->body.wayp.points_count = points_count;
     result->body.wayp.patrol = patrol;
     result->body.wayp.velocity = velocity;
-    result->body.wayp.turn_flag = turn_flag;
-    result->body.wayp.step_flag = step_flag;
     result->body.wayp.step = 0;
     result->body.wayp.step_degree = 0.0;
     result->body.wayp.flag = patrol;
@@ -251,7 +239,7 @@ void cmp_drv_update(struct CmpDrv *cmp_drv, double dt)
         cmp_drv_update_platform(&cmp_drv->body.plat, dt);
         break;
     case CMP_DRV_BALLISTIC:
-        cmp_drv->body.bal.vy += 10.0 * cmp_drv_tile_factor * dt;
+        cmp_drv->body.bal.vy += 10.0 * sc_tile_w * dt;
         break;
     case CMP_DRV_WAYPOINT:
         cmp_drv_update_waypoint(&cmp_drv->body.wayp, dt);

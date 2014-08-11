@@ -1,6 +1,7 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
 #include "sc_data.h"
+#include "sc_level.h"
 
 struct Soul {
     struct CmpAppr *appr;
@@ -13,12 +14,11 @@ struct Soul {
     struct CmpAppr *appr_walk_left;
 
     double box_w, box_h;
-    bool turn_flag;
-    bool step_flag;
 };
 
 void soul_init(
-        struct Soul *soul, double x, double y,
+        struct Soul *soul,
+        struct LvlGraph *lgph, struct TilePos tp,
         void *stand_right_bitmap, void *stand_left_bitmap,
         void *walk_right_sheet, void *walk_left_sheet);
 
