@@ -70,7 +70,7 @@ void soul_init(
     soul->appr_stand_left =
         cmp_appr_create_static_sprite(stand_left_bitmap);
 
-    lgph_arbitrary_path(lgph, soul_tp, &points, &points_count);
+    lgph_random_path(lgph, soul_tp, &points, &points_count);
     coords = malloc(sizeof(*coords) * points_count * 2);
     if (!coords) {
         DIAG_ERROR("Allocation failure.\n");

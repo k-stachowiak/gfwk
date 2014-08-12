@@ -34,6 +34,7 @@ bool aabb_point(struct AABB aabb, double x, double y);
 bool aabb_vline(struct AABB aabb, struct VLine vline);
 bool aabb_aabb(struct AABB lhs, struct AABB rhs);
 
+extern void *sc_debug_font;
 extern void *sc_tile;
 extern void *sc_soulbooth;
 extern void *sc_hunter_stand_right;

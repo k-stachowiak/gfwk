@@ -7,6 +7,7 @@
 #include "diagnostics.h"
 #include "sc_data.h"
 
+void *sc_debug_font;
 void *sc_tile;
 void *sc_soulbooth;
 void *sc_hunter_stand_right;

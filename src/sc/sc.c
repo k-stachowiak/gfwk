@@ -245,6 +245,7 @@ static void sc_tick_arrows(double dt)
 
 static void sc_init(void)
 {
+    sc_debug_font = res_load_font("data/prstartk.ttf", 12);
     sc_tile = res_load_bitmap("data/brick_tile.png");
     sc_soulbooth = res_load_bitmap("data/soul_booth.png");
     sc_hunter_stand_right = res_load_bitmap("data/hunter_stand_right.png");
@@ -346,6 +347,7 @@ static void sc_draw_debug_collisions(void)
 static void sc_draw_debug_graph(void)
 {
     int i;
+    char buf[10];
 
     for (i = 0; i < lgph.nodes_count; ++i) {
 
@@ -353,15 +355,14 @@ static void sc_draw_debug_graph(void)
         struct TilePos atp = lgph.nodes[i];
         struct WorldPos awp = pos_tile_to_world(atp);
         struct ScreenPos asp = pos_world_to_screen(awp);
+        double x1 = asp.x + sc_tile_w / 2.0;
+        double y1 = asp.y + sc_tile_w / 2.0;
 
         for (adj = lgph.adjacency[i]; adj->neighbor != -1; ++adj) {
 
             struct TilePos btp = lgph.nodes[adj->neighbor];
             struct WorldPos bwp = pos_tile_to_world(btp);
             struct ScreenPos bsp = pos_world_to_screen(bwp);
-
-            double x1 = asp.x + sc_tile_w / 2.0;
-            double y1 = asp.y + sc_tile_w / 2.0;
             double x2 = bsp.x + sc_tile_w / 2.0;
             double y2 = bsp.y + sc_tile_w / 2.0;
 
@@ -378,6 +379,14 @@ static void sc_draw_debug_graph(void)
             al_draw_line(x1, y1, x2, y2, color, 1.0);
             al_draw_filled_circle(x1 - 4.0, y1, 5.0, color);
             al_draw_circle(x2 + 4.0, y2, 5.0, color, 1.0);
+
+            sprintf(buf, "%d", i);
+            draw_text(sc_debug_font, x1 + 2, y1 - 18, 0, 0, 0, 1, true, buf);
+            draw_text(sc_debug_font, x1, y1 - 20, 1, 1, 1, 1, true, buf);
+            sprintf(buf, "%d", adj->neighbor);
+            draw_text(sc_debug_font, x2 + 2, y2 - 18, 0, 0, 0, 1, true, buf);
+            draw_text(sc_debug_font, x2, y2 - 20, 1, 1, 1, 1, true, buf);
+
         }
     }
 }
@@ -402,6 +411,8 @@ static void sc_draw(double weight)
 
     if (sys_keys[ALLEGRO_KEY_F1]) {
         sc_draw_debug_collisions();
+    }
+    if (sys_keys[ALLEGRO_KEY_F2]) {
         sc_draw_debug_graph();
     }
 

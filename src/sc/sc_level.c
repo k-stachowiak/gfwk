@@ -6,6 +6,7 @@
 
 #include <allegro5/allegro_primitives.h>
 
+#include "random.h"
 #include "draw.h"
 #include "array.h"
 #include "diagnostics.h"
@@ -44,7 +45,6 @@ static void lvl_draw_tile(struct TilePos tile_pos, char c)
         screen_pos.y + sc_tile_w / 2,
         0.0);
 }
-
 
 static int lvl_load_read_line(FILE *f, char **buffer, int *length)
 {
@@ -369,6 +369,91 @@ static struct LvlAdj *lgph_find_adjacency(
     return result.data;
 }
 
+static void lgph_dijkstra(
+        struct LvlGraph *lgph, struct TilePos src_pos, struct TilePos dst_pos,
+        struct TilePos **points, int *points_count)
+{
+    struct { struct TilePos *data; int cap, size; } result = { NULL, 0, 0 };
+    int dst, src, u, i, *preds;
+    double *lens;
+    bool *visit;
+
+    if (!(preds = malloc(lgph->nodes_count * sizeof(*preds))) ||
+        !(lens = malloc(lgph->nodes_count * sizeof(*lens))) ||
+        !(visit = malloc(lgph->nodes_count * sizeof(*visit)))) {
+            DIAG_ERROR("Allocation failure.");
+            exit(1);
+    }
+
+    for (i = 0; i < lgph->nodes_count; ++i) {
+        preds[i] = i;
+        lens[i] = DBL_MAX;
+        visit[i] = false;
+    }
+
+    u = lgph_find_index(lgph, src_pos);
+    lens[u] = 0;
+
+    dst = lgph_find_index(lgph, dst_pos);
+
+    DIAG_DEBUG("Seeking path %d - %d", u, dst);
+
+    while (u != dst) {
+
+        struct LvlAdj *adj;
+        struct TilePos u_pos = lgph->nodes[u];
+        double min_len = DBL_MAX;
+
+        visit[u] = true;
+        DIAG_DEBUG("Visiting %d", u);
+
+        for (adj = lgph->adjacency[u]; adj->neighbor != -1; ++adj) {
+            int v = adj->neighbor;
+            struct TilePos v_pos = lgph->nodes[v];
+            double dx = v_pos.x - u_pos.x, dy = v_pos.y - u_pos.y;
+            double distance = 1.0 / rsqrt(dx * dx + dy * dy);
+
+            DIAG_DEBUG("Relaxing %d (%f)", v, lens[v]);
+
+            if (lens[u] + distance < lens[v]) {
+                lens[v] = lens[u] + distance;
+                preds[v] = u;
+                DIAG_DEBUG("New distance %d (%f). marking (%d <- %d)",
+                        v, lens[v], preds[v], v);
+            }
+        }
+
+        for (i = 0; i < lgph->nodes_count; ++i) {
+            if (!visit[i] && (lens[i] < min_len)) {
+                min_len = lens[i];
+                u = i;
+            }
+        }
+    }
+
+    src = lgph_find_index(lgph, src_pos);
+    while (u != src) {
+        ARRAY_APPEND(result, lgph->nodes[u]);
+        DIAG_DEBUG("Path step %d", u);
+        u = preds[u];
+    }
+    ARRAY_APPEND(result, lgph->nodes[u]);
+    DIAG_DEBUG("Path step %d", u);
+
+    free(preds);
+    free(lens);
+    free(visit);
+
+    for (i = 0; i < result.size / 2; ++i) {
+        struct TilePos temp = result.data[i];
+        result.data[i] = result.data[result.size - i - 1];
+        result.data[result.size - i] = temp;
+    }
+
+    *points = result.data;
+    *points_count = result.size;
+}
+
 struct LvlGraph lgph_init(struct Level *lvl)
 {
     int i;
@@ -447,113 +532,14 @@ void lgph_runaway_path(
         struct LvlGraph *lgph, struct TilePos src, struct TilePos bad,
         struct TilePos **points, int *points_count)
 {
-    struct { struct TilePos *data; int cap, size; } result = { 0 };
-    int u, i, dst, *preds;
-    double *lens;
-    bool *visit;
-
-    if (!(preds = malloc(lgph->nodes_count * sizeof(*preds))) ||
-         (lens = malloc(lgph->nodes_count * sizeof(*lens))) ||
-         (visit = malloc(lgph->nodes_count * sizeof(*visit)))) {
-            DIAG_ERROR("Allocation failure.");
-            exit(1);
-    }
-
-    for (i = 0; i < lgph->nodes_count; ++i) {
-        preds[i] = i;
-        lens[i] = DBL_MAX;
-        visit[i] = false;
-    }
-
-    u = lgph_find_index(lgph, src);
-    lens[u] = 0;
-
-    dst = lgph_find_farthest(lgph, src);
-
-    while (u != dst) {
-
-        struct LvlAdj *adj;
-        struct TilePos u_pos = lgph->nodes[u];
-        double min_len = DBL_MAX;
-
-        visit[u] = true;
-
-        for (adj = lgph->adjacency[u]; adj->neighbor != -1; ++adj) {
-            int v = adj->neighbor;
-            struct TilePos v_pos = lgph->nodes[v];
-            double dx = v_pos.x - u_pos.x, dy = v_pos.y - u_pos.y;
-            double distance = 1.0 / rsqrt(dx * dx + dy * dy);
-
-            if (lens[u] + distance < lens[v]) {
-                lens[v] = lens[u] + distance;
-                preds[v] = u;
-            }
-        }
-
-        for (i = 0; i < lgph->nodes_count; ++i) {
-            if (!visit[i] && lens[i] < min_len) {
-                min_len = lens[i];
-                u = i;
-            }
-        }
-    }
-
-    dst = lgph_find_index(lgph, src);
-    while (u != dst) {
-        ARRAY_APPEND(result, lgph->nodes[u]);
-        u = preds[u];
-    }
-    ARRAY_APPEND(result, src);
-
-    free(preds);
-    free(lens);
-    free(visit);
-
-    *points = result.data;
-    *points_count = result.size;
+    int dst = lgph_find_farthest(lgph, bad);
+    lgph_dijkstra(lgph, src, lgph->nodes[dst], points, points_count);
 }
 
-void lgph_arbitrary_path(
+void lgph_random_path(
         struct LvlGraph *lgph, struct TilePos src,
         struct TilePos **points, int *points_count)
 {
-    struct { struct TilePos *data; int cap, size; } result = { 0 };
-    int current = lgph_find_index(lgph, src);
-    bool can_visit = true;
-    bool *visit;
-    int i;
-
-    if (!(visit = malloc(lgph->nodes_count * sizeof(*visit)))) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
-
-    for (i = 0; i < lgph->nodes_count; ++i) {
-        visit[i] = false;
-    }
-
-    while (can_visit) {
-
-       struct LvlAdj *adj;
-
-       visit[current] = true;
-       ARRAY_APPEND(result, lgph->nodes[current]);
-
-       for (adj = lgph->adjacency[current]; adj->neighbor != -1; ++adj) {
-           if (!visit[adj->neighbor]) {
-               break;
-           }
-       }
-
-       if (adj->neighbor == -1) {
-           can_visit = false;
-       } else {
-           current = adj->neighbor;
-       }
-    }
-
-    *points = result.data;
-    *points_count = result.size;
-
-    free(visit);
+    int dst = rnd_uniform_rng_i(0, lgph->nodes_count - 1);
+    lgph_dijkstra(lgph, src, lgph->nodes[dst], points, points_count);
 }

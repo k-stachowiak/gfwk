@@ -42,7 +42,7 @@ void lgph_runaway_path(
         struct LvlGraph *lgph, struct TilePos src, struct TilePos bad,
         struct TilePos **points, int *points_count);
 
-void lgph_arbitrary_path(
+void lgph_random_path(
         struct LvlGraph *lgph, struct TilePos src,
         struct TilePos **points, int *points_count);
 
