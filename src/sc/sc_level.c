@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <float.h>
+#include <math.h>
 
 #include <allegro5/allegro_primitives.h>
 
@@ -10,7 +11,6 @@
 #include "draw.h"
 #include "array.h"
 #include "diagnostics.h"
-#include "mymath.h"
 #include "sc_level.h"
 
 static void lvl_draw_tile(struct TilePos tile_pos, char c)
@@ -391,35 +391,27 @@ static void lgph_dijkstra(
         visit[i] = false;
     }
 
-    u = lgph_find_index(lgph, src_pos);
-    lens[u] = 0;
+    src = u = lgph_find_index(lgph, src_pos);
+    lens[src] = 0;
 
     dst = lgph_find_index(lgph, dst_pos);
 
-    DIAG_DEBUG("Seeking path %d - %d", u, dst);
-
     while (u != dst) {
-
         struct LvlAdj *adj;
         struct TilePos u_pos = lgph->nodes[u];
         double min_len = DBL_MAX;
 
         visit[u] = true;
-        DIAG_DEBUG("Visiting %d", u);
 
         for (adj = lgph->adjacency[u]; adj->neighbor != -1; ++adj) {
             int v = adj->neighbor;
             struct TilePos v_pos = lgph->nodes[v];
             double dx = v_pos.x - u_pos.x, dy = v_pos.y - u_pos.y;
-            double distance = 1.0 / rsqrt(dx * dx + dy * dy);
-
-            DIAG_DEBUG("Relaxing %d (%f)", v, lens[v]);
+            double distance = sqrt(dx * dx + dy * dy);
 
             if (lens[u] + distance < lens[v]) {
                 lens[v] = lens[u] + distance;
                 preds[v] = u;
-                DIAG_DEBUG("New distance %d (%f). marking (%d <- %d)",
-                        v, lens[v], preds[v], v);
             }
         }
 
@@ -431,14 +423,11 @@ static void lgph_dijkstra(
         }
     }
 
-    src = lgph_find_index(lgph, src_pos);
     while (u != src) {
         ARRAY_APPEND(result, lgph->nodes[u]);
-        DIAG_DEBUG("Path step %d", u);
         u = preds[u];
     }
     ARRAY_APPEND(result, lgph->nodes[u]);
-    DIAG_DEBUG("Path step %d", u);
 
     free(preds);
     free(lens);
@@ -518,7 +507,7 @@ int lgph_find_farthest(struct LvlGraph *lgph, struct TilePos bad)
     for (index = 0; index < lgph->nodes_count; ++index) {
         struct TilePos pos = lgph->nodes[index];
         double dx = pos.x - bad.x, dy = pos.y - bad.y;
-        double distance = 1.0 / rsqrt(dx * dx + dy * dy);
+        double distance = sqrt(dx * dx + dy * dy);
         if (distance > max_dist) {
             max_dist = distance;
             max = index;
@@ -540,6 +529,9 @@ void lgph_random_path(
         struct LvlGraph *lgph, struct TilePos src,
         struct TilePos **points, int *points_count)
 {
+    /*
     int dst = rnd_uniform_rng_i(0, lgph->nodes_count - 1);
     lgph_dijkstra(lgph, src, lgph->nodes[dst], points, points_count);
+    */
+    lgph_dijkstra(lgph, lgph->nodes[10], lgph->nodes[1], points, points_count);
 }

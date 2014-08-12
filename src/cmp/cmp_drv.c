@@ -1,8 +1,8 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
 #include <stdlib.h>
+#include <math.h>
 
-#include "mymath.h"
 #include "diagnostics.h"
 #include "cmp_drv.h"
 #include "sc_data.h"
@@ -48,8 +48,9 @@ static void cmp_drv_waypoint_step(struct CmpDrvWaypoint *wayp)
     if (wayp->patrol) {
         if (wayp->flag) {
             ++wayp->step;
-            if(wayp->step >= (wayp->points_count - 1)) {
+            if(wayp->step >= wayp->points_count) {
                 wayp->flag = false;
+                --wayp->step;
             }
         } else {
             --wayp->step;
@@ -60,7 +61,7 @@ static void cmp_drv_waypoint_step(struct CmpDrvWaypoint *wayp)
 
     } else {
         ++wayp->step;
-        if(wayp->step >= (wayp->points_count - 1)) {
+        if(wayp->step >= wayp->points_count) {
             wayp->flag = true;
         }
     }
@@ -81,7 +82,7 @@ void cmp_drv_update_waypoint(struct CmpDrvWaypoint *wayp, double dt)
     dx = x1 - x0;
     dy = y1 - y0;
 
-    step_len = 1.0 / rsqrt(dx * dx + dy * dy);
+    step_len = sqrt(dx * dx + dy * dy);
     step_inc = (wayp->velocity * dt) / step_len;
 
     wayp->step_degree += step_inc;
@@ -107,7 +108,7 @@ struct Vel cmp_drv_vel_waypoint(struct CmpDrvWaypoint *wayp)
     dx = x1 - x0;
     dy = y1 - y0;
 
-    rev_sqrt = rsqrt(dx * dx + dy * dy);
+    rev_sqrt = 1.0 / sqrt(dx * dx + dy * dy);
 
     result.vx = dx * rev_sqrt * wayp->velocity;
     result.vy = dy * rev_sqrt * wayp->velocity;

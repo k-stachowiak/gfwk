@@ -1,8 +1,8 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
 #include <stdlib.h>
+#include <math.h>
 
-#include "mymath.h"
 #include "diagnostics.h"
 #include "cmp_ori.h"
 
@@ -58,6 +58,6 @@ double cmp_ori_distance(struct CmpOri *a, struct CmpOri *b)
     struct PosRot prb = cmp_ori_get(b);
     double dx = prb.x - pra.x;
     double dy = prb.y - pra.y;
-    return 1.0 / rsqrt(dx * dx + dy * dy);
+    return sqrt(dx * dx + dy * dy);
 }
 
