@@ -82,7 +82,20 @@ void db_init(void)
 {
     db_insert_integer("screen_w", 800);
     db_insert_integer("screen_h", 800);
+
     db_insert_real("fps", 50.0);
+
+    db_insert_real("menu_text_caption_r", 0.777);
+    db_insert_real("menu_text_caption_g", 0.888);
+    db_insert_real("menu_text_caption_b", 0.999);
+    db_insert_real("menu_text_on_r", 0.667);
+    db_insert_real("menu_text_on_g", 0.5);
+    db_insert_real("menu_text_on_b", 0.333);
+    db_insert_real("menu_text_off_r", 0.333);
+    db_insert_real("menu_text_off_g", 0.5);
+    db_insert_real("menu_text_off_b", 0.667);
+    db_insert_integer("menu_text_size", 20);
+    db_insert_real("menu_text_y_offset", 30.0);
 }
 
 void db_deinit(void)

@@ -15,6 +15,19 @@
 #include "play.h"
 #include "sc.h"
 
+/* Configuration cache. */
+static double menu_text_caption_r;
+static double menu_text_caption_g;
+static double menu_text_caption_b;
+static double menu_text_on_r;
+static double menu_text_on_g;
+static double menu_text_on_b;
+static double menu_text_off_r;
+static double menu_text_off_g;
+static double menu_text_off_b;
+static long menu_text_size;
+static double menu_text_y_offset;
+
 /* Local state. */
 static bool menu_alive;
 static struct SysClient *menu_next;
@@ -49,7 +62,9 @@ static void menu_quit_callback(void)
 static struct MenuPage *menu_create_options_page(void)
 {
     struct MenuItem *mi_dummy_flag = menu_item_create_value(
-            "Dummy flag", &dummy_flag, NULL);
+            "Dummy flag",
+            &dummy_flag,
+            NULL);
 
     return menu_page_create("+ Options menu", mi_dummy_flag);
 }
@@ -83,22 +98,31 @@ void menu_draw_page(struct MenuPage *page)
 {
     double x = (double)screen_w / 2.0;
     double y = 170.0;
-    double r, g = 0.5, b;
+    double r, g, b;
     int index = 0;
     int cap_len;
     char text[4096] = { 0 }; /* TODO: Fix this. */
     struct MenuItem *item = page->items;
 
-    draw_text(menu_font, x, y, 0.333, 0.5, 0.667, 1, false, page->caption);
+    draw_text(
+        menu_font, x, y,
+        menu_text_caption_r,
+        menu_text_caption_g,
+        menu_text_caption_b,
+        1,
+        false,
+        page->caption);
 
     while (item) {
 
         if (index++ == page->current_item) {
-            r = 0.667;
-            b = 0.333;
+            r = menu_text_on_r;
+            g = menu_text_on_g;
+            b = menu_text_on_b;
         } else {
-            r = 0.333;
-            b = 0.667;
+            r = menu_text_off_r;
+            g = menu_text_off_g;
+            b = menu_text_off_b;
         }
 
         cap_len = strlen(item->caption);
@@ -119,7 +143,7 @@ void menu_draw_page(struct MenuPage *page)
             memcpy(text, item->caption, cap_len + 1);
         }
 
-        y += 30.0;
+        y += menu_text_y_offset;
         draw_text(menu_font, x, y, r, g, b, 1, true, text);
         item = item->next;
     }
@@ -134,6 +158,18 @@ static void menu_init(void)
     struct MenuPage *mp_opts;
     struct MenuPage *mp_main;
 
+    menu_text_caption_r = db_real("menu_text_caption_r");
+    menu_text_caption_g = db_real("menu_text_caption_g");
+    menu_text_caption_b = db_real("menu_text_caption_b");
+    menu_text_on_r = db_real("menu_text_on_r");
+    menu_text_on_g = db_real("menu_text_on_g");
+    menu_text_on_b = db_real("menu_text_on_b");
+    menu_text_off_r = db_real("menu_text_off_r");
+    menu_text_off_g = db_real("menu_text_off_g");
+    menu_text_off_b = db_real("menu_text_off_b");
+    menu_text_size = db_integer("menu_text_size");
+    menu_text_y_offset = db_real("menu_text_y_offset");
+
     menu_alive = true;
     menu_next = NULL;
     menu_redraw = true;
@@ -146,7 +182,7 @@ static void menu_init(void)
 
     main_menu = menu_create(mp_main);
 
-    menu_font = res_load_font("data/prstartk.ttf", 20);
+    menu_font = res_load_font("data/prstartk.ttf", menu_text_size);
     nav_enter_sample = res_load_sample("data/beep.ogg");
     nav_move_sample = res_load_sample("data/MenuSelectionClick.ogg");
 
