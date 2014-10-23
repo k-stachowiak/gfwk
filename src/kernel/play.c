@@ -7,7 +7,7 @@
 
 struct SampleIdNode {
     ALLEGRO_SAMPLE *key;
-    ALLEGRO_SAMPLE_ID value;
+    ALLEGRO_SAMPLE_ID id;
     struct SampleIdNode *next;
 };
 
@@ -31,7 +31,7 @@ static void sample_id_assign(ALLEGRO_SAMPLE *sample, ALLEGRO_SAMPLE_ID id)
     struct SampleIdNode *node = sample_id_find(sample);
 
     if (node) {
-        node->value = id;
+        node->id = id;
         return;
     }
 
@@ -43,7 +43,7 @@ static void sample_id_assign(ALLEGRO_SAMPLE *sample, ALLEGRO_SAMPLE_ID id)
     }
 
     node->key = sample;
-    node->value = id;
+    node->id = id;
     node->next = sample_id_map;
 
     sample_id_map = node;
@@ -70,7 +70,7 @@ void play_sample(void *sample)
     struct SampleIdNode *node = sample_id_find((ALLEGRO_SAMPLE*)sample);
 
     if (node) {
-        al_stop_sample(&node->value);
+        al_stop_sample(&node->id);
     }
 
     if (!al_play_sample(
