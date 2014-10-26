@@ -7,6 +7,10 @@
 #include "diagnostics.h"
 #include "sc_data.h"
 
+int sc_screen_w;
+int sc_screen_h;
+int sc_tile_w;
+
 void *sc_debug_font;
 void *sc_tile;
 void *sc_soulbooth;
@@ -21,9 +25,10 @@ void *sc_soul_stand_left;
 void *sc_soul_walk_right;
 void *sc_soul_walk_left;
 
-int sc_screen_w;
-int sc_screen_h;
-int sc_tile_w;
+struct CmpApprAnimSpriteCommon *sc_hunter_walk_right_common;
+struct CmpApprAnimSpriteCommon *sc_hunter_walk_left_common;
+struct CmpApprAnimSpriteCommon *sc_soul_walk_right_common;
+struct CmpApprAnimSpriteCommon *sc_soul_walk_left_common;
 
 struct WorldPos sc_cam_shift;
 struct AABB sc_screen_aabb;

@@ -11,49 +11,7 @@
 #include "diagnostics.h"
 #include "resources.h"
 
-static struct CmpAppr *soul_init_walk_appr(struct Soul *soul, void *walk_sheet)
-{
-    int i;
-
-    void **frames;
-    int frames_count;
-
-    int *frame_indices;
-    double *frame_times;
-    int frame_defs_count;
-
-    int frame_w = 74;
-    double frame_time = 0.1;
-
-    res_cut_frame_sheet(walk_sheet, frame_w, &frames, &frames_count);
-
-    frame_defs_count = 8;
-    frame_indices = malloc(frame_defs_count * sizeof(*frame_indices));
-    frame_times = malloc(frame_defs_count * sizeof(*frame_times));
-
-    frame_indices[0] = 0;
-    frame_indices[1] = 1;
-    frame_indices[2] = 2;
-    frame_indices[3] = 3;
-    frame_indices[4] = 4;
-    frame_indices[5] = 3;
-    frame_indices[6] = 2;
-    frame_indices[7] = 1;
-    for (i = 0; i < frame_defs_count; ++i) {
-        frame_times[i] = frame_time;
-    }
-
-    return cmp_appr_create_anim_sprite(
-        frames, frames_count,
-        frame_indices, frame_times, frame_defs_count,
-        frame_w, 2, -1);
-}
-
-void soul_init(
-        struct Soul *soul,
-        struct LvlGraph *lgph, struct TilePos soul_tp,
-        void *stand_right_bitmap, void *stand_left_bitmap,
-        void *walk_right_sheet, void *walk_left_sheet)
+void soul_init(struct Soul *soul, struct LvlGraph *lgph, struct TilePos soul_tp)
 {
     int i;
     struct WorldPos wp = pos_tile_to_world(soul_tp);
@@ -61,14 +19,10 @@ void soul_init(
     int points_count;
     double *coords;
 
-    soul->appr_walk_right = soul_init_walk_appr(soul, walk_right_sheet);
-    soul->appr_walk_left = soul_init_walk_appr(soul, walk_left_sheet);
-
-    soul->appr_stand_right =
-        cmp_appr_create_static_sprite(stand_right_bitmap);
-
-    soul->appr_stand_left =
-        cmp_appr_create_static_sprite(stand_left_bitmap);
+    soul->appr_walk_right = cmp_appr_create_anim_sprite(sc_soul_walk_right_common, 2, -1);
+    soul->appr_walk_left = cmp_appr_create_anim_sprite(sc_soul_walk_left_common, 2, -1);
+    soul->appr_stand_right = cmp_appr_create_static_sprite(sc_soul_stand_right);
+    soul->appr_stand_left = cmp_appr_create_static_sprite(sc_soul_stand_left);
 
     lgph_random_path(lgph, soul_tp, &points, &points_count);
     coords = malloc(sizeof(*coords) * points_count * 2);

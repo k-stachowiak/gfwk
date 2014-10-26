@@ -34,6 +34,12 @@ bool aabb_point(struct AABB aabb, double x, double y);
 bool aabb_vline(struct AABB aabb, struct VLine vline);
 bool aabb_aabb(struct AABB lhs, struct AABB rhs);
 
+/* Configuration proxy. */
+extern int sc_screen_w;
+extern int sc_screen_h;
+extern int sc_tile_w;
+
+/* Basic resources. */
 extern void *sc_debug_font;
 extern void *sc_tile;
 extern void *sc_soulbooth;
@@ -48,10 +54,13 @@ extern void *sc_soul_stand_left;
 extern void *sc_soul_walk_right;
 extern void *sc_soul_walk_left;
 
-extern int sc_screen_w;
-extern int sc_screen_h;
-extern int sc_tile_w;
+/* Cmoplex resources. */
+extern struct CmpApprAnimSpriteCommon *sc_hunter_walk_right_common;
+extern struct CmpApprAnimSpriteCommon *sc_hunter_walk_left_common;
+extern struct CmpApprAnimSpriteCommon *sc_soul_walk_right_common;
+extern struct CmpApprAnimSpriteCommon *sc_soul_walk_left_common;
 
+/* View state. */
 extern struct WorldPos sc_cam_shift;
 extern struct AABB sc_screen_aabb;
 

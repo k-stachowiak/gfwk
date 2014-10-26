@@ -13,58 +13,12 @@
 #include "system.h"
 #include "draw.h"
 
-static struct CmpAppr *hunter_init_walk_appr(
-        struct Hunter *hunter, void *walk_sheet)
+void hunter_init(struct Hunter *hunter)
 {
-    int i;
-
-    void **frames;
-    int frames_count;
-
-    int *frame_indices;
-    double *frame_times;
-    int frame_defs_count;
-
-    int frame_w = 106;
-    double frame_time = 0.1;
-
-    res_cut_frame_sheet(walk_sheet, frame_w, &frames, &frames_count);
-
-    frame_defs_count = 8;
-    frame_indices = malloc(frame_defs_count * sizeof(*frame_indices));
-    frame_times = malloc(frame_defs_count * sizeof(*frame_times));
-
-    frame_indices[0] = 0;
-    frame_indices[1] = 1;
-    frame_indices[2] = 2;
-    frame_indices[3] = 3;
-    frame_indices[4] = 4;
-    frame_indices[5] = 3;
-    frame_indices[6] = 2;
-    frame_indices[7] = 1;
-    for (i = 0; i < frame_defs_count; ++i) {
-        frame_times[i] = frame_time;
-    }
-
-    return cmp_appr_create_anim_sprite(
-        frames, frames_count,
-        frame_indices, frame_times, frame_defs_count,
-        frame_w, 2, -1);
-}
-
-void hunter_init(
-        struct Hunter *hunter,
-        void *stand_right_bitmap, void *stand_left_bitmap,
-        void *walk_right_sheet, void *walk_left_sheet)
-{
-    hunter->appr_walk_right = hunter_init_walk_appr(hunter, walk_right_sheet);
-    hunter->appr_walk_left = hunter_init_walk_appr(hunter, walk_left_sheet);
-
-    hunter->appr_stand_right =
-        cmp_appr_create_static_sprite(stand_right_bitmap);
-
-    hunter->appr_stand_left =
-        cmp_appr_create_static_sprite(stand_left_bitmap);
+    hunter->appr_walk_right = cmp_appr_create_anim_sprite(sc_hunter_walk_right_common, 2, -1);
+    hunter->appr_walk_left = cmp_appr_create_anim_sprite(sc_hunter_walk_left_common, 2, -1);
+    hunter->appr_stand_right = cmp_appr_create_static_sprite(sc_hunter_stand_right);
+    hunter->appr_stand_left = cmp_appr_create_static_sprite(sc_hunter_stand_left);
 
     hunter->appr = hunter->appr_stand_right;
     hunter->ori = cmp_ori_create(0.0, 0.0, 0.0);

@@ -192,6 +192,15 @@ void res_cut_frame_sheet(
     }
 }
 
+void res_dispose_frame_sheet(void **frames, int frames_count)
+{
+    int i;
+    for (i = 0; i < frames_count; ++i) {
+        al_destroy_bitmap((ALLEGRO_BITMAP*)frames[i]);
+    }
+    free(frames);
+}
+
 void *res_load_sample(char *path)
 {
     int path_len;

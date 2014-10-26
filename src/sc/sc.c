@@ -10,18 +10,21 @@
 #include "sc_hunter.h"
 #include "sc_soul.h"
 #include "sc_level.h"
+#include "sc_collision.h"
 #include "resources.h"
 #include "database.h"
 #include "menu.h"
 #include "draw.h"
 #include "cmp_ori.h"
 #include "cmp_drv.h"
+#include "cmp_appr.h"
 #include "cmp_operations.h"
 
 /* Local state. */
 static bool sc_alive;
 static struct SysClient *sc_next;
 
+/* Entities. */
 struct Level lvl;
 struct LvlGraph lgph;
 struct Hunter hunter;
@@ -32,156 +35,121 @@ struct {
     int size, cap;
 } arrows;
 
-struct CollisionContext {
-    struct AABB bbox;
-    struct VLine lsline, rsline;
-    int utiles[3];
-    int btiles[3];
-    int ltiles[3];
-    int rtiles[3];
-    struct AABB utile_aabbs[3];
-    struct AABB btile_aabbs[3];
-    struct AABB ltile_aabbs[3];
-    struct AABB rtile_aabbs[3];
-} cc_last;
-
-static struct AABB cc_tile_aabb(int x, int y)
+/* Resources management logic. */
+static void sc_init_resources_basic(void)
 {
-    struct TilePos tp = { x, y };
-    struct WorldPos wp = pos_tile_to_world(tp);
-    struct AABB aabb = { wp.x, wp.y, wp.x + sc_tile_w, wp.y + sc_tile_w };
-    return aabb;
+    sc_debug_font = res_load_font("data/prstartk.ttf", 12);
+    sc_tile = res_load_bitmap("data/brick_tile.png");
+    sc_soulbooth = res_load_bitmap("data/soul_booth.png");
+    sc_hunter_stand_right = res_load_bitmap("data/hunter_stand_right.png");
+    sc_hunter_stand_left = res_load_bitmap("data/hunter_stand_left.png");
+    sc_hunter_walk_right = res_load_bitmap("data/hunter_walk_right_w106.png");
+    sc_hunter_walk_left = res_load_bitmap("data/hunter_walk_left_w106.png");
+    sc_bow_bitmap = res_load_bitmap("data/bow.png");
+    sc_arrow_bitmap = res_load_bitmap("data/arrow.png");
+    sc_soul_stand_right = res_load_bitmap("data/soul_stand_right.png");
+    sc_soul_stand_left = res_load_bitmap("data/soul_stand_left.png");
+    sc_soul_walk_right = res_load_bitmap("data/soul_walk_right_w74.png");
+    sc_soul_walk_left = res_load_bitmap("data/soul_walk_left_w74.png");
 }
 
-static struct CollisionContext cc_analyze(struct PosRot pr, double w, double h)
+static void sc_deinit_resources_basic(void)
 {
-    struct TilePos tp = { pr.x / sc_tile_w, pr.y / sc_tile_w };
-    struct CollisionContext result;
-
-    /* Bottom collision box. */
-    result.bbox.ax = pr.x - w / 2.0;
-    result.bbox.ay = pr.y + h / 2.0 + 1.0;
-    result.bbox.bx = pr.x + w / 2.0;
-    result.bbox.by = pr.y + h / 2.0 + 3.0;
-
-    /* Left and right scan lines. */
-    result.lsline.x = pr.x - w / 2.0;
-    result.lsline.y1 = pr.y - h / 2.0;
-    result.lsline.y2 = pr.y + h / 2.0;
-    result.rsline.x = pr.x + w / 2.0;
-    result.rsline.y1 = pr.y - h / 2.0;
-    result.rsline.y2 = pr.y + h / 2.0;
-
-    /* Surrounding tile field values. */
-    result.utiles[0] = lvl_get_tile(&lvl, tp.x, tp.y - 1);
-    result.utiles[1] = lvl_get_tile(&lvl, tp.x - 1, tp.y - 1);
-    result.utiles[2] = lvl_get_tile(&lvl, tp.x + 1, tp.y - 1);
-    result.btiles[0] = lvl_get_tile(&lvl, tp.x, tp.y + 1);
-    result.btiles[1] = lvl_get_tile(&lvl, tp.x - 1, tp.y + 1);
-    result.btiles[2] = lvl_get_tile(&lvl, tp.x + 1, tp.y + 1);
-    result.ltiles[0] = lvl_get_tile(&lvl, tp.x - 1, tp.y);
-    result.ltiles[1] = lvl_get_tile(&lvl, tp.x - 1, tp.y - 1);
-    result.ltiles[2] = lvl_get_tile(&lvl, tp.x - 1, tp.y + 1);
-    result.rtiles[0] = lvl_get_tile(&lvl, tp.x + 1, tp.y);
-    result.rtiles[1] = lvl_get_tile(&lvl, tp.x + 1, tp.y - 1);
-    result.rtiles[2] = lvl_get_tile(&lvl, tp.x + 1, tp.y + 1);
-
-    /* Surrounding tile bounding boxes. */
-    result.utile_aabbs[0] = cc_tile_aabb(tp.x, tp.y - 1);
-    result.utile_aabbs[1] = cc_tile_aabb(tp.x - 1, tp.y - 1);
-    result.utile_aabbs[2] = cc_tile_aabb(tp.x + 1, tp.y - 1);
-    result.btile_aabbs[0] = cc_tile_aabb(tp.x, tp.y + 1);
-    result.btile_aabbs[1] = cc_tile_aabb(tp.x - 1, tp.y + 1);
-    result.btile_aabbs[2] = cc_tile_aabb(tp.x + 1, tp.y + 1);
-    result.ltile_aabbs[0] = cc_tile_aabb(tp.x - 1, tp.y);
-    result.ltile_aabbs[1] = cc_tile_aabb(tp.x - 1, tp.y - 1);
-    result.ltile_aabbs[2] = cc_tile_aabb(tp.x - 1, tp.y + 1);
-    result.rtile_aabbs[0] = cc_tile_aabb(tp.x + 1, tp.y);
-    result.rtile_aabbs[1] = cc_tile_aabb(tp.x + 1, tp.y - 1);
-    result.rtile_aabbs[2] = cc_tile_aabb(tp.x + 1, tp.y + 1);
-
-    return result;
 }
 
-static void sc_handle_collisions_vertical(struct CollisionContext *cc)
+static struct CmpApprAnimSpriteCommon *sc_init_hunter_anim_common(void *walk_sheet)
 {
-    if ((cc->ltiles[0] == '#' && aabb_vline(cc->ltile_aabbs[0], cc->lsline)) ||
-        (cc->ltiles[1] == '#' && aabb_vline(cc->ltile_aabbs[1], cc->lsline)) ||
-        (cc->ltiles[2] == '#' && aabb_vline(cc->ltile_aabbs[2], cc->lsline))) {
-            cmp_drv_stop_x(hunter.drv);
-            hunter.ori->current.x =
-                cc->ltile_aabbs[0].bx +
-                hunter.box_w / 2.0 +
-                1.0;
+    int i;
+
+    void **frames;
+    int frames_count;
+
+    int *frame_indices;
+    double *frame_times;
+    int frame_defs_count;
+
+    int frame_w = 106;
+    double frame_time = 0.1;
+
+    res_cut_frame_sheet(walk_sheet, frame_w, &frames, &frames_count);
+
+    frame_defs_count = 8;
+    frame_indices = malloc(frame_defs_count * sizeof(*frame_indices));
+    frame_times = malloc(frame_defs_count * sizeof(*frame_times));
+
+    frame_indices[0] = 0;
+    frame_indices[1] = 1;
+    frame_indices[2] = 2;
+    frame_indices[3] = 3;
+    frame_indices[4] = 4;
+    frame_indices[5] = 3;
+    frame_indices[6] = 2;
+    frame_indices[7] = 1;
+    for (i = 0; i < frame_defs_count; ++i) {
+        frame_times[i] = frame_time;
     }
-    if ((cc->rtiles[0] == '#' && aabb_vline(cc->ltile_aabbs[0], cc->rsline)) ||
-        (cc->rtiles[1] == '#' && aabb_vline(cc->ltile_aabbs[1], cc->rsline)) ||
-        (cc->rtiles[2] == '#' && aabb_vline(cc->ltile_aabbs[2], cc->rsline))) {
-            cmp_drv_stop_x(hunter.drv);
-            hunter.ori->current.x =
-                cc->rtile_aabbs[0].ax -
-                hunter.box_w / 2.0 -
-                1.0;
-    }
+
+    return cmp_appr_create_anim_sprite_common(
+        frames, frames_count,
+        frame_indices, frame_times, frame_defs_count,
+        frame_w);
 }
 
-static void sc_handle_collisions_standing(struct CollisionContext *cc)
+static struct CmpApprAnimSpriteCommon *sc_init_soul_anim_common(void *walk_sheet)
 {
-    if ((cc->btiles[0] != '#' || !aabb_aabb(cc->bbox, cc->btile_aabbs[0])) &&
-        (cc->btiles[1] != '#' || !aabb_aabb(cc->bbox, cc->btile_aabbs[1])) &&
-        (cc->btiles[2] != '#' || !aabb_aabb(cc->bbox, cc->btile_aabbs[2]))) {
-            hunter.standing = false;
+    int i;
+
+    void **frames;
+    int frames_count;
+
+    int *frame_indices;
+    double *frame_times;
+    int frame_defs_count;
+
+    int frame_w = 74;
+    double frame_time = 0.1;
+
+    res_cut_frame_sheet(walk_sheet, frame_w, &frames, &frames_count);
+
+    frame_defs_count = 8;
+    frame_indices = malloc(frame_defs_count * sizeof(*frame_indices));
+    frame_times = malloc(frame_defs_count * sizeof(*frame_times));
+
+    frame_indices[0] = 0;
+    frame_indices[1] = 1;
+    frame_indices[2] = 2;
+    frame_indices[3] = 3;
+    frame_indices[4] = 4;
+    frame_indices[5] = 3;
+    frame_indices[6] = 2;
+    frame_indices[7] = 1;
+    for (i = 0; i < frame_defs_count; ++i) {
+        frame_times[i] = frame_time;
     }
+
+    return cmp_appr_create_anim_sprite_common(
+        frames, frames_count,
+        frame_indices, frame_times, frame_defs_count,
+        frame_w);
 }
 
-static void sc_handle_collisions_midair(struct CollisionContext *cc)
+static void sc_init_resources_complex(void)
 {
-    if ((cc->utiles[0] == '#' && (aabb_vline(cc->utile_aabbs[0], cc->lsline) ||
-                                  aabb_vline(cc->utile_aabbs[0], cc->rsline))) ||
-        (cc->utiles[1] == '#' && (aabb_vline(cc->utile_aabbs[1], cc->lsline) ||
-                                  aabb_vline(cc->utile_aabbs[1], cc->rsline))) ||
-        (cc->utiles[2] == '#' && (aabb_vline(cc->utile_aabbs[2], cc->lsline) ||
-                                  aabb_vline(cc->utile_aabbs[2], cc->rsline)))) {
-        cmp_drv_stop_y(hunter.drv);
-        hunter.ori->current.y =
-            cc->utile_aabbs[0].by +
-            hunter.box_h / 2.0 +
-            1.0;
-    }
-
-    if ((cc->btiles[0] == '#' && (aabb_vline(cc->btile_aabbs[0], cc->lsline) ||
-                                  aabb_vline(cc->btile_aabbs[0], cc->rsline))) ||
-        (cc->btiles[1] == '#' && (aabb_vline(cc->btile_aabbs[1], cc->lsline) ||
-                                  aabb_vline(cc->btile_aabbs[1], cc->rsline))) ||
-        (cc->btiles[2] == '#' && (aabb_vline(cc->btile_aabbs[2], cc->lsline) ||
-                                  aabb_vline(cc->btile_aabbs[2], cc->rsline)))) {
-            /* TODO: consider getting dir of the move cancelling operation. */
-            hunter.standing = true;
-            cmp_drv_stop_y(hunter.drv);
-            hunter.ori->current.y =
-                cc->btile_aabbs[0].ay -
-                hunter.box_h / 2.0 -
-                1.0;
-    }
+    sc_hunter_walk_right_common = sc_init_hunter_anim_common(sc_hunter_walk_right);
+    sc_hunter_walk_left_common = sc_init_hunter_anim_common(sc_hunter_walk_left);
+    sc_soul_walk_right_common = sc_init_soul_anim_common(sc_soul_walk_right);
+    sc_soul_walk_left_common = sc_init_soul_anim_common(sc_soul_walk_left);
 }
 
-static void sc_handle_collisions(void)
+static void sc_deinit_resources_complex(void)
 {
-    /* Common values. */
-    struct PosRot hunter_pr = cmp_ori_get(hunter.ori);
-    struct CollisionContext cc = cc_analyze(
-            hunter_pr, hunter.box_w, hunter.box_h);
-    cc_last = cc;
-
-    /* Actual collision cases dispatch. */
-    sc_handle_collisions_vertical(&cc);
-    if (hunter.standing) {
-        sc_handle_collisions_standing(&cc);
-    } else {
-        sc_handle_collisions_midair(&cc);
-    }
+    cmp_appr_free_anim_sprite_common(sc_hunter_walk_right_common);
+    cmp_appr_free_anim_sprite_common(sc_hunter_walk_left_common);
+    cmp_appr_free_anim_sprite_common(sc_soul_walk_right_common);
+    cmp_appr_free_anim_sprite_common(sc_soul_walk_left_common);
 }
 
+/* Common logic. */
 static void sc_shoot_arrow(void)
 {
     struct Arrow arrow;
@@ -245,20 +213,6 @@ static void sc_tick_arrows(double dt)
 
 static void sc_init(void)
 {
-    sc_debug_font = res_load_font("data/prstartk.ttf", 12);
-    sc_tile = res_load_bitmap("data/brick_tile.png");
-    sc_soulbooth = res_load_bitmap("data/soul_booth.png");
-    sc_hunter_stand_right = res_load_bitmap("data/hunter_stand_right.png");
-    sc_hunter_stand_left = res_load_bitmap("data/hunter_stand_left.png");
-    sc_hunter_walk_right = res_load_bitmap("data/hunter_walk_right_w106.png");
-    sc_hunter_walk_left = res_load_bitmap("data/hunter_walk_left_w106.png");
-    sc_bow_bitmap = res_load_bitmap("data/bow.png");
-    sc_arrow_bitmap = res_load_bitmap("data/arrow.png");
-    sc_soul_stand_right = res_load_bitmap("data/soul_stand_right.png");
-    sc_soul_stand_left = res_load_bitmap("data/soul_stand_left.png");
-    sc_soul_walk_right = res_load_bitmap("data/soul_walk_right_w74.png");
-    sc_soul_walk_left = res_load_bitmap("data/soul_walk_left_w74.png");
-
     sc_alive = true;
     sc_next = NULL;
 
@@ -266,23 +220,14 @@ static void sc_init(void)
     sc_screen_h = db_integer("screen_h");
     sc_tile_w = 64;
 
+    sc_init_resources_basic();
+    sc_init_resources_complex();
+
     lvl_load(&lvl, "data/map");
     lgph = lgph_init(&lvl);
 
-    hunter_init(
-        &hunter,
-        sc_hunter_stand_right,
-        sc_hunter_stand_left,
-        sc_hunter_walk_right,
-        sc_hunter_walk_left);
-
-    soul_init(
-        &soul, &lgph, lgph.nodes[10],
-        sc_soul_stand_right,
-        sc_soul_stand_left,
-        sc_soul_walk_right,
-        sc_soul_walk_left);
-
+    hunter_init(&hunter);
+    soul_init(&soul, &lgph, lgph.nodes[10]);
     arrows.data = NULL;
     arrows.size = 0;
     arrows.cap = 0;
@@ -298,6 +243,9 @@ static void sc_deinit(void)
     lvl_unload(&lvl);
     hunter_deinit(&hunter);
     soul_deinit(&soul);
+
+    sc_deinit_resources_complex();
+    sc_deinit_resources_basic();
 }
 
 static void sc_tick(double dt)
@@ -306,7 +254,7 @@ static void sc_tick(double dt)
     hunter_tick(&hunter, dt);
     soul_tick(&soul, dt);
     sc_tick_arrows(dt);
-    sc_handle_collisions();
+    col_handle_all(&hunter, &lvl);
 }
 
 static void sc_draw_aabb(
