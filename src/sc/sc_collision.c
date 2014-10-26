@@ -1,11 +1,24 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
+#include <allegro5/allegro_primitives.h>
+
 #include "cmp_ori.h"
 #include "cmp_drv.h"
 #include "sc_collision.h"
 #include "sc_data.h"
 
-struct CollisionContext cc_last;
+struct CollisionContext {
+    struct AABB bbox;
+    struct VLine lsline, rsline;
+    int utiles[3];
+    int btiles[3];
+    int ltiles[3];
+    int rtiles[3];
+    struct AABB utile_aabbs[3];
+    struct AABB btile_aabbs[3];
+    struct AABB ltile_aabbs[3];
+    struct AABB rtile_aabbs[3];
+} cc_last;
 
 static struct AABB col_tile_aabb(int x, int y)
 {
@@ -132,6 +145,24 @@ static void col_handle_midair(struct Hunter *hunter, struct CollisionContext *cc
     }
 }
 
+static void col_draw_aabb(struct AABB aabb, bool fill, double r, double g, double b)
+{
+    double x1, y1, x2, y2;
+    aabb_to_screen(aabb, &x1, &y1, &x2, &y2);
+    if (fill) {
+        al_draw_filled_rectangle(x1, y1, x2, y2, al_map_rgb_f(r, g, b));
+    } else {
+        al_draw_rectangle(x1, y1, x2, y2, al_map_rgb_f(r, g, b), 1.0);
+    }
+}
+
+static void col_draw_vline(struct VLine vline, double r, double g, double b)
+{
+    double x, y1, y2;
+    vline_to_screen(vline, &x, &y1, &y2);
+    al_draw_line(x, y1, x, y2, al_map_rgb_f(r, g, b), 1.0);
+}
+
 void col_handle_all(struct Hunter *hunter, struct Level *lvl)
 {
     cc_last = col_analyze(hunter, lvl);
@@ -142,5 +173,20 @@ void col_handle_all(struct Hunter *hunter, struct Level *lvl)
     } else {
         col_handle_midair(hunter, &cc_last);
     }
+}
+
+void col_draw_last(void)
+{
+    col_draw_aabb(cc_last.bbox, true, 1, 1, 0);
+    col_draw_vline(cc_last.lsline, 1, 1, 0);
+    col_draw_vline(cc_last.rsline, 1, 1, 0);
+    col_draw_aabb(cc_last.utile_aabbs[0], cc_last.utiles[0] == '#', 0, 1, 1);
+    col_draw_aabb(cc_last.utile_aabbs[1], cc_last.utiles[1] == '#', 0, 1, 1);
+    col_draw_aabb(cc_last.utile_aabbs[2], cc_last.utiles[2] == '#', 0, 1, 1);
+    col_draw_aabb(cc_last.btile_aabbs[0], cc_last.btiles[0] == '#', 0, 1, 1);
+    col_draw_aabb(cc_last.btile_aabbs[1], cc_last.btiles[1] == '#', 0, 1, 1);
+    col_draw_aabb(cc_last.btile_aabbs[2], cc_last.btiles[2] == '#', 0, 1, 1);
+    col_draw_aabb(cc_last.ltile_aabbs[0], cc_last.ltiles[0] == '#', 1, 0, 1);
+    col_draw_aabb(cc_last.rtile_aabbs[0], cc_last.rtiles[0] == '#', 1, 0, 1);
 }
 

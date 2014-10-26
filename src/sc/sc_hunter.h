@@ -35,11 +35,8 @@ struct Arrow {
     struct CmpDrv *drv;
 };
 
-void arrow_init(
-        struct Arrow *arrow,
-        double x, double y, double angle,
-        void *arrow_bitmap);
-
+void arrow_init(struct Arrow *arrow, double x, double y, double angle);
 void arrow_deinit(struct Arrow *arrow);
+bool arrow_tick(struct Arrow *arrow, double dt);
 
 #endif

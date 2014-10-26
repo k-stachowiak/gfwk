@@ -67,7 +67,7 @@ static void cmp_drv_waypoint_step(struct CmpDrvWaypoint *wayp)
     }
 }
 
-void cmp_drv_update_waypoint(struct CmpDrvWaypoint *wayp, double dt)
+static void cmp_drv_update_waypoint(struct CmpDrvWaypoint *wayp, double dt)
 {
     double x0, y0, x1, y1;
     double dx, dy;

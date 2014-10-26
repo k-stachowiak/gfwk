@@ -55,6 +55,19 @@ static void sc_init_resources_basic(void)
 
 static void sc_deinit_resources_basic(void)
 {
+    res_dispose_font(sc_debug_font);
+    res_dispose_bitmap(sc_tile);
+    res_dispose_bitmap(sc_soulbooth);
+    res_dispose_bitmap(sc_hunter_stand_right);
+    res_dispose_bitmap(sc_hunter_stand_left);
+    res_dispose_bitmap(sc_hunter_walk_right);
+    res_dispose_bitmap(sc_hunter_walk_left);
+    res_dispose_bitmap(sc_bow_bitmap);
+    res_dispose_bitmap(sc_arrow_bitmap);
+    res_dispose_bitmap(sc_soul_stand_right);
+    res_dispose_bitmap(sc_soul_stand_left);
+    res_dispose_bitmap(sc_soul_walk_right);
+    res_dispose_bitmap(sc_soul_walk_left);
 }
 
 static struct CmpApprAnimSpriteCommon *sc_init_hunter_anim_common(void *walk_sheet)
@@ -155,13 +168,7 @@ static void sc_shoot_arrow(void)
     struct Arrow arrow;
     struct PosRot hunter_pr = cmp_ori_get(hunter.ori);
     struct WorldPos hunter_wp = { hunter_pr.x, hunter_pr.y };
-
-    arrow_init(
-        &arrow,
-        hunter_wp.x, hunter_wp.y - 15.0,
-        hunter.aim_angle,
-        sc_arrow_bitmap);
-
+    arrow_init(&arrow, hunter_wp.x, hunter_wp.y - 15.0, hunter.aim_angle);
     ARRAY_APPEND(arrows, arrow);
 }
 
@@ -179,32 +186,6 @@ static void sc_tick_camera(double dt)
     sc_cam_shift.x = hunter_pr.x;
     sc_cam_shift.y = hunter_pr.y;
     sc_update_screen_aabb();
-}
-
-static void sc_tick_arrows(double dt)
-{
-    int i;
-    int margin = 20;
-    for (i = 0; i < arrows.size; ++i) {
-        struct PosRot pr;
-        struct WorldPos wp;
-        struct ScreenPos sp;
-
-        cmp_drv_update(arrows.data[i].drv, dt);
-        cmp_drive(arrows.data[i].ori, arrows.data[i].drv, dt);
-
-        pr = cmp_ori_get(arrows.data[i].ori);
-        wp.x = pr.x;
-        wp.y = pr.y;
-        sp = pos_world_to_screen(wp);
-
-        if (sp.x < margin || sp.x > (sc_screen_w - margin) ||
-            sp.y < margin || sp.y > (sc_screen_h - margin)) {
-                arrow_deinit(arrows.data + i);
-                ARRAY_REMOVE(arrows, i);
-                --i;
-        }
-    }
 }
 
 /* Client API.
@@ -228,6 +209,7 @@ static void sc_init(void)
 
     hunter_init(&hunter);
     soul_init(&soul, &lgph, lgph.nodes[10]);
+
     arrows.data = NULL;
     arrows.size = 0;
     arrows.cap = 0;
@@ -250,46 +232,21 @@ static void sc_deinit(void)
 
 static void sc_tick(double dt)
 {
+    int i;
+
     sc_tick_camera(dt);
     hunter_tick(&hunter, dt);
     soul_tick(&soul, dt);
-    sc_tick_arrows(dt);
-    col_handle_all(&hunter, &lvl);
-}
 
-static void sc_draw_aabb(
-        struct AABB aabb, bool fill,
-        double r, double g, double b)
-{
-    double x1, y1, x2, y2;
-    aabb_to_screen(aabb, &x1, &y1, &x2, &y2);
-    if (fill) {
-        al_draw_filled_rectangle(x1, y1, x2, y2, al_map_rgb_f(r, g, b));
-    } else {
-        al_draw_rectangle(x1, y1, x2, y2, al_map_rgb_f(r, g, b), 1.0);
+    for (i = 0; i < arrows.size; ++i) {
+        if (!arrow_tick(arrows.data + i, dt)) {
+            arrow_deinit(arrows.data + i);
+            ARRAY_REMOVE(arrows, i);
+            --i;
+        }
     }
-}
 
-static void sc_draw_vline(struct VLine vline, double r, double g, double b)
-{
-    double x, y1, y2;
-    vline_to_screen(vline, &x, &y1, &y2);
-    al_draw_line(x, y1, x, y2, al_map_rgb_f(r, g, b), 1.0);
-}
-
-static void sc_draw_debug_collisions(void)
-{
-    sc_draw_aabb(cc_last.bbox, true, 1, 1, 0);
-    sc_draw_vline(cc_last.lsline, 1, 1, 0);
-    sc_draw_vline(cc_last.rsline, 1, 1, 0);
-    sc_draw_aabb(cc_last.utile_aabbs[0], cc_last.utiles[0] == '#', 0, 1, 1);
-    sc_draw_aabb(cc_last.utile_aabbs[1], cc_last.utiles[1] == '#', 0, 1, 1);
-    sc_draw_aabb(cc_last.utile_aabbs[2], cc_last.utiles[2] == '#', 0, 1, 1);
-    sc_draw_aabb(cc_last.btile_aabbs[0], cc_last.btiles[0] == '#', 0, 1, 1);
-    sc_draw_aabb(cc_last.btile_aabbs[1], cc_last.btiles[1] == '#', 0, 1, 1);
-    sc_draw_aabb(cc_last.btile_aabbs[2], cc_last.btiles[2] == '#', 0, 1, 1);
-    sc_draw_aabb(cc_last.ltile_aabbs[0], cc_last.ltiles[0] == '#', 1, 0, 1);
-    sc_draw_aabb(cc_last.rtile_aabbs[0], cc_last.rtiles[0] == '#', 1, 0, 1);
+    col_handle_all(&hunter, &lvl);
 }
 
 static void sc_draw_debug_graph(void)
@@ -358,7 +315,7 @@ static void sc_draw(double weight)
     }
 
     if (sys_keys[ALLEGRO_KEY_F1]) {
-        sc_draw_debug_collisions();
+        col_draw_last();
     }
     if (sys_keys[ALLEGRO_KEY_F2]) {
         sc_draw_debug_graph();

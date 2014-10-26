@@ -74,6 +74,7 @@ void res_deinit(void)
     struct ResNodeSample *stemp;
 
     while (bitmaps) {
+        DIAG_WARNING("Uninitialized bitmap (%s)", bitmaps->path);
         btemp = bitmaps->next;
         free(bitmaps->path);
         al_destroy_bitmap(bitmaps->value);
@@ -82,6 +83,7 @@ void res_deinit(void)
     }
 
     while (samples) {
+        DIAG_WARNING("Uninitialized sample (%s)", samples->path);
         stemp = samples->next;
         free(samples->path);
         al_destroy_sample(samples->value);
@@ -90,6 +92,7 @@ void res_deinit(void)
     }
 
     while (fonts) {
+        DIAG_WARNING("Uninitialized font (%s)", fonts->path);
         ftemp = fonts->next;
         free(fonts->path);
         al_destroy_font(fonts->value);
@@ -237,6 +240,37 @@ void *res_load_sample(char *path)
     return (void*)value;
 }
 
+void res_dispose_sample(void *sample)
+{
+    struct ResNodeSample *prev, *curr;
+
+    if (samples->value == (ALLEGRO_SAMPLE*)sample) {
+        struct ResNodeSample *temp;
+        al_destroy_sample(samples->value);
+        temp = samples;
+        samples = samples->next;
+        free(temp);
+        return;
+    }
+
+    prev = samples;
+    curr = samples->next;
+
+    while (curr) {
+        if (curr->value == (ALLEGRO_SAMPLE*)sample) {
+            al_destroy_sample(curr->value);
+            prev->next = curr->next;
+            free(curr);
+            return;
+        }
+        prev = curr;
+        curr = curr->next;
+    }
+
+    DIAG_ERROR("Failed finding sample to destroy.");
+    exit(1);
+}
+
 void *res_load_font(char *path, int size)
 {
     int path_len;
@@ -272,4 +306,35 @@ void *res_load_font(char *path, int size)
     fonts = new_node;
 
     return (void*)value;
+}
+
+void res_dispose_font(void *font)
+{
+    struct ResNodeFont *prev, *curr;
+
+    if (fonts->value == (ALLEGRO_FONT*)font) {
+        struct ResNodeFont *temp;
+        al_destroy_font(fonts->value);
+        temp = fonts;
+        fonts = fonts->next;
+        free(temp);
+        return;
+    }
+
+    prev = fonts;
+    curr = fonts->next;
+
+    while (curr) {
+        if (curr->value == (ALLEGRO_FONT*)font) {
+            al_destroy_font(curr->value);
+            prev->next = curr->next;
+            free(curr);
+            return;
+        }
+        prev = curr;
+        curr = curr->next;
+    }
+
+    DIAG_ERROR("Failed finding font to destroy.");
+    exit(1);
 }

@@ -184,11 +184,13 @@ static void menu_init(void)
     menu_font = res_load_font("data/prstartk.ttf", menu_text_size);
     nav_enter_sample = res_load_sample("data/beep.ogg");
     nav_move_sample = res_load_sample("data/MenuSelectionClick.ogg");
-
 }
 
 static void menu_deinit(void)
 {
+    res_dispose_sample(nav_enter_sample);
+    res_dispose_sample(nav_move_sample);
+    res_dispose_font(menu_font);
     menu_free(main_menu);
 }
 

@@ -67,6 +67,15 @@ static void demo_init_resources_basic(void)
     bullet_sprite = res_load_bitmap("data/bullet.png");
 }
 
+static void demo_deinit_resources_basic(void)
+{
+    res_dispose_bitmap(ball_sheet);
+    res_dispose_sample(bounce_sample);
+    res_dispose_bitmap(tank_sprite);
+    res_dispose_sample(shot_sample);
+    res_dispose_bitmap(bullet_sprite);
+}
+
 static void demo_init_resources_complex(void)
 {
     int i;
@@ -95,6 +104,11 @@ static void demo_init_resources_complex(void)
             frames, frames_count,
             frame_indices, frame_times, frame_defs_count,
             frame_w);
+}
+
+static void demo_deinit_resources_complex(void)
+{
+    cmp_appr_free_anim_sprite_common(ball_anim_common);
 }
 
 /* Ball logic. */
@@ -265,11 +279,8 @@ static void demo_deinit(void)
     demo_deinit_tank(&tank);
     demo_deinit_ball(&ball);
 
-    cmp_appr_free_anim_sprite_common(ball_anim_common);
-
-    res_dispose_bitmap(ball_sheet);
-    res_dispose_bitmap(tank_sprite);
-    res_dispose_bitmap(bullet_sprite);
+    demo_deinit_resources_complex();
+    demo_deinit_resources_basic();
 }
 
 static void demo_tick(double dt)
