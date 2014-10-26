@@ -59,7 +59,7 @@ static void cmp_drv_waypoint_step(struct CmpDrvWaypoint *wayp)
             }
         }
 
-    } else {
+    } else if (wayp->flag == false) {
         ++wayp->step;
         if(wayp->step >= wayp->points_count) {
             wayp->flag = true;
