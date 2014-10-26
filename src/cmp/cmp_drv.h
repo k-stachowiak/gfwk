@@ -9,14 +9,6 @@ struct Vel {
     double vx, vy, vtheta;
 };
 
-enum CmpDrvType {
-    CMP_DRV_LINEAR,
-    CMP_DRV_INPUT_8DIR,
-    CMP_DRV_PLATFORM,
-    CMP_DRV_BALLISTIC,
-    CMP_DRV_WAYPOINT
-};
-
 struct CmpDrvI8d {
     double vel;
     int *inx, *iny;
@@ -37,6 +29,14 @@ struct CmpDrvWaypoint {
     int step;
     double step_degree;
     bool flag;
+};
+
+enum CmpDrvType {
+    CMP_DRV_LINEAR,
+    CMP_DRV_INPUT_8DIR,
+    CMP_DRV_PLATFORM,
+    CMP_DRV_BALLISTIC,
+    CMP_DRV_WAYPOINT
 };
 
 struct CmpDrv {

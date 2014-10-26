@@ -5,11 +5,6 @@
 
 #include <stdbool.h>
 
-enum CmpApprType {
-    CMP_APPR_STATIC_SPRITE,
-    CMP_APPR_ANIM_SPRITE
-};
-
 struct CmpApprAnimSprite {
     void **frames;
     int frames_count;
@@ -23,6 +18,11 @@ struct CmpApprAnimSprite {
 
     double time_to_switch;
     bool done;
+};
+
+enum CmpApprType {
+    CMP_APPR_STATIC_SPRITE,
+    CMP_APPR_ANIM_SPRITE
 };
 
 struct CmpAppr {

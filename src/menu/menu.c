@@ -5,7 +5,6 @@
 #include <allegro5/allegro.h>
 
 #include "diagnostics.h"
-#include "string_util.h"
 #include "menu.h"
 #include "menu_struct.h"
 #include "resources.h"

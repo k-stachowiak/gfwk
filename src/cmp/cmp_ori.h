@@ -3,8 +3,6 @@
 #ifndef CMP_ORI_H
 #define CMP_ORI_H
 
-#define CMP_ORI_BUF_SIZE 10
-
 struct PosRot {
     double x, y, theta;
 };
