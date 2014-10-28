@@ -43,18 +43,19 @@ static void cmp_drv_waypoint_local_points(
 
 static void cmp_drv_waypoint_step(struct CmpDrvWaypoint *wayp)
 {
-    wayp->step_degree = 0.0;
+    wayp->step_degree -= 1.0;
 
     if (wayp->patrol) {
         if (wayp->flag) {
             ++wayp->step;
             if(wayp->step >= wayp->points_count) {
                 wayp->flag = false;
-                --wayp->step;
+                wayp->step = wayp->points_count - 1;
             }
         } else {
             --wayp->step;
             if(wayp->step <= 0) {
+                wayp->step = 0;
                 wayp->flag = true;
             }
         }

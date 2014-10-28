@@ -296,6 +296,31 @@ static void sc_draw_debug_graph(void)
     }
 }
 
+static void sc_draw_debug_soul(struct Soul *soul)
+{
+    int i;
+    struct CmpDrvWaypoint *wp = &soul->drv->body.wayp;
+    ALLEGRO_COLOR color = al_map_rgb_f(1.0f, 0.7f, 0.4f);
+
+    for (i = 0; i < (wp->points_count - 1); ++i) {
+
+        struct WorldPos
+            wp1 = { wp->points[2 * i + 0], wp->points[2 * i + 1] },
+            wp2 = { wp->points[2 * i + 2], wp->points[2 * i + 3] };
+
+        struct ScreenPos
+            sp1 = pos_world_to_screen(wp1),
+            sp2 = pos_world_to_screen(wp2);
+
+        double x1 = sp1.x + sc_tile_w / 2.0;
+        double y1 = sp1.y + sc_tile_w / 2.0;
+        double x2 = sp2.x + sc_tile_w / 2.0;
+        double y2 = sp2.y + sc_tile_w / 2.0;
+
+        al_draw_line(x1, y1, x2, y2, color, 2.0);
+    }
+}
+
 static void sc_draw(double weight)
 {
     int i;
@@ -319,6 +344,7 @@ static void sc_draw(double weight)
     }
     if (sys_keys[ALLEGRO_KEY_F2]) {
         sc_draw_debug_graph();
+        sc_draw_debug_soul(&soul);
     }
 
     al_flip_display();

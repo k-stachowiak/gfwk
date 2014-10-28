@@ -11,7 +11,7 @@
 #define DLVL_WARNING 2
 #define DLVL_ERROR 3
 
-#define DIAG_LEVEL DLVL_DEBUG
+#define DIAG_LEVEL DLVL_TRACE
 
 #if DIAG_LEVEL <= DLVL_TRACE
 #   define DIAG_TRACE(FORMAT, ...) \

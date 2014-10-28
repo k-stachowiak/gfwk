@@ -13,6 +13,21 @@
 #include "diagnostics.h"
 #include "sc_level.h"
 
+static inline double min(double a, double b)
+{
+    return (a < b) ? a : b;
+}
+
+static inline double max(double a, double b)
+{
+    return (a < b) ? b : a;
+}
+
+static inline bool eq_tilepos(struct TilePos *a, struct TilePos *b)
+{
+	return a->x == b->x && a->y == b->y;
+}
+
 static void lvl_draw_tile(struct TilePos tile_pos, char c)
 {
     struct WorldPos world_pos;
@@ -155,6 +170,12 @@ struct NodeArray {
     int size, cap;
 };
 
+/**
+ * Fills a node array with nodes for all the horizontal edges in the level.
+ * Note that the y coordinates of the edge nodes will be one tile above the
+ * edge y coordinates, because the movement graph is plotted above the walkable
+ * tiles.
+ */
 static void lgph_find_platform_edges(
         struct Level *lvl,
         struct NodeArray *result)
@@ -179,23 +200,13 @@ static void lgph_find_platform_edges(
             }
             x2 = x - 1;
 
-            tp.y = y - 1;
+            tp.y = y - 1; /* The _nodes_ are 1 tile above the _edges_. */
             tp.x = x1;
             ARRAY_APPEND(*result, tp);
             tp.x = x2;
             ARRAY_APPEND(*result, tp);
         }
     }
-}
-
-static inline double min(double a, double b)
-{
-    return (a < b) ? a : b;
-}
-
-static inline double max(double a, double b)
-{
-    return (a < b) ? b : a;
 }
 
 static void lgph_add_descent(
@@ -205,55 +216,72 @@ static void lgph_add_descent(
         struct NodeArray *result)
 {
     int i;
-    bool replaced = false;;
+    bool replaced = false;
 
     for (i = 0; i < result->size; i += 2) {
 
         int y, x1, x2;
         struct TilePos new_pos;
 
+		/* Discard if the edge is not on the same height as the lower point. */
         if (result->data[i].y != lower.y || result->data[i + 1].y != lower.y) {
             continue;
-        } else {
-            y = lower.y;
         }
 
+        y = lower.y;
         x1 = min(result->data[i].x, result->data[i + 1].x);
         x2 = max(result->data[i].x, result->data[i + 1].x);
 
+		/* Discard if the edge doesn't include the lower point. */
         if (lower.x <= x1 || lower.x >= x2) {
             continue;
-        } else {
-            replaced = true;
         }
 
+		replaced = true;
+
+		/* Substitute the first point for the upper descent point
+         * and the second point for the lower descent point.
+		 */
         result->data[i] = upper;
         result->data[i + 1] = lower;
 
+		/* Insert the left point again. */
         new_pos.x = x1;
         new_pos.y = y;
         ARRAY_APPEND(*result, new_pos);
 
+		/* Insert the new middle point twice: once to end first part of the
+		 * broken edge and once to begin the second part of the broken edge.
+		 */
         new_pos.x = lower.x;
         new_pos.y = y;
         ARRAY_APPEND(*result, new_pos);
-
-        new_pos.x = lower.x;
-        new_pos.y = y;
         ARRAY_APPEND(*result, new_pos);
 
+		/* Insert the right point again. */
         new_pos.x = x2;
         new_pos.y = y;
         ARRAY_APPEND(*result, new_pos);
     }
 
+	/* If the descent doesn't break any edge in two parts, then let's just
+     * insert it.
+	 */
     if (!replaced) {
         ARRAY_APPEND(*result, upper);
         ARRAY_APPEND(*result, lower);
     }
 }
 
-static void lgph_find_jump_edges(
+/**
+ * This will analyze all the platforms' edges. If there is another edge below
+ * then a descent edge will be created in the graph. This procedure may or may
+ * not land the destination node in the middle of another, existing edge. If
+ * an edge is discovered below, then it is broken into two parts so that the
+ * point of the descent landing is placed in an actual node and not in the
+ * middle of an edge.
+ */
+void lgph_insert_jump_edges(
         struct Level *lvl,
         struct NodeArray *plat,
         struct NodeArray *result)
@@ -284,30 +312,16 @@ static struct NodeArray lgph_find_unique_nodes(struct NodeArray *in)
     bool found;
     struct NodeArray uniques = { NULL, 0, 0 };
 
-    for (i = 0; i < in->size; i += 2) {
-
+    for (i = 0; i < in->size; ++i) {
         found = false;
         for (j = 0; j != uniques.size; ++j) {
-            if (in->data[i].x == uniques.data[j].x &&
-                in->data[i].y == uniques.data[j].y) {
-                    found = true;
-                    break;
+			if (eq_tilepos(in->data + i, uniques.data + j)) {
+				found = true;
+				break;
             }
         }
         if (!found) {
             ARRAY_APPEND(uniques, in->data[i]);
-        }
-
-        found = false;
-        for (j = 0; j != uniques.size; ++j) {
-            if (in->data[i + 1].x == uniques.data[j].x &&
-                in->data[i + 1].y == uniques.data[j].y) {
-                    found = true;
-                    break;
-            }
-        }
-        if (!found) {
-            ARRAY_APPEND(uniques, in->data[i + 1]);
         }
     }
 
@@ -316,7 +330,7 @@ static struct NodeArray lgph_find_unique_nodes(struct NodeArray *in)
 
 static struct LvlAdj *lgph_find_adjacency(
         struct TilePos n,
-        struct NodeArray *unique,
+        struct NodeArray *uniques,
         struct NodeArray *all)
 {
     int i;
@@ -328,41 +342,47 @@ static struct LvlAdj *lgph_find_adjacency(
 
     struct LvlAdj adj;
 
+	/* For each edge in the graph. */
     for (i = 0; i < all->size; i += 2) {
 
         int j;
+		struct TilePos
+			*first = all->data + i,
+			*second = all->data + i + 1;
 
-        bool is_first = n.x == all->data[i].x && n.y == all->data[i].y;
-        bool is_second = n.x == all->data[i + 1].x && n.y == all->data[i + 1].y;
-        bool is_vertical = all->data[i].y != all->data[i + 1].y;
+		/* Analyze the n node against the current edge. */
+		bool is_first = eq_tilepos(&n, first);
+        bool is_second = eq_tilepos(&n, second);
+        bool is_vertical = first->y != second->y;
 
         if (is_first && !is_second) {
-            for (j = 0; j < unique->size; ++j) {
-                if (i != j &&
-                    all->data[i + 1].x == unique->data[j].x &&
-                    all->data[i + 1].y == unique->data[j].y) {
-                        adj.neighbor = j;
-                        adj.type = is_vertical ? LVL_ADJ_JUMP : LVL_ADJ_WALK;
-                        ARRAY_APPEND(result, adj);
-                        break;
+			/* Lookup the second node and set as the n's adjacency. */
+            for (j = 0; j < uniques->size; ++j) {
+				struct TilePos *unique = uniques->data + j;
+                if (eq_tilepos(second, unique)) {
+					adj.neighbor = j;
+					adj.type = is_vertical ? LVL_ADJ_JUMP : LVL_ADJ_WALK;
+					ARRAY_APPEND(result, adj);
+					break;
                 }
             }
         } else if (!is_first && is_second) {
-            for (j = 0; j < unique->size; ++j) {
-                if ((i + 1) != j &&
-                    all->data[i].x == unique->data[j].x &&
-                    all->data[i].y == unique->data[j].y) {
-                        adj.neighbor = j;
-                        adj.type = is_vertical ? LVL_ADJ_JUMP : LVL_ADJ_WALK;
-                        ARRAY_APPEND(result, adj);
-                        break;
+			/* Lookup the first node and set as the n's adjacency. */
+            for (j = 0; j < uniques->size; ++j) {
+				struct TilePos *unique = uniques->data + j;
+                if (eq_tilepos(first, unique)) {
+					adj.neighbor = j;
+					adj.type = is_vertical ? LVL_ADJ_JUMP : LVL_ADJ_WALK;
+					ARRAY_APPEND(result, adj);
+					break;
                 }
             }
         } else {
-            DIAG_TRACE("Pair in the same tile found.");
+            /* NULL; */
         }
     }
 
+	/* Add an awkward plug; WTF? :o */
     adj.neighbor = -1;
     ARRAY_APPEND(result, adj);
 
@@ -436,7 +456,7 @@ static void lgph_dijkstra(
     for (i = 0; i < result.size / 2; ++i) {
         struct TilePos temp = result.data[i];
         result.data[i] = result.data[result.size - i - 1];
-        result.data[result.size - i] = temp;
+        result.data[result.size - i - 1] = temp;
     }
 
     *points = result.data;
@@ -447,13 +467,13 @@ struct LvlGraph lgph_init(struct Level *lvl)
 {
     int i;
     struct LvlGraph result;
-    struct NodeArray uniques, plat_nodes, all_nodes = { NULL, 0, 0 };
-    struct LvlAdj **adjacency;
+    struct NodeArray uniques = { 0, }, plat_nodes = { 0, }, all_nodes = { 0, };
+    struct LvlAdj **adjacency = NULL;
 
     lgph_find_platform_edges(lvl, &all_nodes);
 
     ARRAY_COPY(plat_nodes, all_nodes);
-    lgph_find_jump_edges(lvl, &plat_nodes, &all_nodes);
+    lgph_insert_jump_edges(lvl, &plat_nodes, &all_nodes);
     /* TODO: Also generate jumps over ledges (?) */
 
     uniques = lgph_find_unique_nodes(&all_nodes);
@@ -464,7 +484,8 @@ struct LvlGraph lgph_init(struct Level *lvl)
         exit(1);
     }
     for (i = 0; i < uniques.size; ++i) {
-        adjacency[i] = lgph_find_adjacency(uniques.data[i], &uniques, &all_nodes);
+        adjacency[i] = lgph_find_adjacency(
+            uniques.data[i], &uniques, &all_nodes);
     }
 
     ARRAY_FREE(all_nodes);
