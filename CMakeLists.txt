@@ -34,6 +34,7 @@ add_executable(gfwk
     ./src/sc/sc_soul.c
     ./src/sc/sc_level.c
     ./src/sc/sc_collision.c
+	./src/util/random.c
     ./src/main.c
     )
 

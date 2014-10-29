@@ -18,7 +18,7 @@ static void cmp_drv_update_platform(struct CmpDrvPlat *plat, double dt)
         plat->vel.vy += 10.0 * sc_tile_w * dt;
     }
 
-    plat->vel.vx = *plat->inx * 100.0;
+    plat->vel.vx = *plat->inx * 200.0;
 
     *plat->jump_req = false;
 }
@@ -43,12 +43,10 @@ static void cmp_drv_waypoint_local_points(
 
 static void cmp_drv_waypoint_step(struct CmpDrvWaypoint *wayp)
 {
-    wayp->step_degree -= 1.0;
-
     if (wayp->patrol) {
         if (wayp->flag) {
             ++wayp->step;
-            if(wayp->step >= wayp->points_count) {
+            if(wayp->step >= wayp->points_count - 1) {
                 wayp->flag = false;
                 wayp->step = wayp->points_count - 1;
             }
@@ -88,6 +86,7 @@ static void cmp_drv_update_waypoint(struct CmpDrvWaypoint *wayp, double dt)
 
     wayp->step_degree += step_inc;
     if (wayp->step_degree > 1.0) {
+        wayp->step_degree -= 1.0;
         cmp_drv_waypoint_step(wayp);
     }
 }

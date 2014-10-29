@@ -550,9 +550,6 @@ void lgph_random_path(
         struct LvlGraph *lgph, struct TilePos src,
         struct TilePos **points, int *points_count)
 {
-    /*
     int dst = rnd_uniform_rng_i(0, lgph->nodes_count - 1);
     lgph_dijkstra(lgph, src, lgph->nodes[dst], points, points_count);
-    */
-    lgph_dijkstra(lgph, lgph->nodes[10], lgph->nodes[1], points, points_count);
 }
