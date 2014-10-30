@@ -68,8 +68,12 @@ struct CmpDrv *cmp_drv_create_ballistic(
         bool affect_rot, double vx, double vy);
 
 struct CmpDrv *cmp_drv_create_waypoint(
-        double *points, int points_count,
         bool patrol, double velocity);
+
+void cmp_drv_waypoint_reset(
+        struct CmpDrvWaypoint *wp,
+        double *points,
+        int points_count);
 
 void cmp_drv_free(struct CmpDrv *cmp_drv);
 void cmp_drv_update(struct CmpDrv *cmp_drv, double dt);

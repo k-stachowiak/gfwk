@@ -199,7 +199,6 @@ struct CmpDrv *cmp_drv_create_ballistic(bool affect_rot, double vx, double vy)
 }
 
 struct CmpDrv *cmp_drv_create_waypoint(
-        double *points, int points_count,
         bool patrol, double velocity)
 {
     struct CmpDrv *result = malloc(sizeof(*result));
@@ -211,8 +210,8 @@ struct CmpDrv *cmp_drv_create_waypoint(
 
     result->type = CMP_DRV_WAYPOINT;
     result->affect_rot = false;
-    result->body.wayp.points = points;
-    result->body.wayp.points_count = points_count;
+    result->body.wayp.points = NULL;
+    result->body.wayp.points_count = 0;
     result->body.wayp.patrol = patrol;
     result->body.wayp.velocity = velocity;
     result->body.wayp.step = 0;
@@ -220,6 +219,16 @@ struct CmpDrv *cmp_drv_create_waypoint(
     result->body.wayp.flag = patrol;
 
     return result;
+}
+
+void cmp_drv_waypoint_reset(
+        struct CmpDrvWaypoint *wp,
+        double *points,
+        int points_count)
+{
+    free(wp->points);
+    wp->points = points;
+    wp->points_count = points_count;
 }
 
 void cmp_drv_free(struct CmpDrv *cmp_drv)

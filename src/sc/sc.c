@@ -6,6 +6,11 @@
 
 #include "array.h"
 #include "sc.h"
+#include "cmp_ori.h"
+#include "cmp_drv.h"
+#include "cmp_appr.h"
+#include "cmp_ai.h"
+#include "cmp_operations.h"
 #include "sc_data.h"
 #include "sc_hunter.h"
 #include "sc_soul.h"
@@ -15,10 +20,6 @@
 #include "database.h"
 #include "menu.h"
 #include "draw.h"
-#include "cmp_ori.h"
-#include "cmp_drv.h"
-#include "cmp_appr.h"
-#include "cmp_operations.h"
 
 /* Local state. */
 static bool sc_alive;
@@ -230,14 +231,10 @@ static void sc_deinit(void)
     sc_deinit_resources_basic();
 }
 
-static void sc_tick(double dt)
+static void sc_tick_dumb(double dt)
 {
     int i;
-
-    sc_tick_camera(dt);
     hunter_tick(&hunter, dt);
-    soul_tick(&soul, dt);
-
     for (i = 0; i < arrows.size; ++i) {
         if (!arrow_tick(arrows.data + i, dt)) {
             arrow_deinit(arrows.data + i);
@@ -245,6 +242,21 @@ static void sc_tick(double dt)
             --i;
         }
     }
+}
+
+static void sc_tick_smart(struct CmpAiTacticalStatus *ts, double dt)
+{
+    soul_tick(&soul, ts, dt);
+}
+
+static void sc_tick(double dt)
+{
+    struct CmpAiTacticalStatus ts;
+
+    sc_tick_camera(dt);
+    sc_tick_dumb(dt);
+    ts.hunter_pos = cmp_ori_get(hunter.ori);
+    sc_tick_smart(&ts, dt);
 
     col_handle_all(&hunter, &lvl);
 }
