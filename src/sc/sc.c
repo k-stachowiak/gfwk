@@ -15,6 +15,7 @@
 #include "sc_hunter.h"
 #include "sc_soul.h"
 #include "sc_level.h"
+#include "sc_graph.h"
 #include "sc_collision.h"
 #include "resources.h"
 #include "database.h"
@@ -206,7 +207,7 @@ static void sc_init(void)
     sc_init_resources_complex();
 
     lvl_load(&lvl, "data/map");
-    lgph = lgph_init(&lvl);
+    lgph = lvl_init_graph(&lvl);
 
     hunter_init(&hunter);
     soul_init(&soul, &lgph, lgph.nodes[10]);

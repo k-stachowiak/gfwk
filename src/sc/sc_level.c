@@ -12,6 +12,7 @@
 #include "array.h"
 #include "diagnostics.h"
 #include "sc_level.h"
+#include "sc_graph.h"
 
 static inline double min(double a, double b)
 {
@@ -165,18 +166,13 @@ void lvl_draw(struct Level *lvl)
     lvl_for_each_tile(lvl, lvl_draw_tile);
 }
 
-struct NodeArray {
-    struct TilePos *data;
-    int size, cap;
-};
-
 /**
  * Fills a node array with nodes for all the horizontal edges in the level.
  * Note that the y coordinates of the edge nodes will be one tile above the
  * edge y coordinates, because the movement graph is plotted above the walkable
  * tiles.
  */
-static void lgph_find_platform_edges(
+static void lvl_init_graph_find_platform_edges(
         struct Level *lvl,
         struct NodeArray *result)
 {
@@ -209,7 +205,7 @@ static void lgph_find_platform_edges(
     }
 }
 
-static void lgph_add_descent(
+static void lgph_init_graph_add_descent(
         struct Level *lvl,
         struct TilePos upper,
         struct TilePos lower,
@@ -281,7 +277,7 @@ static void lgph_add_descent(
  * point of the descent landing is placed in an actual node and not in the
  * middle of an edge.
  */
-void lgph_insert_jump_edges(
+static void lvl_init_graph_insert_jump_edges(
         struct Level *lvl,
         struct NodeArray *plat,
         struct NodeArray *result)
@@ -294,19 +290,19 @@ void lgph_insert_jump_edges(
             lvl_get_tile(lvl, upper.x + 1, upper.y + 3) == '#') {
                 lower.x = upper.x + 1;
                 lower.y = upper.y + 2;
-                lgph_add_descent(lvl, upper, lower, result);
+                lgph_init_graph_add_descent(lvl, upper, lower, result);
         }
         if (lvl_get_tile(lvl, upper.x - 1, upper.y + 1) != '#' &&
             lvl_get_tile(lvl, upper.x - 1, upper.y + 2) != '#' &&
             lvl_get_tile(lvl, upper.x - 1, upper.y + 3) == '#') {
                 lower.x = upper.x - 1;
                 lower.y = upper.y + 2;
-                lgph_add_descent(lvl, upper, lower, result);
+                lgph_init_graph_add_descent(lvl, upper, lower, result);
         }
     }
 }
 
-static struct NodeArray lgph_find_unique_nodes(struct NodeArray *in)
+static struct NodeArray lvl_init_graph_find_unique_nodes(struct NodeArray *in)
 {
     int i, j;
     bool found;
@@ -328,7 +324,7 @@ static struct NodeArray lgph_find_unique_nodes(struct NodeArray *in)
     return uniques;
 }
 
-static struct LvlAdj *lgph_find_adjacency(
+static struct LvlAdj *lvl_init_graph_find_adjacency(
         struct TilePos n,
         struct NodeArray *uniques,
         struct NodeArray *all)
@@ -382,101 +378,26 @@ static struct LvlAdj *lgph_find_adjacency(
         }
     }
 
-	/* Add an awkward plug; WTF? :o */
+    /* Terminating element for the sequence. */
     adj.neighbor = -1;
     ARRAY_APPEND(result, adj);
 
     return result.data;
 }
 
-static void lgph_dijkstra(
-        struct LvlGraph *lgph, struct TilePos src_pos, struct TilePos dst_pos,
-        struct TilePos **points, int *points_count)
-{
-    struct { struct TilePos *data; int cap, size; } result = { NULL, 0, 0 };
-    int dst, src, u, i, *preds;
-    double *lens;
-    bool *visit;
-
-    if (!(preds = malloc(lgph->nodes_count * sizeof(*preds))) ||
-        !(lens = malloc(lgph->nodes_count * sizeof(*lens))) ||
-        !(visit = malloc(lgph->nodes_count * sizeof(*visit)))) {
-            DIAG_ERROR("Allocation failure.");
-            exit(1);
-    }
-
-    for (i = 0; i < lgph->nodes_count; ++i) {
-        preds[i] = i;
-        lens[i] = DBL_MAX;
-        visit[i] = false;
-    }
-
-    src = u = lgph_find_index(lgph, src_pos);
-    lens[src] = 0;
-
-    dst = lgph_find_index(lgph, dst_pos);
-
-    while (u != dst) {
-        struct LvlAdj *adj;
-        struct TilePos u_pos = lgph->nodes[u];
-        double min_len = DBL_MAX;
-
-        visit[u] = true;
-
-        for (adj = lgph->adjacency[u]; adj->neighbor != -1; ++adj) {
-            int v = adj->neighbor;
-            struct TilePos v_pos = lgph->nodes[v];
-            double dx = v_pos.x - u_pos.x, dy = v_pos.y - u_pos.y;
-            double distance = sqrt(dx * dx + dy * dy);
-
-            if (lens[u] + distance < lens[v]) {
-                lens[v] = lens[u] + distance;
-                preds[v] = u;
-            }
-        }
-
-        for (i = 0; i < lgph->nodes_count; ++i) {
-            if (!visit[i] && (lens[i] < min_len)) {
-                min_len = lens[i];
-                u = i;
-            }
-        }
-    }
-
-    while (u != src) {
-        ARRAY_APPEND(result, lgph->nodes[u]);
-        u = preds[u];
-    }
-    ARRAY_APPEND(result, lgph->nodes[u]);
-
-    free(preds);
-    free(lens);
-    free(visit);
-
-    for (i = 0; i < result.size / 2; ++i) {
-        struct TilePos temp = result.data[i];
-        result.data[i] = result.data[result.size - i - 1];
-        result.data[result.size - i - 1] = temp;
-    }
-
-    *points = result.data;
-    *points_count = result.size;
-}
-
-struct LvlGraph lgph_init(struct Level *lvl)
+struct LvlGraph lvl_init_graph(struct Level *lvl)
 {
     int i;
     struct LvlGraph result;
     struct NodeArray uniques = { 0, }, plat_nodes = { 0, }, all_nodes = { 0, };
     struct LvlAdj **adjacency = NULL;
 
-    lgph_find_platform_edges(lvl, &all_nodes);
+    lvl_init_graph_find_platform_edges(lvl, &all_nodes);
 
     ARRAY_COPY(plat_nodes, all_nodes);
-    lgph_insert_jump_edges(lvl, &plat_nodes, &all_nodes);
-    /* TODO: Also generate jumps over ledges (?) */
+    lvl_init_graph_insert_jump_edges(lvl, &plat_nodes, &all_nodes);
 
-    uniques = lgph_find_unique_nodes(&all_nodes);
+    uniques = lvl_init_graph_find_unique_nodes(&all_nodes);
 
     adjacency = malloc(uniques.size * sizeof(*adjacency));
     if (!adjacency) {
@@ -484,72 +405,14 @@ struct LvlGraph lgph_init(struct Level *lvl)
         exit(1);
     }
     for (i = 0; i < uniques.size; ++i) {
-        adjacency[i] = lgph_find_adjacency(
+        adjacency[i] = lvl_init_graph_find_adjacency(
             uniques.data[i], &uniques, &all_nodes);
     }
 
     ARRAY_FREE(all_nodes);
 
-    result.nodes_count = uniques.size;
-    result.nodes = uniques.data;
-    result.adjacency = adjacency;
+    lgph_init(&result, uniques.size, uniques.data, adjacency);
 
     return result;
 }
 
-void lgph_deinit(struct LvlGraph *lgph)
-{
-    int i;
-    free(lgph->nodes);
-    for (i = 0; i < lgph->nodes_count; ++i) {
-        free(lgph->adjacency[i]);
-    }
-    free(lgph->adjacency);
-}
-
-int lgph_find_index(struct LvlGraph *lgph, struct TilePos pos)
-{
-    int index;
-    for (index = 0; index < lgph->nodes_count; ++index) {
-        if (lgph->nodes[index].x == pos.x && lgph->nodes[index].y == pos.y) {
-            return index;
-        }
-    }
-
-    DIAG_ERROR("Requested index of node not in graph.");
-    exit(1);
-}
-
-int lgph_find_farthest(struct LvlGraph *lgph, struct TilePos bad)
-{
-    double max_dist = 0.0;
-    int index, max;
-
-    for (index = 0; index < lgph->nodes_count; ++index) {
-        struct TilePos pos = lgph->nodes[index];
-        double dx = pos.x - bad.x, dy = pos.y - bad.y;
-        double distance = sqrt(dx * dx + dy * dy);
-        if (distance > max_dist) {
-            max_dist = distance;
-            max = index;
-        }
-    }
-
-    return max;
-}
-
-void lgph_runaway_path(
-        struct LvlGraph *lgph, struct TilePos src, struct TilePos bad,
-        struct TilePos **points, int *points_count)
-{
-    int dst = lgph_find_farthest(lgph, bad);
-    lgph_dijkstra(lgph, src, lgph->nodes[dst], points, points_count);
-}
-
-void lgph_random_path(
-        struct LvlGraph *lgph, struct TilePos src,
-        struct TilePos **points, int *points_count)
-{
-    int dst = rnd_uniform_rng_i(0, lgph->nodes_count - 1);
-    lgph_dijkstra(lgph, src, lgph->nodes[dst], points, points_count);
-}
