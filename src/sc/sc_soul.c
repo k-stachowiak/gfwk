@@ -11,7 +11,7 @@
 #include "diagnostics.h"
 #include "resources.h"
 
-void soul_init(struct Soul *soul, struct LvlGraph *lgph, struct TilePos soul_tp)
+void soul_init(struct Soul *soul, struct Graph *lgph, struct TilePos soul_tp)
 {
     struct WorldPos wp = pos_tile_to_world(soul_tp);
 

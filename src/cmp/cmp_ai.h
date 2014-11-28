@@ -6,7 +6,7 @@
 #include "cmp_ori.h"
 #include "cmp_drv.h"
 
-struct LvlGraph;
+struct Graph;
 struct TilePos;
 
 struct CmpAiTacticalStatus {
@@ -42,7 +42,7 @@ void cmp_ai_soul_update_driver(
         struct CmpAiSoul *ai,
         struct CmpDrvWaypoint *wp,
         struct TilePos *soul_tp,
-        struct LvlGraph *lgph);
+        struct Graph *lgph);
 
 void cmp_ai_free(struct CmpAi *cmp_ai);
 

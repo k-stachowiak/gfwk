@@ -324,7 +324,7 @@ static struct NodeArray lvl_init_graph_find_unique_nodes(struct NodeArray *in)
     return uniques;
 }
 
-static struct LvlAdj *lvl_init_graph_find_adjacency(
+static struct Adj *lvl_init_graph_find_adjacency(
         struct TilePos n,
         struct NodeArray *uniques,
         struct NodeArray *all)
@@ -332,11 +332,11 @@ static struct LvlAdj *lvl_init_graph_find_adjacency(
     int i;
 
     struct {
-        struct LvlAdj *data;
+        struct Adj *data;
         int size, cap;
     } result = { NULL, 0, 0 };
 
-    struct LvlAdj adj;
+    struct Adj adj;
 
 	/* For each edge in the graph. */
     for (i = 0; i < all->size; i += 2) {
@@ -357,7 +357,7 @@ static struct LvlAdj *lvl_init_graph_find_adjacency(
 				struct TilePos *unique = uniques->data + j;
                 if (eq_tilepos(second, unique)) {
 					adj.neighbor = j;
-					adj.type = is_vertical ? LVL_ADJ_JUMP : LVL_ADJ_WALK;
+					adj.type = is_vertical ? ADJ_JUMP : ADJ_WALK;
 					ARRAY_APPEND(result, adj);
 					break;
                 }
@@ -368,7 +368,7 @@ static struct LvlAdj *lvl_init_graph_find_adjacency(
 				struct TilePos *unique = uniques->data + j;
                 if (eq_tilepos(first, unique)) {
 					adj.neighbor = j;
-					adj.type = is_vertical ? LVL_ADJ_JUMP : LVL_ADJ_WALK;
+					adj.type = is_vertical ? ADJ_JUMP : ADJ_WALK;
 					ARRAY_APPEND(result, adj);
 					break;
                 }
@@ -385,12 +385,12 @@ static struct LvlAdj *lvl_init_graph_find_adjacency(
     return result.data;
 }
 
-struct LvlGraph lvl_init_graph(struct Level *lvl)
+struct Graph lvl_init_graph(struct Level *lvl)
 {
     int i;
-    struct LvlGraph result;
+    struct Graph result;
     struct NodeArray uniques = { 0, }, plat_nodes = { 0, }, all_nodes = { 0, };
-    struct LvlAdj **adjacency = NULL;
+    struct Adj **adjacency = NULL;
 
     lvl_init_graph_find_platform_edges(lvl, &all_nodes);
 

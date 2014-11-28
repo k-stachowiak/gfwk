@@ -44,7 +44,7 @@ void cmp_ai_soul_update_driver(
         struct CmpAiSoul *ai,
         struct CmpDrvWaypoint *wp,
         struct TilePos *soul_tp,
-        struct LvlGraph *lgph)
+        struct Graph *lgph)
 {
     struct TilePos *points;
     int points_count, i;

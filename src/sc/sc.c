@@ -28,7 +28,7 @@ static struct SysClient *sc_next;
 
 /* Entities. */
 struct Level lvl;
-struct LvlGraph lgph;
+struct Graph lgph;
 struct Hunter hunter;
 struct Soul soul;
 
@@ -269,7 +269,7 @@ static void sc_draw_debug_graph(void)
 
     for (i = 0; i < lgph.nodes_count; ++i) {
 
-        struct LvlAdj *adj;
+        struct Adj *adj;
         struct TilePos atp = lgph.nodes[i];
         struct WorldPos awp = pos_tile_to_world(atp);
         struct ScreenPos asp = pos_world_to_screen(awp);
@@ -286,10 +286,10 @@ static void sc_draw_debug_graph(void)
 
             ALLEGRO_COLOR color;
             switch (adj->type) {
-            case LVL_ADJ_WALK:
+            case ADJ_WALK:
                 color = al_map_rgb_f(0.5f, 1.0f, 0.5f);
                 break;
-            case LVL_ADJ_JUMP:
+            case ADJ_JUMP:
                 color = al_map_rgb_f(0.5f, 0.5f, 1.0f);
                 break;
             }
@@ -355,10 +355,10 @@ static void sc_draw(double weight)
     if (sys_keys[ALLEGRO_KEY_F1]) {
         col_draw_last();
     }
-    if (sys_keys[ALLEGRO_KEY_F2]) {
+    // if (sys_keys[ALLEGRO_KEY_F2]) {
         sc_draw_debug_graph();
         sc_draw_debug_soul(&soul);
-    }
+    //}
 
     al_flip_display();
 }

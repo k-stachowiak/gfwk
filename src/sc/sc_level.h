@@ -17,6 +17,6 @@ void lvl_for_each_tile(struct Level *lvl, void (*f)(struct TilePos, char));
 int lvl_get_tile(struct Level *lvl, int x, int y);
 void lvl_draw(struct Level *lvl);
 
-struct LvlGraph lvl_init_graph(struct Level *lvl);
+struct Graph lvl_init_graph(struct Level *lvl);
 
 #endif

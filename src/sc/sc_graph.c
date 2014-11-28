@@ -8,7 +8,7 @@
 #include "sc_graph.h"
 
 static void lgph_dijkstra(
-        struct LvlGraph *lgph, struct TilePos src_pos, struct TilePos dst_pos,
+        struct Graph *lgph, struct TilePos src_pos, struct TilePos dst_pos,
         struct TilePos **points, int *points_count)
 {
     struct { struct TilePos *data; int cap, size; } result = { NULL, 0, 0 };
@@ -35,7 +35,7 @@ static void lgph_dijkstra(
     dst = lgph_find_index(lgph, dst_pos);
 
     while (u != dst) {
-        struct LvlAdj *adj;
+        struct Adj *adj;
         struct TilePos u_pos = lgph->nodes[u];
         double min_len = DBL_MAX;
 
@@ -82,17 +82,17 @@ static void lgph_dijkstra(
 }
 
 void lgph_init(
-        struct LvlGraph *lgph,
+        struct Graph *lgph,
         int nodes_count,
         struct TilePos *nodes,
-        struct LvlAdj **adjacency)
+        struct Adj **adjacency)
 {
     lgph->nodes_count = nodes_count;
     lgph->nodes = nodes;
     lgph->adjacency = adjacency;
 }
 
-void lgph_deinit(struct LvlGraph *lgph)
+void lgph_deinit(struct Graph *lgph)
 {
     int i;
     free(lgph->nodes);
@@ -102,7 +102,7 @@ void lgph_deinit(struct LvlGraph *lgph)
     free(lgph->adjacency);
 }
 
-int lgph_find_index(struct LvlGraph *lgph, struct TilePos pos)
+int lgph_find_index(struct Graph *lgph, struct TilePos pos)
 {
     int index;
     for (index = 0; index < lgph->nodes_count; ++index) {
@@ -115,7 +115,7 @@ int lgph_find_index(struct LvlGraph *lgph, struct TilePos pos)
     exit(1);
 }
 
-int lgph_find_farthest(struct LvlGraph *lgph, struct TilePos bad)
+int lgph_find_farthest(struct Graph *lgph, struct TilePos bad)
 {
     double max_dist = 0.0;
     int index, max;
@@ -134,7 +134,7 @@ int lgph_find_farthest(struct LvlGraph *lgph, struct TilePos bad)
 }
 
 void lgph_runaway_path(
-        struct LvlGraph *lgph, struct TilePos src, struct TilePos bad,
+        struct Graph *lgph, struct TilePos src, struct TilePos bad,
         struct TilePos **points, int *points_count)
 {
     int dst = lgph_find_farthest(lgph, bad);
@@ -142,7 +142,7 @@ void lgph_runaway_path(
 }
 
 void lgph_random_path(
-        struct LvlGraph *lgph, struct TilePos src,
+        struct Graph *lgph, struct TilePos src,
         struct TilePos **points, int *points_count)
 {
     int dst = rnd_uniform_rng_i(0, lgph->nodes_count - 1);
