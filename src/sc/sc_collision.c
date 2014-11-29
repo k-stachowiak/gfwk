@@ -88,7 +88,7 @@ static void col_handle_vertical(struct Hunter *hunter, struct CollisionContext *
     if ((cc->ltiles[0] == '#' && aabb_vline(cc->ltile_aabbs[0], cc->lsline)) ||
         (cc->ltiles[1] == '#' && aabb_vline(cc->ltile_aabbs[1], cc->lsline)) ||
         (cc->ltiles[2] == '#' && aabb_vline(cc->ltile_aabbs[2], cc->lsline))) {
-            cmp_drv_stop_x(hunter->drv);
+            hunter->drv->stop_x(hunter->drv);
             hunter->ori->current.x =
                 cc->ltile_aabbs[0].bx +
                 hunter->box_w / 2.0 +
@@ -97,7 +97,7 @@ static void col_handle_vertical(struct Hunter *hunter, struct CollisionContext *
     if ((cc->rtiles[0] == '#' && aabb_vline(cc->ltile_aabbs[0], cc->rsline)) ||
         (cc->rtiles[1] == '#' && aabb_vline(cc->ltile_aabbs[1], cc->rsline)) ||
         (cc->rtiles[2] == '#' && aabb_vline(cc->ltile_aabbs[2], cc->rsline))) {
-            cmp_drv_stop_x(hunter->drv);
+            hunter->drv->stop_x(hunter->drv);
             hunter->ori->current.x =
                 cc->rtile_aabbs[0].ax -
                 hunter->box_w / 2.0 -
@@ -122,7 +122,7 @@ static void col_handle_midair(struct Hunter *hunter, struct CollisionContext *cc
                                   aabb_vline(cc->utile_aabbs[1], cc->rsline))) ||
         (cc->utiles[2] == '#' && (aabb_vline(cc->utile_aabbs[2], cc->lsline) ||
                                   aabb_vline(cc->utile_aabbs[2], cc->rsline)))) {
-        cmp_drv_stop_y(hunter->drv);
+        hunter->drv->stop_y(hunter->drv);
         hunter->ori->current.y =
             cc->utile_aabbs[0].by +
             hunter->box_h / 2.0 +
@@ -137,7 +137,7 @@ static void col_handle_midair(struct Hunter *hunter, struct CollisionContext *cc
                                   aabb_vline(cc->btile_aabbs[2], cc->rsline)))) {
             /* TODO: consider getting rid of the move cancelling operation. */
             hunter->standing = true;
-            cmp_drv_stop_y(hunter->drv);
+            hunter->drv->stop_y(hunter->drv);
             hunter->ori->current.y =
                 cc->btile_aabbs[0].ay -
                 hunter->box_h / 2.0 -

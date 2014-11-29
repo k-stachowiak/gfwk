@@ -15,14 +15,14 @@
 
 void hunter_init(struct Hunter *hunter)
 {
-    hunter->appr_walk_right = cmp_appr_create_anim_sprite(sc_hunter_walk_right_common, 2, -1);
-    hunter->appr_walk_left = cmp_appr_create_anim_sprite(sc_hunter_walk_left_common, 2, -1);
-    hunter->appr_stand_right = cmp_appr_create_static_sprite(sc_hunter_stand_right);
-    hunter->appr_stand_left = cmp_appr_create_static_sprite(sc_hunter_stand_left);
+    hunter->appr_walk_right = cmp_appr_anim_sprite_create(sc_hunter_walk_right_common, 2, -1);
+    hunter->appr_walk_left = cmp_appr_anim_sprite_create(sc_hunter_walk_left_common, 2, -1);
+    hunter->appr_stand_right = cmp_appr_static_sprite_create(sc_hunter_stand_right);
+    hunter->appr_stand_left = cmp_appr_static_sprite_create(sc_hunter_stand_left);
 
     hunter->appr = hunter->appr_stand_right;
     hunter->ori = cmp_ori_create(0.0, 0.0, 0.0);
-    hunter->drv = cmp_drv_create_platform(
+    hunter->drv = cmp_drv_platform_create(
             &hunter->inx, &hunter->jump_req, &hunter->standing);
 
     hunter->aim_angle = 0.0;
@@ -35,12 +35,12 @@ void hunter_init(struct Hunter *hunter)
 
 void hunter_deinit(struct Hunter *hunter)
 {
-    cmp_drv_free(hunter->drv);
+    hunter->drv->free(hunter->drv);
     cmp_ori_free(hunter->ori);
-    cmp_appr_free(hunter->appr_stand_right);
-    cmp_appr_free(hunter->appr_stand_left);
-    cmp_appr_free(hunter->appr_walk_right);
-    cmp_appr_free(hunter->appr_walk_left);
+    hunter->appr_stand_right->free(hunter->appr_stand_right);
+    hunter->appr_stand_left->free(hunter->appr_stand_left);
+    hunter->appr_walk_right->free(hunter->appr_walk_right);
+    hunter->appr_walk_left->free(hunter->appr_walk_left);
 }
 
 static void hunter_tick_input(struct Hunter *hunter, double dt)
@@ -85,8 +85,8 @@ static void hunter_tick_input(struct Hunter *hunter, double dt)
 
 void hunter_tick(struct Hunter *hunter, double dt)
 {
-    cmp_appr_update(hunter->appr, dt);
-    cmp_drv_update(hunter->drv, dt);
+    hunter->appr->update(hunter->appr, dt);
+    hunter->drv->update(hunter->drv, dt);
     cmp_drive(hunter->ori, hunter->drv, dt);
     hunter_tick_input(hunter, dt);
 }
@@ -106,16 +106,16 @@ void hunter_draw(struct Hunter *hunter)
 void arrow_init(struct Arrow *arrow, double x, double y, double angle)
 {
     static double vel = 600.0;
-    arrow->appr = cmp_appr_create_static_sprite(sc_arrow_bitmap);
+    arrow->appr = cmp_appr_static_sprite_create(sc_arrow_bitmap);
     arrow->ori = cmp_ori_create(x, y, angle);
-    arrow->drv = cmp_drv_create_ballistic(true, cos(angle) * vel, sin(angle) * vel);
+    arrow->drv = cmp_drv_ballistic_create(true, cos(angle) * vel, sin(angle) * vel);
 }
 
 void arrow_deinit(struct Arrow *arrow)
 {
-    cmp_appr_free(arrow->appr);
+    arrow->appr->free(arrow->appr);
+    arrow->drv->free(arrow->drv);
     cmp_ori_free(arrow->ori);
-    cmp_drv_free(arrow->drv);
 }
 
 bool arrow_tick(struct Arrow *arrow, double dt)
@@ -126,7 +126,7 @@ bool arrow_tick(struct Arrow *arrow, double dt)
     struct WorldPos wp;
     struct ScreenPos sp;
 
-    cmp_drv_update(arrow->drv, dt);
+    arrow->drv->update(arrow->drv, dt);
     cmp_drive(arrow->ori, arrow->drv, dt);
 
     pr = cmp_ori_get(arrow->ori);

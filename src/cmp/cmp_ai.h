@@ -13,44 +13,13 @@ struct CmpAiTacticalStatus {
     struct PosRot hunter_pos;
 };
 
-enum CmpAiSoulState {
-    CMP_AI_SOUL_STATE_IDLE,
-    CMP_AI_SOUL_STATE_PANIC,
-    CMP_AI_SOUL_STATE_KO,
-    CMP_AI_SOUL_STATE_HANGING
-};
-
-struct CmpAiSoul {
-    enum CmpAiSoulState state;
-    double think_timer, think_timer_max;
-};
-
-enum CmpAiType {
-    CMP_AI_SOUL
-};
-
 struct CmpAi {
-    enum CmpAiType type;
-    union {
-        struct CmpAiSoul soul;
-    } body;
+    void (*free)(struct CmpAi*);
+    void (*update)(struct CmpAi*, struct CmpDrv*drv, struct CmpAiTacticalStatus*, double);
+    void (*update_driver)(struct CmpAi*, struct CmpDrv*, struct TilePos*, struct Graph*);
 };
 
-struct CmpAi *cmp_ai_soul_create(enum CmpAiSoulState init_state);
-
-void cmp_ai_soul_update_driver(
-        struct CmpAiSoul *ai,
-        struct CmpDrvWaypoint *wp,
-        struct TilePos *soul_tp,
-        struct Graph *lgph);
-
-void cmp_ai_free(struct CmpAi *cmp_ai);
-
-void cmp_ai_update(
-        struct CmpAi *ai,
-        struct CmpDrv *drv,
-        struct CmpAiTacticalStatus *ts,
-        double dt);
+struct CmpAi *cmp_ai_soul_create(void);
 
 #endif
 

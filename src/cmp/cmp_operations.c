@@ -11,7 +11,7 @@
 void cmp_draw(struct CmpOri *ori, struct CmpAppr *appr, double vsx, double vsy)
 {
     struct PosRot pr = cmp_ori_get(ori);
-    void *bitmap = cmp_appr_bitmap(appr);
+    void *bitmap = appr->bitmap(appr);
     draw_bitmap(bitmap, pr.x - vsx, pr.y - vsy, pr.theta);
 }
 
@@ -19,7 +19,7 @@ void cmp_drive(struct CmpOri *ori, struct CmpDrv *drv, double dt)
 {
     struct Vel vel;
 
-    vel = cmp_drv_vel(drv);
+    vel = drv->vel(drv);
 
     if (drv->affect_rot && (vel.vx != 0 || vel.vy != 0)) {
         double new_theta = atan2(vel.vy, vel.vx);

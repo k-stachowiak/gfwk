@@ -8,7 +8,19 @@
 #include "resources.h"
 #include "cmp_appr.h"
 
-struct CmpApprAnimSpriteCommon *cmp_appr_create_anim_sprite_common(
+/* Common animation sub-component.
+ * ===============================
+ */
+
+void cmp_appr_anim_sprite_common_free(struct CmpApprAnimSpriteCommon* common)
+{
+    res_dispose_frame_sheet(common->frames, common->frames_count);
+    free(common->frame_indices);
+    free(common->frame_times);
+    free(common);
+}
+
+struct CmpApprAnimSpriteCommon *cmp_appr_anim_sprite_common_create(
         void **frames, int frames_count,
         int *frame_indices, double *frame_times, int frame_defs_count,
         int frame_w)
@@ -29,117 +41,125 @@ struct CmpApprAnimSpriteCommon *cmp_appr_create_anim_sprite_common(
     return result;
 }
 
-void cmp_appr_free_anim_sprite_common(struct CmpApprAnimSpriteCommon* common)
+/* Appearance component.
+ * =====================
+ */
+
+/* Common implementation.
+ * ----------------------
+ */
+
+static void cmp_appr_common_free(struct CmpAppr *this)
 {
-    res_dispose_frame_sheet(common->frames, common->frames_count);
-    free(common->frame_indices);
-    free(common->frame_times);
-    free(common);
+    free(this);
 }
 
-struct CmpAppr *cmp_appr_create_static_sprite(void *sprite)
+/* Static sprite implementation.
+ * -----------------------------
+ */
+
+struct CmpApprStaticSprite {
+    struct CmpAppr base;
+    void *bitmap;
+};
+
+static void cmp_appr_static_sprite_update(struct CmpAppr *this, double dt)
 {
-    struct CmpAppr *result = malloc(sizeof(*result));
+    (void)this;
+    (void)dt;
+}
+
+static void *cmp_appr_static_sprite_bitmap(struct CmpAppr *this)
+{
+    struct CmpApprStaticSprite *derived = (struct CmpApprStaticSprite*)this;
+    return derived->bitmap;
+}
+
+struct CmpAppr *cmp_appr_static_sprite_create(void *sprite)
+{
+    struct CmpApprStaticSprite *result = malloc(sizeof(*result));
+
     if (!result) {
         DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 
-    result->type = CMP_APPR_STATIC_SPRITE;
-    result->body.static_sprite = sprite;
+    result->base.free = cmp_appr_common_free;
+    result->base.update = cmp_appr_static_sprite_update;
+    result->base.bitmap = cmp_appr_static_sprite_bitmap;
 
-    return result;
+    result->bitmap = sprite;
+
+    return (struct CmpAppr*)result;
 }
 
-static void cmp_appr_update_anim_sprite(
-        struct CmpApprAnimSprite *as,
+/* Animated sprite implementation.
+ * -------------------------------
+ */
+
+struct CmpApprAnimSprite {
+    struct CmpAppr base;
+    struct CmpApprAnimSpriteCommon *common;
+    int current_def;
+    int rep_count;
+    double time_to_switch;
+    bool done;
+};
+
+static void cmp_appr_anim_sprite_update(
+        struct CmpAppr *this,
         double dt)
 {
-    as->time_to_switch -= dt;
+    struct CmpApprAnimSprite *derived = (struct CmpApprAnimSprite*)this;
 
-    if(!as->done && (as->time_to_switch <= 0.0)) {
+    derived->time_to_switch -= dt;
 
-        if(as->current_def == as->common->frame_defs_count - 1) {
-            if(as->rep_count > 0) {
-                --as->rep_count;
+    if(!derived->done && (derived->time_to_switch <= 0.0)) {
+
+        if(derived->current_def == derived->common->frame_defs_count - 1) {
+            if(derived->rep_count > 0) {
+                --derived->rep_count;
             }
-            if(as->rep_count == 0) {
-                as->done = true;
+            if(derived->rep_count == 0) {
+                derived->done = true;
                 return;
             }
         }
 
-        double remain = -(as->time_to_switch);
+        double remain = -(derived->time_to_switch);
 
-        as->current_def = (as->current_def + 1) % as->common->frame_defs_count;
-        as->time_to_switch = as->common->frame_times[as->current_def];
-        as->time_to_switch -= remain;
+        derived->current_def = (derived->current_def + 1) % derived->common->frame_defs_count;
+        derived->time_to_switch = derived->common->frame_times[derived->current_def];
+        derived->time_to_switch -= remain;
     }
 }
 
-void *cmp_appr_bitmap_anim_sprite(struct CmpApprAnimSprite *as)
+static void *cmp_appr_anim_sprite_bitmap(struct CmpAppr *this)
 {
-    return as->common->frames[as->common->frame_indices[as->current_def]];
+    struct CmpApprAnimSprite *derived = (struct CmpApprAnimSprite*)this;
+    return derived->common->frames[derived->common->frame_indices[derived->current_def]];
 }
 
-struct CmpAppr *cmp_appr_create_anim_sprite(
+struct CmpAppr *cmp_appr_anim_sprite_create(
         struct CmpApprAnimSpriteCommon *common, int init_def, int rep_count)
 {
-    struct CmpAppr *result = malloc(sizeof(*result));
+    struct CmpApprAnimSprite *result = malloc(sizeof(*result));
+
     if (!result) {
         DIAG_ERROR("Allocation failure.");
         exit(1);
     }
 
-    result->type = CMP_APPR_ANIM_SPRITE;
+    result->base.free = cmp_appr_common_free;
+    result->base.update = cmp_appr_anim_sprite_update;
+    result->base.bitmap = cmp_appr_anim_sprite_bitmap;
 
-    result->body.anim_sprite.common = common;
-    result->body.anim_sprite.current_def = init_def;
-    result->body.anim_sprite.rep_count = rep_count;
-    result->body.anim_sprite.time_to_switch = common->frame_times[init_def];
-    result->body.anim_sprite.done = false;
+    result->common = common;
+    result->current_def = init_def;
+    result->rep_count = rep_count;
+    result->time_to_switch = common->frame_times[init_def];
+    result->done = false;
 
-    return result;
-}
-
-void cmp_appr_free(struct CmpAppr *cmp_appr)
-{
-    switch(cmp_appr->type) {
-    case CMP_APPR_STATIC_SPRITE:
-        break;
-    case CMP_APPR_ANIM_SPRITE:
-        break;
-    default:
-        DIAG_ERROR("Unhandled apprarance component type.");
-        exit(1);
-    }
-    free(cmp_appr);
-}
-
-void cmp_appr_update(struct CmpAppr *cmp_appr, double dt)
-{
-    switch(cmp_appr->type) {
-    case CMP_APPR_STATIC_SPRITE:
-        break;
-    case CMP_APPR_ANIM_SPRITE:
-        cmp_appr_update_anim_sprite(&cmp_appr->body.anim_sprite, dt);
-        break;
-    default:
-        DIAG_ERROR("Unhandled apprarance component type.");
-        exit(1);
-    }
-}
-
-void *cmp_appr_bitmap(struct CmpAppr *cmp_appr)
-{
-    switch(cmp_appr->type) {
-    case CMP_APPR_STATIC_SPRITE:
-        return cmp_appr->body.static_sprite;
-    case CMP_APPR_ANIM_SPRITE:
-        return cmp_appr_bitmap_anim_sprite(&cmp_appr->body.anim_sprite);
-    default:
-        DIAG_ERROR("Unhandled apprarance component type.");
-        exit(1);
-    }
+    return (struct CmpAppr*)result;
 }
 

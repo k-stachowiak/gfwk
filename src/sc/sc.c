@@ -104,7 +104,7 @@ static struct CmpApprAnimSpriteCommon *sc_init_hunter_anim_common(void *walk_she
         frame_times[i] = frame_time;
     }
 
-    return cmp_appr_create_anim_sprite_common(
+    return cmp_appr_anim_sprite_common_create(
         frames, frames_count,
         frame_indices, frame_times, frame_defs_count,
         frame_w);
@@ -142,7 +142,7 @@ static struct CmpApprAnimSpriteCommon *sc_init_soul_anim_common(void *walk_sheet
         frame_times[i] = frame_time;
     }
 
-    return cmp_appr_create_anim_sprite_common(
+    return cmp_appr_anim_sprite_common_create(
         frames, frames_count,
         frame_indices, frame_times, frame_defs_count,
         frame_w);
@@ -158,10 +158,10 @@ static void sc_init_resources_complex(void)
 
 static void sc_deinit_resources_complex(void)
 {
-    cmp_appr_free_anim_sprite_common(sc_hunter_walk_right_common);
-    cmp_appr_free_anim_sprite_common(sc_hunter_walk_left_common);
-    cmp_appr_free_anim_sprite_common(sc_soul_walk_right_common);
-    cmp_appr_free_anim_sprite_common(sc_soul_walk_left_common);
+    cmp_appr_anim_sprite_common_free(sc_hunter_walk_right_common);
+    cmp_appr_anim_sprite_common_free(sc_hunter_walk_left_common);
+    cmp_appr_anim_sprite_common_free(sc_soul_walk_right_common);
+    cmp_appr_anim_sprite_common_free(sc_soul_walk_left_common);
 }
 
 /* Common logic. */
@@ -312,14 +312,17 @@ static void sc_draw_debug_graph(void)
 static void sc_draw_debug_soul(struct Soul *soul)
 {
     int i;
-    struct CmpDrvWaypoint *wp = &soul->drv->body.wayp;
+    double *points;
+    int points_count;
     ALLEGRO_COLOR color = al_map_rgb_f(1.0f, 0.7f, 0.4f);
 
-    for (i = 0; i < (wp->points_count - 1); ++i) {
+    cmp_drv_waypoint_points(soul->drv, &points, &points_count);
+
+    for (i = 0; i < points_count; ++i) {
 
         struct WorldPos
-            wp1 = { wp->points[2 * i + 0], wp->points[2 * i + 1] },
-            wp2 = { wp->points[2 * i + 2], wp->points[2 * i + 3] };
+            wp1 = { points[2 * i + 0], points[2 * i + 1] },
+            wp2 = { points[2 * i + 2], points[2 * i + 3] };
 
         struct ScreenPos
             sp1 = pos_world_to_screen(wp1),
