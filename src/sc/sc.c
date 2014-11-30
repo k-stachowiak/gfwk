@@ -250,6 +250,10 @@ static void sc_tick_smart(struct CmpAiTacticalStatus *ts, double dt)
     soul_tick(&soul, ts, dt);
 }
 
+static void sc_tick_pain(void)
+{
+}
+
 static void sc_tick(double dt)
 {
     struct CmpAiTacticalStatus ts;
@@ -258,6 +262,7 @@ static void sc_tick(double dt)
     sc_tick_dumb(dt);
     ts.hunter_pos = cmp_ori_get(hunter.ori);
     sc_tick_smart(&ts, dt);
+    sc_tick_pain();
 
     col_handle_all(&hunter, &lvl);
 }
