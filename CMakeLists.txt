@@ -36,6 +36,7 @@ add_executable(gfwk
     ./src/sc/sc_level.c
     ./src/sc/sc_graph.c
     ./src/sc/sc_collision.c
+    ./src/sc/sc_pain.c
 	./src/util/random.c
     ./src/main.c
     )

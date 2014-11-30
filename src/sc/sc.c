@@ -17,6 +17,7 @@
 #include "sc_level.h"
 #include "sc_graph.h"
 #include "sc_collision.h"
+#include "sc_pain.h"
 #include "resources.h"
 #include "database.h"
 #include "menu.h"
@@ -248,10 +249,6 @@ static void sc_tick_dumb(double dt)
 static void sc_tick_smart(struct CmpAiTacticalStatus *ts, double dt)
 {
     soul_tick(&soul, ts, dt);
-}
-
-static void sc_tick_pain(void)
-{
 }
 
 static void sc_tick(double dt)
