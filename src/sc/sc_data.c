@@ -79,6 +79,21 @@ void aabb_to_screen(
     *y2 = bbs.y;
 }
 
+void segment_to_screen(
+    struct Segment segment,
+    double *x1, double *y1,
+    double *x2, double *y2)
+{
+    struct WorldPos aaw = { segment.ax, segment.ay };
+    struct WorldPos bbw = { segment.bx, segment.by };
+    struct ScreenPos aas = pos_world_to_screen(aaw);
+    struct ScreenPos bbs = pos_world_to_screen(bbw);
+    *x1 = aas.x;
+    *y1 = aas.y;
+    *x2 = bbs.x;
+    *y2 = bbs.y;
+}
+
 bool aabb_point(struct AABB aabb, double x, double y)
 {
     return x < aabb.bx && x > aabb.ax && y < aabb.by && y > aabb.ay;

@@ -3,6 +3,12 @@
 #ifndef SC_PAIN_H
 #define SC_PAIN_H
 
-void sc_tick_pain(void);
+#include "sc_hunter.h"
+#include "sc_soul.h"
+
+void pain_draw_debug(void);
+void pain_tick(
+        struct Arrow *arrows, int arrows_count,
+        struct Soul *soul);
 
 #endif

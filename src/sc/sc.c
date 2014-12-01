@@ -16,7 +16,7 @@
 #include "sc_soul.h"
 #include "sc_level.h"
 #include "sc_graph.h"
-#include "sc_collision.h"
+#include "sc_platform.h"
 #include "sc_pain.h"
 #include "resources.h"
 #include "database.h"
@@ -233,6 +233,7 @@ static void sc_deinit(void)
     sc_deinit_resources_basic();
 }
 
+/** Dumb objects' frame (e.g. projectiles). */
 static void sc_tick_dumb(double dt)
 {
     int i;
@@ -246,6 +247,7 @@ static void sc_tick_dumb(double dt)
     }
 }
 
+/** Smart object's frame (wiht AI). */
 static void sc_tick_smart(struct CmpAiTacticalStatus *ts, double dt)
 {
     soul_tick(&soul, ts, dt);
@@ -259,9 +261,9 @@ static void sc_tick(double dt)
     sc_tick_dumb(dt);
     ts.hunter_pos = cmp_ori_get(hunter.ori);
     sc_tick_smart(&ts, dt);
-    sc_tick_pain();
 
-    col_handle_all(&hunter, &lvl);
+    platform_collide(&hunter, &lvl);            /* Update platformer engine. */
+    pain_tick(arrows.data, arrows.size, &soul); /* Update pain engine. */
 }
 
 static void sc_draw_debug_graph(void)
@@ -357,13 +359,12 @@ static void sc_draw(double weight)
             -zero_sp.x, -zero_sp.y);
     }
 
-    if (sys_keys[ALLEGRO_KEY_F1]) {
-        col_draw_last();
-    }
-    // if (sys_keys[ALLEGRO_KEY_F2]) {
+    if (!sys_keys[ALLEGRO_KEY_F1]) {
+        platform_draw_debug();
+        pain_draw_debug();
         sc_draw_debug_graph();
         sc_draw_debug_soul(&soul);
-    //}
+    }
 
     al_flip_display();
 }

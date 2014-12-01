@@ -30,6 +30,15 @@ void aabb_to_screen(
     double *x1, double *y1,
     double *x2, double *y2);
 
+struct Segment {
+    double ax, ay, bx, by;
+};
+
+void segment_to_screen(
+    struct Segment segment,
+    double *x1, double *y1,
+    double *x2, double *y2);
+
 bool aabb_point(struct AABB aabb, double x, double y);
 bool aabb_vline(struct AABB aabb, struct VLine vline);
 bool aabb_aabb(struct AABB lhs, struct AABB rhs);
