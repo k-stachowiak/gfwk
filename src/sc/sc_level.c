@@ -13,6 +13,7 @@
 #include "diagnostics.h"
 #include "sc_level.h"
 #include "sc_graph.h"
+#include "sc_collision.h"
 
 static inline double min(double a, double b)
 {
@@ -33,7 +34,6 @@ static void lvl_draw_tile(struct TilePos tile_pos, char c)
 {
     struct WorldPos world_pos;
     struct ScreenPos screen_pos;
-    struct AABB tile_aabb;
     void *bitmap;
 
     if (c == '#') {
@@ -45,16 +45,7 @@ static void lvl_draw_tile(struct TilePos tile_pos, char c)
     }
 
     world_pos = pos_tile_to_world(tile_pos);
-    tile_aabb.ax = world_pos.x;
-    tile_aabb.ay = world_pos.y;
-    tile_aabb.bx = world_pos.x + sc_tile_w;
-    tile_aabb.by = world_pos.y + sc_tile_w;
-    if (!aabb_aabb(tile_aabb, sc_screen_aabb)) {
-        return;
-    }
-
     screen_pos = pos_world_to_screen(world_pos);
-
     draw_bitmap(
         bitmap,
         screen_pos.x + sc_tile_w / 2,

@@ -7,6 +7,68 @@
 #include "sc_collision.h"
 #include "sc_data.h"
 
+static void vline_to_screen(
+    struct VLine vline,
+    double *x, double *y1, double *y2)
+{
+    struct WorldPos wp1 = { vline.x, vline.y1 };
+    struct WorldPos wp2 = { vline.x, vline.y2 };
+    struct ScreenPos sp1 = pos_world_to_screen(wp1);
+    struct ScreenPos sp2 = pos_world_to_screen(wp2);
+    *x = sp1.x;
+    *y1 = sp1.y;
+    *y2 = sp2.y;
+}
+
+static void aabb_to_screen(
+    struct AABB aabb,
+    double *x1, double *y1,
+    double *x2, double *y2)
+{
+    struct WorldPos aaw = { aabb.ax, aabb.ay };
+    struct WorldPos bbw = { aabb.bx, aabb.by };
+    struct ScreenPos aas = pos_world_to_screen(aaw);
+    struct ScreenPos bbs = pos_world_to_screen(bbw);
+    *x1 = aas.x;
+    *y1 = aas.y;
+    *x2 = bbs.x;
+    *y2 = bbs.y;
+}
+
+static void segment_to_screen(
+    struct Segment segment,
+    double *x1, double *y1,
+    double *x2, double *y2)
+{
+    struct WorldPos aaw = { segment.ax, segment.ay };
+    struct WorldPos bbw = { segment.bx, segment.by };
+    struct ScreenPos aas = pos_world_to_screen(aaw);
+    struct ScreenPos bbs = pos_world_to_screen(bbw);
+    *x1 = aas.x;
+    *y1 = aas.y;
+    *x2 = bbs.x;
+    *y2 = bbs.y;
+}
+
+bool aabb_point(struct AABB aabb, double x, double y)
+{
+    return x < aabb.bx && x > aabb.ax && y < aabb.by && y > aabb.ay;
+}
+
+bool aabb_vline(struct AABB aabb, struct VLine vline)
+{
+    return
+        vline.x < aabb.bx && vline.x > aabb.ax &&
+        vline.y1 < aabb.by && vline.y2 > aabb.ay;
+}
+
+bool aabb_aabb(struct AABB lhs, struct AABB rhs)
+{
+    return
+        lhs.ax < rhs.bx && lhs.bx > rhs.ax &&
+        lhs.ay < rhs.by && lhs.by > rhs.ay;
+}
+
 struct AABB col_tile_aabb(int x, int y)
 {
     struct TilePos tp = { x, y };

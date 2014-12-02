@@ -175,20 +175,11 @@ static void sc_shoot_arrow(void)
     ARRAY_APPEND(arrows, arrow);
 }
 
-static void sc_update_screen_aabb(void)
-{
-    sc_screen_aabb.ax = sc_cam_shift.x - sc_screen_w / 2;
-    sc_screen_aabb.ay = sc_cam_shift.y - sc_screen_h / 2;
-    sc_screen_aabb.bx = sc_screen_aabb.ax + sc_screen_w;
-    sc_screen_aabb.by = sc_screen_aabb.ay + sc_screen_h;
-}
-
 static void sc_tick_camera(double dt)
 {
     struct PosRot hunter_pr = cmp_ori_get(hunter.ori);
     sc_cam_shift.x = hunter_pr.x;
     sc_cam_shift.y = hunter_pr.y;
-    sc_update_screen_aabb();
 }
 
 /* Client API.
@@ -219,7 +210,6 @@ static void sc_init(void)
 
     sc_cam_shift.x = 0.0;
     sc_cam_shift.y = 0.0;
-    sc_update_screen_aabb();
 }
 
 static void sc_deinit(void)
