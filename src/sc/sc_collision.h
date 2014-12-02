@@ -20,14 +20,18 @@ struct Segment {
     double ax, ay, bx, by;
 };
 
-bool aabb_point(struct AABB aabb, double x, double y);
-bool aabb_vline(struct AABB aabb, struct VLine vline);
-bool aabb_aabb(struct AABB lhs, struct AABB rhs);
+struct Circle {
+    double x, y, r;
+};
 
-struct AABB col_tile_aabb(int x, int y);
+bool col_aabb_point(struct AABB aabb, double x, double y);
+bool col_aabb_vline(struct AABB aabb, struct VLine vline);
+bool col_aabb_aabb(struct AABB lhs, struct AABB rhs);
+bool col_segment_circle(struct Segment seg, struct Circle cir);
 
 void col_draw_aabb(struct AABB aabb, bool fill, double r, double g, double b);
 void col_draw_vline(struct VLine vline, double r, double g, double b);
 void col_draw_segment(struct Segment segment, double r, double g, double b);
+void col_draw_circle(struct Circle cir, double r, double g, double b);
 
 #endif

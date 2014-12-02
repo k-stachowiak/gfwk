@@ -18,21 +18,30 @@ struct CollisionContext {
     struct AABB rtile_aabbs[3];
 } cc_last;
 
+/** AABB structure for the tile of the given tile coordinates. */
+static struct AABB col_tile_aabb(int x, int y)
+{
+    struct TilePos tp = { x, y };
+    struct WorldPos wp = pos_tile_to_world(tp);
+    struct AABB aabb = { wp.x, wp.y, wp.x + sc_tile_w, wp.y + sc_tile_w };
+    return aabb;
+}
+
 /** Collision of the sides (common to all the character states). */
 static void platform_handle_vertical(struct Hunter *hunter, struct CollisionContext *cc)
 {
-    if ((cc->ltiles[0] == '#' && aabb_vline(cc->ltile_aabbs[0], cc->lsline)) ||
-        (cc->ltiles[1] == '#' && aabb_vline(cc->ltile_aabbs[1], cc->lsline)) ||
-        (cc->ltiles[2] == '#' && aabb_vline(cc->ltile_aabbs[2], cc->lsline))) {
+    if ((cc->ltiles[0] == '#' && col_aabb_vline(cc->ltile_aabbs[0], cc->lsline)) ||
+        (cc->ltiles[1] == '#' && col_aabb_vline(cc->ltile_aabbs[1], cc->lsline)) ||
+        (cc->ltiles[2] == '#' && col_aabb_vline(cc->ltile_aabbs[2], cc->lsline))) {
             hunter->drv->stop_x(hunter->drv);
             hunter->ori->current.x =
                 cc->ltile_aabbs[0].bx +
                 hunter->box_w / 2.0 +
                 1.0;
     }
-    if ((cc->rtiles[0] == '#' && aabb_vline(cc->ltile_aabbs[0], cc->rsline)) ||
-        (cc->rtiles[1] == '#' && aabb_vline(cc->ltile_aabbs[1], cc->rsline)) ||
-        (cc->rtiles[2] == '#' && aabb_vline(cc->ltile_aabbs[2], cc->rsline))) {
+    if ((cc->rtiles[0] == '#' && col_aabb_vline(cc->ltile_aabbs[0], cc->rsline)) ||
+        (cc->rtiles[1] == '#' && col_aabb_vline(cc->ltile_aabbs[1], cc->rsline)) ||
+        (cc->rtiles[2] == '#' && col_aabb_vline(cc->ltile_aabbs[2], cc->rsline))) {
             hunter->drv->stop_x(hunter->drv);
             hunter->ori->current.x =
                 cc->rtile_aabbs[0].ax -
@@ -47,9 +56,9 @@ static void platform_handle_standing(struct Hunter *hunter, struct CollisionCont
     /* If all of the bottom tiles are non-solid, or don't collide with the
      * bottom box, then start falling.
      */
-    if ((cc->btiles[0] != '#' || !aabb_aabb(cc->bbox, cc->btile_aabbs[0])) &&
-        (cc->btiles[1] != '#' || !aabb_aabb(cc->bbox, cc->btile_aabbs[1])) &&
-        (cc->btiles[2] != '#' || !aabb_aabb(cc->bbox, cc->btile_aabbs[2]))) {
+    if ((cc->btiles[0] != '#' || !col_aabb_aabb(cc->bbox, cc->btile_aabbs[0])) &&
+        (cc->btiles[1] != '#' || !col_aabb_aabb(cc->bbox, cc->btile_aabbs[1])) &&
+        (cc->btiles[2] != '#' || !col_aabb_aabb(cc->bbox, cc->btile_aabbs[2]))) {
             hunter->standing = false;
     }
 }
@@ -60,24 +69,24 @@ static void platform_handle_midair(
         struct CollisionContext *cc)
 {
     bool collided_up = 
-        (cc->utiles[0] == '#' && (aabb_vline(cc->utile_aabbs[0], cc->lsline) ||
-                                 aabb_vline(cc->utile_aabbs[0], cc->rsline))) ||
+        (cc->utiles[0] == '#' && (col_aabb_vline(cc->utile_aabbs[0], cc->lsline) ||
+                                  col_aabb_vline(cc->utile_aabbs[0], cc->rsline))) ||
 
-        (cc->utiles[1] == '#' && (aabb_vline(cc->utile_aabbs[1], cc->lsline) ||
-                                 aabb_vline(cc->utile_aabbs[1], cc->rsline))) ||
+        (cc->utiles[1] == '#' && (col_aabb_vline(cc->utile_aabbs[1], cc->lsline) ||
+                                  col_aabb_vline(cc->utile_aabbs[1], cc->rsline))) ||
 
-        (cc->utiles[2] == '#' && (aabb_vline(cc->utile_aabbs[2], cc->lsline) ||
-                                 aabb_vline(cc->utile_aabbs[2], cc->rsline)));
+        (cc->utiles[2] == '#' && (col_aabb_vline(cc->utile_aabbs[2], cc->lsline) ||
+                                  col_aabb_vline(cc->utile_aabbs[2], cc->rsline)));
 
     bool collided_bottom =
-        (cc->btiles[0] == '#' && (aabb_vline(cc->btile_aabbs[0], cc->lsline) ||
-                                 aabb_vline(cc->btile_aabbs[0], cc->rsline))) ||
+        (cc->btiles[0] == '#' && (col_aabb_vline(cc->btile_aabbs[0], cc->lsline) ||
+                                  col_aabb_vline(cc->btile_aabbs[0], cc->rsline))) ||
 
-        (cc->btiles[1] == '#' && (aabb_vline(cc->btile_aabbs[1], cc->lsline) ||
-                                 aabb_vline(cc->btile_aabbs[1], cc->rsline))) ||
+        (cc->btiles[1] == '#' && (col_aabb_vline(cc->btile_aabbs[1], cc->lsline) ||
+                                  col_aabb_vline(cc->btile_aabbs[1], cc->rsline))) ||
 
-        (cc->btiles[2] == '#' && (aabb_vline(cc->btile_aabbs[2], cc->lsline) ||
-                                 aabb_vline(cc->btile_aabbs[2], cc->rsline)));
+        (cc->btiles[2] == '#' && (col_aabb_vline(cc->btile_aabbs[2], cc->lsline) ||
+                                  col_aabb_vline(cc->btile_aabbs[2], cc->rsline)));
 
     if (collided_up) {
         hunter->drv->stop_y(hunter->drv);
