@@ -1,6 +1,7 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
 #include "diagnostics.h"
+#include "memory.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -22,19 +23,10 @@ static struct ConfigNode *db_make_node(char *key)
     struct ConfigNode *new_node;
 
     key_len = strlen(key);
-    key_copy = malloc(key_len + 1);
-    if (!key_copy) {
-        DIAG_ERROR("Allocation failed.");
-        exit(1);
-    }
+    key_copy = malloc_or_die(key_len + 1);
     memcpy(key_copy, key, key_len + 1);
 
-    new_node = malloc(sizeof(*new_node));
-    if (!new_node) {
-        DIAG_ERROR("Allocation failed.");
-        exit(1);
-    }
-
+    new_node = malloc_or_die(sizeof(*new_node));
     new_node->key = key_copy;
     
     return new_node;

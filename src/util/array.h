@@ -19,6 +19,10 @@
     do { \
         int size = src.cap * sizeof(*dst.data); \
         dst.data = malloc(size); \
+        if (!dst.data) { \
+            fprintf(stderr, "Allocation failure.\n"); \
+            exit(1); \
+        } \
         memcpy(dst.data, src.data, size); \
         dst.size = src.size; \
         dst.cap = src.cap; \

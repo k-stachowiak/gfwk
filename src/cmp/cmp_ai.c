@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "diagnostics.h"
+#include "memory.h"
 #include "cmp_ai.h"
 
 #include "sc_data.h"
@@ -62,11 +63,7 @@ static void cmp_ai_soul_update_driver(
 
     lgph_random_path(lgph, *soul_tp, &points, &points_count);
 
-    coords = malloc(sizeof(*coords) * points_count * 2);
-    if (!coords) {
-        DIAG_ERROR("Allocation failure.\n");
-        exit(1);
-    }
+    coords = malloc_or_die(sizeof(*coords) * points_count * 2);
 
     for (i = 0; i < points_count; ++i) {
         struct WorldPos coord_wp = pos_tile_to_world(points[i]);
@@ -81,12 +78,7 @@ static void cmp_ai_soul_update_driver(
 
 struct CmpAi *cmp_ai_soul_create(void)
 {
-    struct CmpAiSoul *result = malloc(sizeof(*result));
-
-    if (!result) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    struct CmpAiSoul *result = malloc_or_die(sizeof(*result));
 
     result->base.free = cmp_ai_soul_free;
     result->base.update = cmp_ai_soul_update;

@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include "array.h"
+#include "memory.h"
 #include "resources.h"
 #include "cmp_appr.h"
 #include "cmp_ori.h"
@@ -93,8 +94,8 @@ static void demo_init_resources_complex(void)
 
     res_cut_frame_sheet(ball_sheet, frame_w, &frames, &frames_count);
     frame_defs_count = frame_count;
-    frame_indices = malloc(frame_defs_count * sizeof(*frame_indices));
-    frame_times = malloc(frame_defs_count * sizeof(*frame_times));
+    frame_indices = malloc_or_die(frame_defs_count * sizeof(*frame_indices));
+    frame_times = malloc_or_die(frame_defs_count * sizeof(*frame_times));
     for (i = 0; i < frame_defs_count; ++i) {
         frame_indices[i] = i;
         frame_times[i] = frame_time;

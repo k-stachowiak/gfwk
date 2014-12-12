@@ -6,6 +6,7 @@
 #include <allegro5/allegro_audio.h>
 
 #include "diagnostics.h"
+#include "memory.h"
 #include "resources.h"
 
 struct ResNodeBitmap {
@@ -114,13 +115,8 @@ void *res_load_bitmap(char *path)
     }
 
     path_len = strlen(path);
-    path_copy = malloc(path_len + 1);
-    new_node = malloc(sizeof(*new_node));
-
-    if (!new_node || !path_copy) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    path_copy = malloc_or_die(path_len + 1);
+    new_node = malloc_or_die(sizeof(*new_node));
 
     if (!(value = al_load_bitmap(path))) {
         DIAG_ERROR("Failed loading bitmap \"%s\".", path);
@@ -177,12 +173,7 @@ void res_cut_frame_sheet(
     int bitmap_h = al_get_bitmap_height((ALLEGRO_BITMAP*)bitmap);
 
     *frames_count = bitmap_w / frame_w;
-    *frames = malloc(*frames_count * sizeof(**frames));
-
-    if (!(*frames)) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    *frames = malloc_or_die(*frames_count * sizeof(**frames));
 
     for(i = 0; i < *frames_count; ++i) {
         ALLEGRO_BITMAP* frame_bitmap = al_create_sub_bitmap(
@@ -217,13 +208,8 @@ void *res_load_sample(char *path)
     }
 
     path_len = strlen(path);
-    path_copy = malloc(path_len + 1);
-    new_node = malloc(sizeof(*new_node));
-
-    if (!new_node || !path_copy) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    path_copy = malloc_or_die(path_len + 1);
+    new_node = malloc_or_die(sizeof(*new_node));
 
     if (!(value = al_load_sample(path))) {
         DIAG_ERROR("Failed loading sample \"%s\".", path);
@@ -284,13 +270,8 @@ void *res_load_font(char *path, int size)
     }
 
     path_len = strlen(path);
-    path_copy = malloc(path_len + 1);
-    new_node = malloc(sizeof(*new_node));
-
-    if (!new_node || !path_copy) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    path_copy = malloc_or_die(path_len + 1);
+    new_node = malloc_or_die(sizeof(*new_node));
 
     if (!(value = al_load_font(path, -size, 0))) {
         DIAG_ERROR("Failed loading font \"%s\".", path);

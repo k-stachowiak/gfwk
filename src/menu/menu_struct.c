@@ -5,6 +5,7 @@
 
 #include "array.h"
 #include "diagnostics.h"
+#include "memory.h"
 #include "menu_struct.h"
 
 struct MenuPageVisits {
@@ -37,12 +38,7 @@ static void menu_free_rec(
 
 struct Menu *menu_create(struct MenuPage *main_page)
 {
-    struct Menu *result = malloc(sizeof(*result));
-
-    if (!result) {
-        DIAG_ERROR("Allocation error.");
-        exit(1);
-    }
+    struct Menu *result = malloc_or_die(sizeof(*result));
 
     result->main_page = main_page;
     result->current_page = main_page;
@@ -170,14 +166,9 @@ struct MenuPage *menu_page_create(
         char *caption,
         struct MenuItem *items)
 {
-    struct MenuPage *result = malloc(sizeof(*result));
+    struct MenuPage *result = malloc_or_die(sizeof(*result));
     int len = strlen(caption);
-    char *caption_copy = malloc(len + 1);
-
-    if (!result || !caption) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    char *caption_copy = malloc_or_die(len + 1);
 
     memcpy(caption_copy, caption, len + 1);
 
@@ -231,14 +222,9 @@ struct MenuItem *menu_item_create_value(
         long *integer,
         double *real)
 {
-    struct MenuItem *result = malloc(sizeof(*result));
+    struct MenuItem *result = malloc_or_die(sizeof(*result));
     int len = strlen(caption);
-    char *caption_copy = malloc(len + 1);
-
-    if (!result || !caption) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    char *caption_copy = malloc_or_die(len + 1);
 
     if ((!!integer) + (!!real) != 1) {
         DIAG_ERROR("Only one pointer can be set for value menu item.");
@@ -267,14 +253,9 @@ struct MenuItem *menu_item_create_ref(
         char *caption,
         struct MenuPage *ref)
 {
-    struct MenuItem *result = malloc(sizeof(*result));
+    struct MenuItem *result = malloc_or_die(sizeof(*result));
     int len = strlen(caption);
-    char *caption_copy = malloc(len + 1);
-
-    if (!result || !caption) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    char *caption_copy = malloc_or_die(len + 1);
 
     memcpy(caption_copy, caption, len + 1);
 
@@ -290,14 +271,9 @@ struct MenuItem *menu_item_create_action(
         char *caption,
         void (*callback)(void))
 {
-    struct MenuItem *result = malloc(sizeof(*result));
+    struct MenuItem *result = malloc_or_die(sizeof(*result));
     int len = strlen(caption);
-    char *caption_copy = malloc(len + 1);
-
-    if (!result || !caption) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    char *caption_copy = malloc_or_die(len + 1);
 
     memcpy(caption_copy, caption, len + 1);
 

@@ -8,6 +8,7 @@
 #include <allegro5/allegro_primitives.h>
 
 #include "random.h"
+#include "memory.h"
 #include "draw.h"
 #include "array.h"
 #include "diagnostics.h"
@@ -66,11 +67,7 @@ static int lvl_load_read_line(FILE *f, char **buffer, int *length)
     }
 
     *length = result.size;
-    *buffer = malloc(result.size);
-    if (!(*buffer)) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    *buffer = malloc_or_die(result.size);
     memcpy(*buffer, result.data, result.size);
 
     ARRAY_FREE(result);
@@ -93,11 +90,7 @@ void lvl_load(struct Level *lvl, char *filename)
     width = line_length;
 
     map_cap = line_length;
-    map = malloc(map_cap);
-    if (!map) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    map = malloc_or_die(map_cap);
     memcpy(map, line, line_length);
     free(line);
     map_size = map_cap;
@@ -106,11 +99,7 @@ void lvl_load(struct Level *lvl, char *filename)
         c = lvl_load_read_line(in, &line, &line_length);
         if (line_length != 1) {
             map_cap += line_length;
-            map = realloc(map, map_cap);
-            if (!map) {
-                DIAG_ERROR("Allocation failure.");
-                exit(1);
-            }
+            map = realloc_or_die(map, map_cap);
             memcpy(map + map_size, line, line_length);
             map_size = map_cap;
         }
@@ -390,11 +379,7 @@ struct Graph lvl_init_graph(struct Level *lvl)
 
     uniques = lvl_init_graph_find_unique_nodes(&all_nodes);
 
-    adjacency = malloc(uniques.size * sizeof(*adjacency));
-    if (!adjacency) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    adjacency = malloc_or_die(uniques.size * sizeof(*adjacency));
     for (i = 0; i < uniques.size; ++i) {
         adjacency[i] = lvl_init_graph_find_adjacency(
             uniques.data[i], &uniques, &all_nodes);

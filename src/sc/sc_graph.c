@@ -5,6 +5,7 @@
 #include "diagnostics.h"
 #include "random.h"
 #include "array.h"
+#include "memory.h"
 #include "sc_graph.h"
 
 static void lgph_dijkstra(
@@ -16,9 +17,9 @@ static void lgph_dijkstra(
     double *lens;
     bool *visit;
 
-    if (!(preds = malloc(lgph->nodes_count * sizeof(*preds))) ||
-        !(lens = malloc(lgph->nodes_count * sizeof(*lens))) ||
-        !(visit = malloc(lgph->nodes_count * sizeof(*visit)))) {
+    if (!(preds = malloc_or_die(lgph->nodes_count * sizeof(*preds))) ||
+        !(lens = malloc_or_die(lgph->nodes_count * sizeof(*lens))) ||
+        !(visit = malloc_or_die(lgph->nodes_count * sizeof(*visit)))) {
             DIAG_ERROR("Allocation failure.");
             exit(1);
     }

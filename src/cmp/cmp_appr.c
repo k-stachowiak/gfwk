@@ -5,6 +5,7 @@
 #include <allegro5/allegro.h>
 
 #include "diagnostics.h"
+#include "memory.h"
 #include "resources.h"
 #include "cmp_appr.h"
 
@@ -25,11 +26,7 @@ struct CmpApprAnimSpriteCommon *cmp_appr_anim_sprite_common_create(
         int *frame_indices, double *frame_times, int frame_defs_count,
         int frame_w)
 {
-    struct CmpApprAnimSpriteCommon *result = malloc(sizeof(*result));
-    if (!result) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    struct CmpApprAnimSpriteCommon *result = malloc_or_die(sizeof(*result));
 
     result->frames = frames;
     result->frames_count = frames_count;
@@ -77,12 +74,7 @@ static void *cmp_appr_static_sprite_bitmap(struct CmpAppr *this)
 
 struct CmpAppr *cmp_appr_static_sprite_create(void *sprite)
 {
-    struct CmpApprStaticSprite *result = malloc(sizeof(*result));
-
-    if (!result) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    struct CmpApprStaticSprite *result = malloc_or_die(sizeof(*result));
 
     result->base.free = cmp_appr_common_free;
     result->base.update = cmp_appr_static_sprite_update;
@@ -143,12 +135,7 @@ static void *cmp_appr_anim_sprite_bitmap(struct CmpAppr *this)
 struct CmpAppr *cmp_appr_anim_sprite_create(
         struct CmpApprAnimSpriteCommon *common, int init_def, int rep_count)
 {
-    struct CmpApprAnimSprite *result = malloc(sizeof(*result));
-
-    if (!result) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    struct CmpApprAnimSprite *result = malloc_or_die(sizeof(*result));
 
     result->base.free = cmp_appr_common_free;
     result->base.update = cmp_appr_anim_sprite_update;

@@ -4,6 +4,7 @@
 #include <math.h>
 
 #include "diagnostics.h"
+#include "memory.h"
 #include "cmp_drv.h"
 #include "sc_data.h"
 
@@ -73,12 +74,7 @@ struct CmpDrv *cmp_drv_linear_create(
         double vx, double vy,
         double vtheta)
 {
-    struct CmpDrvLinear *result = malloc(sizeof(*result));
-
-    if (!result) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    struct CmpDrvLinear *result = malloc_or_die(sizeof(*result));
 
     cmp_drv_base_init((struct CmpDrv*)result, affect_rot);
 
@@ -119,12 +115,7 @@ struct CmpDrv *cmp_drv_i8d_create(
         double vel,
         int *inx, int *iny)
 {
-    struct CmpDrvI8d *result = malloc(sizeof(*result));
-
-    if (!result) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    struct CmpDrvI8d *result = malloc_or_die(sizeof(*result));
 
     cmp_drv_base_init((struct CmpDrv*)result, affect_rot);
 
@@ -171,12 +162,7 @@ struct CmpDrv *cmp_drv_ballistic_create(
         bool affect_rot,
         double vx, double vy)
 {
-    struct CmpDrvBallistic *result = malloc(sizeof(*result));
-
-    if (!result) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    struct CmpDrvBallistic *result = malloc_or_die(sizeof(*result));
 
     cmp_drv_base_init((struct CmpDrv*)result, affect_rot);
 
@@ -238,12 +224,7 @@ static struct Vel cmp_drv_platform_vel(struct CmpDrv *this)
 struct CmpDrv *cmp_drv_platform_create(
         int *inx, bool *jump_req, bool *standing)
 {
-    struct CmpDrvPlatform *result = malloc(sizeof(*result));
-
-    if (!result) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    struct CmpDrvPlatform *result = malloc_or_die(sizeof(*result));
 
     cmp_drv_base_init((struct CmpDrv*)result, false);
 
@@ -390,12 +371,7 @@ struct Vel cmp_drv_waypoint_vel(struct CmpDrv *this)
 struct CmpDrv *cmp_drv_waypoint_create(
         bool patrol, double velocity)
 {
-    struct CmpDrvWaypoint *result = malloc(sizeof(*result));
-
-    if (!result) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    struct CmpDrvWaypoint *result = malloc_or_die(sizeof(*result));
 
     cmp_drv_base_init((struct CmpDrv*)result, false);
 

@@ -24,6 +24,7 @@ void cmp_ori_cancel_x(struct CmpOri *cmp_ori);
 void cmp_ori_cancel_y(struct CmpOri *cmp_ori);
 
 struct PosRot cmp_ori_get(struct CmpOri *cmp_ori);
+void cmp_ori_get_shift(struct CmpOri *cmp_ori, double *dx, double *dy);
 double cmp_ori_distance(struct CmpOri *a, struct CmpOri *b);
 
 #endif

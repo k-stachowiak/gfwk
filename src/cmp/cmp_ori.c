@@ -4,17 +4,13 @@
 #include <math.h>
 
 #include "diagnostics.h"
+#include "memory.h"
 #include "cmp_ori.h"
 
 struct CmpOri *cmp_ori_create(double x, double y, double theta)
 {
-    struct CmpOri *result = malloc(sizeof(*result));
+    struct CmpOri *result = malloc_or_die(sizeof(*result));
     struct PosRot init_pr = { x, y, theta };
-
-    if (!result) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
 
     result->current = init_pr;
     result->prev = init_pr;
@@ -50,6 +46,12 @@ void cmp_ori_cancel_y(struct CmpOri *cmp_ori)
 struct PosRot cmp_ori_get(struct CmpOri *cmp_ori)
 {
     return cmp_ori->current;
+}
+
+void cmp_ori_get_shift(struct CmpOri *cmp_ori, double *dx, double *dy)
+{
+    *dx = cmp_ori->current.x - cmp_ori->prev.x;
+    *dy = cmp_ori->current.y - cmp_ori->prev.y;
 }
 
 double cmp_ori_distance(struct CmpOri *a, struct CmpOri *b)

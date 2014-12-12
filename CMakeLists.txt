@@ -39,6 +39,7 @@ add_executable(gfwk
     ./src/sc/sc_pain.c
     ./src/sc/sc_platform.c
 	./src/util/random.c
+    ./src/util/memory.c
     ./src/main.c
     )
 

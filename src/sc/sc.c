@@ -5,6 +5,7 @@
 #include <allegro5/allegro_primitives.h>
 
 #include "array.h"
+#include "memory.h"
 #include "sc.h"
 #include "cmp_ori.h"
 #include "cmp_drv.h"
@@ -37,6 +38,7 @@ struct {
     struct Arrow *data;
     int size, cap;
 } arrows;
+int stuck_arrows;
 
 /* Resources management logic. */
 static void sc_init_resources_basic(void)
@@ -90,8 +92,8 @@ static struct CmpApprAnimSpriteCommon *sc_init_hunter_anim_common(void *walk_she
     res_cut_frame_sheet(walk_sheet, frame_w, &frames, &frames_count);
 
     frame_defs_count = 8;
-    frame_indices = malloc(frame_defs_count * sizeof(*frame_indices));
-    frame_times = malloc(frame_defs_count * sizeof(*frame_times));
+    frame_indices = malloc_or_die(frame_defs_count * sizeof(*frame_indices));
+    frame_times = malloc_or_die(frame_defs_count * sizeof(*frame_times));
 
     frame_indices[0] = 0;
     frame_indices[1] = 1;
@@ -128,8 +130,8 @@ static struct CmpApprAnimSpriteCommon *sc_init_soul_anim_common(void *walk_sheet
     res_cut_frame_sheet(walk_sheet, frame_w, &frames, &frames_count);
 
     frame_defs_count = 8;
-    frame_indices = malloc(frame_defs_count * sizeof(*frame_indices));
-    frame_times = malloc(frame_defs_count * sizeof(*frame_times));
+    frame_indices = malloc_or_die(frame_defs_count * sizeof(*frame_indices));
+    frame_times = malloc_or_die(frame_defs_count * sizeof(*frame_times));
 
     frame_indices[0] = 0;
     frame_indices[1] = 1;
