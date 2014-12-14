@@ -20,7 +20,7 @@ struct CmpOri *cmp_ori_create(double x, double y, double theta)
 
 void cmp_ori_free(struct CmpOri *cmp_ori)
 {
-    free(cmp_ori);
+    free_or_die(cmp_ori);
 }
 
 void cmp_ori_shift_rotate(

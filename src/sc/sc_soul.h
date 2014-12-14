@@ -13,11 +13,13 @@ struct Soul {
     struct CmpAppr *appr_stand_left;
     struct CmpAppr *appr_walk_right;
     struct CmpAppr *appr_walk_left;
+    struct CmpAppr *appr_caught;
 
     struct CmpAppr *appr;
     struct CmpOri *ori;
     struct CmpDrv *drv;
     struct CmpAi *ai;
+    struct CmpPain *pain;
 
     double box_w, box_h;
 };

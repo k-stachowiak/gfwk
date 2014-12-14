@@ -24,6 +24,7 @@ void *sc_soul_stand_right;
 void *sc_soul_stand_left;
 void *sc_soul_walk_right;
 void *sc_soul_walk_left;
+void *sc_soul_caught;
 
 struct CmpApprAnimSpriteCommon *sc_hunter_walk_right_common;
 struct CmpApprAnimSpriteCommon *sc_hunter_walk_left_common;

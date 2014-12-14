@@ -68,9 +68,9 @@ static void lgph_dijkstra(
     }
     ARRAY_APPEND(result, lgph->nodes[u]);
 
-    free(preds);
-    free(lens);
-    free(visit);
+    free_or_die(preds);
+    free_or_die(lens);
+    free_or_die(visit);
 
     for (i = 0; i < result.size / 2; ++i) {
         struct TilePos temp = result.data[i];
@@ -96,11 +96,11 @@ void lgph_init(
 void lgph_deinit(struct Graph *lgph)
 {
     int i;
-    free(lgph->nodes);
+    free_or_die(lgph->nodes);
     for (i = 0; i < lgph->nodes_count; ++i) {
-        free(lgph->adjacency[i]);
+        free_or_die(lgph->adjacency[i]);
     }
-    free(lgph->adjacency);
+    free_or_die(lgph->adjacency);
 }
 
 int lgph_find_index(struct Graph *lgph, struct TilePos pos)

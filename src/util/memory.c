@@ -1,8 +1,10 @@
+/* Copyright (C) 2014 Krzysztof Stachowiak */
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 
-#define MEM_TRACE(op, addr) printf(op " %p\n", addr)
+#define MEM_TRACE(op, addr) // printf(op " %p\n", addr)
 
 void *malloc_or_die(size_t size)
 {

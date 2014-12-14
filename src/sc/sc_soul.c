@@ -5,6 +5,7 @@
 #include "cmp_appr.h"
 #include "cmp_ori.h"
 #include "cmp_drv.h"
+#include "cmp_pain.h"
 #include "cmp_operations.h"
 #include "sc_soul.h"
 
@@ -19,13 +20,13 @@ void soul_init(struct Soul *soul, struct Graph *lgph, struct TilePos soul_tp)
     soul->appr_walk_left = cmp_appr_anim_sprite_create(sc_soul_walk_left_common, 2, -1);
     soul->appr_stand_right = cmp_appr_static_sprite_create(sc_soul_stand_right);
     soul->appr_stand_left = cmp_appr_static_sprite_create(sc_soul_stand_left);
+    soul->appr_caught = cmp_appr_static_sprite_create(sc_soul_caught);
 
     soul->appr = soul->appr_walk_right;
     soul->ori = cmp_ori_create(wp.x + sc_tile_w / 2, wp.y + sc_tile_w / 2, 0.0);
     soul->drv = cmp_drv_waypoint_create(true, 150.0);
-    soul->ai = cmp_ai_soul_create();
-
-    soul->ai->update_driver(soul->ai, soul->drv, &soul_tp, lgph);
+    soul->ai = cmp_ai_soul_create(lgph);
+    soul->pain = cmp_pain_create(PT_SOUL);
 
     soul->box_w = 30.0;
     soul->box_h = 60.0;
@@ -37,10 +38,12 @@ void soul_deinit(struct Soul *soul)
     soul->appr_stand_left->free(soul->appr_stand_left);
     soul->appr_walk_right->free(soul->appr_walk_right);
     soul->appr_walk_left->free(soul->appr_walk_left);
+    soul->appr_caught->free(soul->appr_caught);
 
     soul->drv->free(soul->drv);
     soul->ai->free(soul->ai);
     cmp_ori_free(soul->ori);
+    cmp_pain_free(soul->pain);
 }
 
 void soul_tick(struct Soul *soul, struct CmpAiTacticalStatus *ts, double dt)
@@ -49,7 +52,7 @@ void soul_tick(struct Soul *soul, struct CmpAiTacticalStatus *ts, double dt)
 
     soul->appr->update(soul->appr, dt);
     soul->drv->update(soul->drv, dt);
-    soul->ai->update(soul->ai, soul->drv, ts, dt);
+    soul->ai->update(soul->ai, soul->ori, soul->drv, ts, dt);
 
     vel = soul->drv->vel(soul->drv);
 

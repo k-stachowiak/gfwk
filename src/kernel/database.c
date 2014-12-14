@@ -49,8 +49,8 @@ static void db_free_list(struct ConfigNode *list)
     while (list) {
         temp = list;
         list = list->next;
-        free(temp->key);
-        free(temp);
+        free_or_die(temp->key);
+        free_or_die(temp);
     }
 }
 

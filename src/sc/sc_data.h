@@ -31,6 +31,7 @@ extern void *sc_soul_stand_right;
 extern void *sc_soul_stand_left;
 extern void *sc_soul_walk_right;
 extern void *sc_soul_walk_left;
+extern void *sc_soul_caught;
 
 /* Cmoplex resources. */
 extern struct CmpApprAnimSpriteCommon *sc_hunter_walk_right_common;

@@ -26,10 +26,12 @@ add_executable(gfwk
     ./src/cmp/cmp_drv.c
     ./src/cmp/cmp_ai.c
     ./src/cmp/cmp_operations.c
+    ./src/cmp/cmp_pain.c
     ./src/menu/menu.c
     ./src/menu/menu_struct.c
     ./src/demo/demo.c
     ./src/sc/sc.c
+    ./src/sc/sc_arrow.c
     ./src/sc/sc_data.c
     ./src/sc/sc_hunter.c
     ./src/sc/sc_soul.c

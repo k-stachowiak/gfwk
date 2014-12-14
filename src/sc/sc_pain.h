@@ -3,7 +3,7 @@
 #ifndef SC_PAIN_H
 #define SC_PAIN_H
 
-#include "sc_hunter.h"
+#include "sc_arrow.h"
 #include "sc_soul.h"
 
 void pain_draw_debug(void);

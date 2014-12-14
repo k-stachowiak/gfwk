@@ -6,6 +6,7 @@
 #include "array.h"
 #include "diagnostics.h"
 #include "cmp_ori.h"
+#include "cmp_operations.h"
 #include "sc_collision.h"
 #include "sc_pain.h"
 
@@ -13,45 +14,49 @@ struct PainContext {
     struct {
         struct Segment *data;
         int size, cap;
-    } arrs;
+    } arrow_segs;
     struct Circle soul_cir;
 } pc_last;
 
-static struct PainContext pain_analyze(
+static void pain_reset_components(
         struct Arrow *arrows, int arrows_count,
         struct Soul *soul)
 {
     int i;
-    struct PainContext result;
-    struct PosRot soul_pr;
-
-    result.arrs.data = NULL;
-    result.arrs.size = 0;
-    result.arrs.cap = 0;
-
+    cmp_pain_reset(soul->pain);
     for (i = 0; i < arrows_count; ++i) {
-        struct PosRot pr = cmp_ori_get(arrows[i].ori);
-        struct Segment seg = {
-            pr.x, pr.y,
-            pr.x + 25 * cos(pr.theta),
-            pr.y + 25 * sin(pr.theta)
-        };
-        ARRAY_APPEND(result.arrs, seg);
+        cmp_pain_reset(arrows[i].pain);
     }
+}
 
-    soul_pr = cmp_ori_get(soul->ori);
-    result.soul_cir.x = soul_pr.x;
-    result.soul_cir.y = soul_pr.y;
-    result.soul_cir.r = 25.0;
+static void pain_tick_arrows(
+        struct Arrow *arrows, int arrows_count,
+        struct Soul *soul, struct Circle *soul_cir)
+{
+    int i;
+    for (i = 0; i < arrows_count; ++i) {
 
-    return result;
+        struct PosRot arrow_pr = cmp_ori_get(arrows[i].ori);
+        struct Segment arrow_seg;
+
+        arrow_seg.ax = arrow_pr.x;
+        arrow_seg.ay = arrow_pr.y;
+        arrow_seg.bx = arrow_pr.x + 25 * cos(arrow_pr.theta);
+        arrow_seg.by = arrow_pr.y + 25 * sin(arrow_pr.theta);
+
+        ARRAY_APPEND(pc_last.arrow_segs, arrow_seg);
+
+        if (col_segment_circle(arrow_seg, *soul_cir)) {
+            cmp_deal_pain(soul->pain, arrows[i].pain);
+        }
+    }
 }
 
 void pain_draw_debug(void)
 {
     int i;
-    for (i = 0; i < pc_last.arrs.size; ++i) {
-        col_draw_segment(pc_last.arrs.data[i], 1, 1, 1);
+    for (i = 0; i < pc_last.arrow_segs.size; ++i) {
+        col_draw_segment(pc_last.arrow_segs.data[i], 1, 1, 1);
     }
     col_draw_circle(pc_last.soul_cir, 1, 1, 1);
 }
@@ -60,30 +65,19 @@ void pain_tick(
         struct Arrow *arrows, int arrows_count,
         struct Soul *soul)
 {
-    int i;
-    bool deal_pain;
-    struct Circle soul_cir = pc_last.soul_cir;
+    struct PosRot soul_pr;
+    struct Circle soul_cir;
 
-    if (pc_last.arrs.data) {
-        ARRAY_FREE(pc_last.arrs);
-    }
+    ARRAY_FREE(pc_last.arrow_segs);
+    pain_reset_components(arrows, arrows_count, soul);
+    
+    soul_pr = cmp_ori_get(soul->ori);
+    soul_cir.x = soul_pr.x;
+    soul_cir.y = soul_pr.y;
+    soul_cir.r = 25.0;
 
-    pc_last = pain_analyze(arrows, arrows_count, soul);
+    pc_last.soul_cir = soul_cir;
 
-    deal_pain = false;
-    for (i = 0; i < pc_last.arrs.size; ++i) {
-        struct Segment *arr_seg = pc_last.arrs.data + i;
-        if (col_segment_circle(*arr_seg, soul_cir))
-        {
-            deal_pain = true;
-            break;
-        }
-    }
-
-    if (!deal_pain) {
-        return;
-    }
-
-    DIAG_TRACE("pejn");
+    pain_tick_arrows(arrows, arrows_count, soul, &soul_cir);
 }
 

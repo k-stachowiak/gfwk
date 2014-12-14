@@ -52,7 +52,7 @@ void menu_free(struct Menu *menu)
 {
     struct MenuPageVisits visits = { NULL, 0, 0 };
     menu_free_rec(&visits, menu->main_page);
-    free(menu);
+    free_or_die(menu);
     ARRAY_FREE(visits);
 }
 
@@ -181,9 +181,9 @@ struct MenuPage *menu_page_create(
 
 void menu_page_free(struct MenuPage *menu_page)
 {
-    free(menu_page->caption);
+    free_or_die(menu_page->caption);
     menu_item_free(menu_page->items);
-    free(menu_page);
+    free_or_die(menu_page);
 }
 
 int menu_page_items_count(struct MenuPage *menu_page)
@@ -287,10 +287,10 @@ struct MenuItem *menu_item_create_action(
 
 void menu_item_free(struct MenuItem *menu_item)
 {
-    free(menu_item->caption);
+    free_or_die(menu_item->caption);
     if (menu_item->next) {
         menu_item_free(menu_item->next);
     }
-    free(menu_item);
+    free_or_die(menu_item);
 }
 

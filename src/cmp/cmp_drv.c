@@ -14,7 +14,7 @@
 
 static void cmp_drv_base_free(struct CmpDrv *this)
 {
-    free(this);
+    free_or_die(this);
 }
 
 static void cmp_drv_base_stop_x(struct CmpDrv *this)
@@ -260,7 +260,7 @@ struct CmpDrvWaypoint {
 static void cmp_drv_waypoint_free(struct CmpDrv *this)
 {
     struct CmpDrvWaypoint *derived = (struct CmpDrvWaypoint*)this;
-    free(derived->points);
+    free_or_die(derived->points);
     cmp_drv_base_free(this);
 }
 
@@ -394,7 +394,7 @@ struct CmpDrv *cmp_drv_waypoint_create(
 void cmp_drv_waypoint_reset(struct CmpDrv *this, double *points, int points_count)
 {
     struct CmpDrvWaypoint *derived = (struct CmpDrvWaypoint*)this;
-    free(derived->points);
+    free_or_die(derived->points);
     derived->points = points;
     derived->points_count = points_count;
 }

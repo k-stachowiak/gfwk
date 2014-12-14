@@ -55,7 +55,7 @@ void play_deinit(void)
     struct SampleIdNode *temp;
     while (sample_id_map) {
         temp = sample_id_map->next;
-        free(sample_id_map);
+        free_or_die(sample_id_map);
         sample_id_map = temp;
     }
 }

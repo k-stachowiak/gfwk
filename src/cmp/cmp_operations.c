@@ -2,11 +2,9 @@
 
 #include <math.h>
 
-#include "cmp_appr.h"
-#include "cmp_ori.h"
-#include "cmp_drv.h"
-#include "cmp_ai.h"
+#include "diagnostics.h"
 #include "draw.h"
+#include "cmp_operations.h"
 
 void cmp_draw(struct CmpOri *ori, struct CmpAppr *appr, double vsx, double vsy)
 {
@@ -34,3 +32,9 @@ void cmp_think(struct CmpAi *ai)
     (void)ai;
 }
 
+void cmp_deal_pain(struct CmpPain *x, struct CmpPain *y)
+{
+    cmp_pain_queue_push(x, y->type);
+    cmp_pain_queue_push(y, x->type);
+    DIAG_TRACE("pejn");
+}

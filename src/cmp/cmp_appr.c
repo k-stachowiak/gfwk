@@ -16,9 +16,9 @@
 void cmp_appr_anim_sprite_common_free(struct CmpApprAnimSpriteCommon* common)
 {
     res_dispose_frame_sheet(common->frames, common->frames_count);
-    free(common->frame_indices);
-    free(common->frame_times);
-    free(common);
+    free_or_die(common->frame_indices);
+    free_or_die(common->frame_times);
+    free_or_die(common);
 }
 
 struct CmpApprAnimSpriteCommon *cmp_appr_anim_sprite_common_create(
@@ -48,7 +48,7 @@ struct CmpApprAnimSpriteCommon *cmp_appr_anim_sprite_common_create(
 
 static void cmp_appr_common_free(struct CmpAppr *this)
 {
-    free(this);
+    free_or_die(this);
 }
 
 /* Static sprite implementation.

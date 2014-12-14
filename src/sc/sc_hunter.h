@@ -29,14 +29,4 @@ void hunter_deinit(struct Hunter *hunter);
 void hunter_tick(struct Hunter *hunter, double dt);
 void hunter_draw(struct Hunter *hunter);
 
-struct Arrow {
-    struct CmpAppr *appr;
-    struct CmpOri *ori;
-    struct CmpDrv *drv;
-};
-
-void arrow_init(struct Arrow *arrow, double x, double y, double angle);
-void arrow_deinit(struct Arrow *arrow);
-bool arrow_tick(struct Arrow *arrow, double dt);
-
 #endif

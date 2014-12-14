@@ -92,7 +92,7 @@ void lvl_load(struct Level *lvl, char *filename)
     map_cap = line_length;
     map = malloc_or_die(map_cap);
     memcpy(map, line, line_length);
-    free(line);
+    free_or_die(line);
     map_size = map_cap;
 
     while (c != EOF) {
@@ -103,7 +103,7 @@ void lvl_load(struct Level *lvl, char *filename)
             memcpy(map + map_size, line, line_length);
             map_size = map_cap;
         }
-        free(line);
+        free_or_die(line);
     }
 
     fclose(in);
@@ -118,7 +118,7 @@ void lvl_unload(struct Level *lvl)
 {
     lvl->width = 0;
     lvl->map_size = 0;
-    free(lvl->map);
+    free_or_die(lvl->map);
 }
 
 void lvl_for_each_tile(struct Level *lvl, void (*f)(struct TilePos, char))

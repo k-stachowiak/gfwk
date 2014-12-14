@@ -5,6 +5,7 @@
 
 #include "cmp_ori.h"
 #include "cmp_drv.h"
+#include "cmp_pain.h"
 
 struct Graph;
 struct TilePos;
@@ -15,11 +16,15 @@ struct CmpAiTacticalStatus {
 
 struct CmpAi {
     void (*free)(struct CmpAi*);
-    void (*update)(struct CmpAi*, struct CmpDrv*drv, struct CmpAiTacticalStatus*, double);
-    void (*update_driver)(struct CmpAi*, struct CmpDrv*, struct TilePos*, struct Graph*);
+    void (*update)(
+        struct CmpAi*,
+        struct CmpOri*,
+        struct CmpDrv*,
+        struct CmpAiTacticalStatus*,
+        double);
 };
 
-struct CmpAi *cmp_ai_soul_create(void);
+struct CmpAi *cmp_ai_soul_create(struct Graph *graph);
 
 #endif
 

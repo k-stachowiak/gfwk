@@ -34,11 +34,10 @@ struct Graph lgph;
 struct Hunter hunter;
 struct Soul soul;
 
-struct {
+struct ArrowArray {
     struct Arrow *data;
     int size, cap;
-} arrows;
-int stuck_arrows;
+} arrows, arrows_stuck;
 
 /* Resources management logic. */
 static void sc_init_resources_basic(void)
@@ -56,6 +55,7 @@ static void sc_init_resources_basic(void)
     sc_soul_stand_left = res_load_bitmap("data/soul_stand_left.png");
     sc_soul_walk_right = res_load_bitmap("data/soul_walk_right_w74.png");
     sc_soul_walk_left = res_load_bitmap("data/soul_walk_left_w74.png");
+    sc_soul_caught = res_load_bitmap("data/soul_caught.png");
 }
 
 static void sc_deinit_resources_basic(void)
@@ -73,6 +73,7 @@ static void sc_deinit_resources_basic(void)
     res_dispose_bitmap(sc_soul_stand_left);
     res_dispose_bitmap(sc_soul_walk_right);
     res_dispose_bitmap(sc_soul_walk_left);
+    res_dispose_bitmap(sc_soul_caught);
 }
 
 static struct CmpApprAnimSpriteCommon *sc_init_hunter_anim_common(void *walk_sheet)
@@ -209,6 +210,9 @@ static void sc_init(void)
     arrows.data = NULL;
     arrows.size = 0;
     arrows.cap = 0;
+    arrows_stuck.data = NULL;
+    arrows_stuck.size = 0;
+    arrows_stuck.cap = 0;
 
     sc_cam_shift.x = 0.0;
     sc_cam_shift.y = 0.0;
@@ -229,11 +233,23 @@ static void sc_deinit(void)
 static void sc_tick_dumb(double dt)
 {
     int i;
+
     hunter_tick(&hunter, dt);
+
     for (i = 0; i < arrows.size; ++i) {
-        if (!arrow_tick(arrows.data + i, dt)) {
-            arrow_deinit(arrows.data + i);
+        struct Arrow *arrow = arrows.data + i;
+        if (!arrow_tick(arrow, dt)) {
+            arrow_deinit(arrow);
             ARRAY_REMOVE(arrows, i);
+            --i;
+        }
+    }
+
+    for (i = 0; i < arrows_stuck.size; ++i) {
+        struct Arrow *arrow = arrows_stuck.data + i;
+        if ((arrow-> timer -= dt) <= 0) {
+            arrow_deinit(arrow);
+            ARRAY_REMOVE(arrows_stuck, i);
             --i;
         }
     }
@@ -243,6 +259,26 @@ static void sc_tick_dumb(double dt)
 static void sc_tick_smart(struct CmpAiTacticalStatus *ts, double dt)
 {
     soul_tick(&soul, ts, dt);
+}
+
+static void sc_tick_pain_feedback(void)
+{
+    int i, j;
+    for (i = 0; i < arrows.size; ++i) {
+        
+        struct Arrow *arrow = arrows.data + i;
+        struct CmpPain *pain = arrow->pain;
+
+        for (j = 0; j < pain->queue_size; ++j) {
+            if (pain->queue[j] == PT_SOUL) {
+                arrow->timer = 1.0;
+                ARRAY_APPEND(arrows_stuck, *arrow);
+                ARRAY_REMOVE(arrows, i);
+                --i;
+                break;
+            }
+        }
+    }
 }
 
 static void sc_tick(double dt)
@@ -256,6 +292,7 @@ static void sc_tick(double dt)
 
     platform_collide(&hunter, &lvl);            /* Update platformer engine. */
     pain_tick(arrows.data, arrows.size, &soul); /* Update pain engine. */
+    sc_tick_pain_feedback();
 }
 
 static void sc_draw_debug_graph(void)
@@ -333,23 +370,24 @@ static void sc_draw_debug_soul(struct Soul *soul)
     }
 }
 
-static void sc_draw(double weight)
+static void sc_draw_arrow_array(struct ArrowArray *aa)
 {
     int i;
     struct WorldPos zero_wp = { 0.0, 0.0 };
     struct ScreenPos zero_sp = pos_world_to_screen(zero_wp);
+    for (i = 0; i < aa->size; ++i) {
+        cmp_draw(aa->data[i].ori, aa->data[i].appr, -zero_sp.x, -zero_sp.y);
+    }
+}
 
+static void sc_draw(double weight)
+{
     al_clear_to_color(al_map_rgb_f(0.0, 0.0, 0.0));
     lvl_draw(&lvl);
     hunter_draw(&hunter);
     soul_draw(&soul);
-
-    for (i = 0; i < arrows.size; ++i) {
-        cmp_draw(
-            arrows.data[i].ori,
-            arrows.data[i].appr,
-            -zero_sp.x, -zero_sp.y);
-    }
+    sc_draw_arrow_array(&arrows);
+    sc_draw_arrow_array(&arrows_stuck);
 
     if (!sys_keys[ALLEGRO_KEY_F1]) {
         platform_draw_debug();
