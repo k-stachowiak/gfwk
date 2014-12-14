@@ -11,7 +11,7 @@ double normal_buffer;
 
 void rnd_init(void)
 {
-    srand(time(NULL));
+    srand((unsigned int)time(NULL));
 }
 
 double rnd_uniform_d(void)
@@ -31,7 +31,7 @@ int rnd_uniform_i(void)
 
 int rnd_uniform_rng_i(int low, int high)
 {
-    return low + rnd_uniform_d() * (high - low + 1);
+    return (int)(low + rnd_uniform_d() * (high - low + 1));
 }
 
 double rnd_normal(void)
