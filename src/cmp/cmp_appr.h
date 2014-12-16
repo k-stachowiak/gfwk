@@ -35,6 +35,7 @@ struct CmpAppr {
 };
 
 struct CmpAppr *cmp_appr_static_sprite_create(void *sprite);
+
 struct CmpAppr *cmp_appr_anim_sprite_create(
         struct CmpApprAnimSpriteCommon *common,
         int init_def,

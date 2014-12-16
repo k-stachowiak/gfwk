@@ -7,15 +7,18 @@
 
 #include "sc_data.h"
 
+#include "cmp_ori.h"
+
 struct Hunter {
-    struct CmpAppr *appr;
-    struct CmpOri *ori;
+	struct CmpAppr *appr;
     struct CmpDrv *drv;
 
     struct CmpAppr *appr_stand_right;
     struct CmpAppr *appr_stand_left;
     struct CmpAppr *appr_walk_right;
     struct CmpAppr *appr_walk_left;
+
+	struct CmpOri ori;
 
     double aim_angle;
     double box_w, box_h;

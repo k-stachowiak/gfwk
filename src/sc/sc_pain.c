@@ -23,9 +23,9 @@ static void pain_reset_components(
         struct Soul *soul)
 {
     int i;
-    cmp_pain_reset(soul->pain);
+    cmp_pain_reset(&soul->pain);
     for (i = 0; i < arrows_count; ++i) {
-        cmp_pain_reset(arrows[i].pain);
+        cmp_pain_reset(&arrows[i].pain);
     }
 }
 
@@ -36,7 +36,7 @@ static void pain_tick_arrows(
     int i;
     for (i = 0; i < arrows_count; ++i) {
 
-        struct PosRot arrow_pr = cmp_ori_get(arrows[i].ori);
+        struct PosRot arrow_pr = cmp_ori_get(&arrows[i].ori);
         struct Segment arrow_seg;
 
         arrow_seg.ax = arrow_pr.x;
@@ -47,7 +47,7 @@ static void pain_tick_arrows(
         ARRAY_APPEND(pc_last.arrow_segs, arrow_seg);
 
         if (col_segment_circle(arrow_seg, *soul_cir)) {
-            cmp_deal_pain(soul->pain, arrows[i].pain);
+            cmp_deal_pain(&soul->pain, &arrows[i].pain);
         }
     }
 }
@@ -71,7 +71,7 @@ void pain_tick(
     ARRAY_FREE(pc_last.arrow_segs);
     pain_reset_components(arrows, arrows_count, soul);
     
-    soul_pr = cmp_ori_get(soul->ori);
+    soul_pr = cmp_ori_get(&soul->ori);
     soul_cir.x = soul_pr.x;
     soul_cir.y = soul_pr.y;
     soul_cir.r = 25.0;

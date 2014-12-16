@@ -13,6 +13,9 @@ struct CmpOri {
     int prb_top;
 };
 
+void cmp_ori_init(struct CmpOri *ori, double x, double y, double theta);
+void cmp_ori_deinit(struct CmpOri *ori);
+
 struct CmpOri *cmp_ori_create(double x, double y, double theta);
 void cmp_ori_free(struct CmpOri *cmp_ori);
 

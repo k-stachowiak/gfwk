@@ -6,6 +6,10 @@
 #include "sc_data.h"
 #include "sc_level.h"
 
+#include "cmp_ori.h"
+#include "cmp_pain.h"
+#include "cmp_ai.h"
+
 struct CmpAiTacticalStatus;
 
 struct Soul {
@@ -16,10 +20,11 @@ struct Soul {
     struct CmpAppr *appr_caught;
 
     struct CmpAppr *appr;
-    struct CmpOri *ori;
     struct CmpDrv *drv;
-    struct CmpAi *ai;
-    struct CmpPain *pain;
+
+	struct CmpOri ori;
+	struct CmpPain pain;
+	struct CmpAiSoul ai;
 
     double box_w, box_h;
 };

@@ -7,19 +7,28 @@
 #include "memory.h"
 #include "cmp_ori.h"
 
+void cmp_ori_init(struct CmpOri *ori, double x, double y, double theta)
+{
+	struct PosRot init_pr = { x, y, theta };
+	ori->current = init_pr;
+	ori->prev = init_pr;
+}
+
+void cmp_ori_deinit(struct CmpOri *ori)
+{
+	(void)ori;
+}
+
 struct CmpOri *cmp_ori_create(double x, double y, double theta)
 {
     struct CmpOri *result = malloc_or_die(sizeof(*result));
-    struct PosRot init_pr = { x, y, theta };
-
-    result->current = init_pr;
-    result->prev = init_pr;
-
+	cmp_ori_init(result, x, y, theta);
     return result;
 }
 
 void cmp_ori_free(struct CmpOri *cmp_ori)
 {
+	cmp_ori_deinit(cmp_ori);
     free_or_die(cmp_ori);
 }
 

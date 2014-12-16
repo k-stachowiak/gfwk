@@ -10,30 +10,6 @@
 #include "sc_data.h"
 #include "sc_graph.h"
 
-/* Type definition.
- * ================
- */
-
-enum CmpAiSoulState {
-    CMP_AI_SOUL_STATE_IDLE,
-    CMP_AI_SOUL_STATE_PANIC,
-    CMP_AI_SOUL_STATE_KO,
-    CMP_AI_SOUL_STATE_HANGING
-};
-
-struct CmpAiSoul {
-
-    struct CmpAi base;
-
-    enum CmpAiSoulState state;
-
-    double think_timer;
-    double think_timer_max;
-
-    struct Graph *graph;
-	struct CmpOri *ori;
-};
-
 /* Common waypoint related opretaions.
  * ===================================
  */
@@ -144,9 +120,37 @@ static void cmp_ai_soul_update(
  * ===============================
  */
 
-static void cmp_ai_soul_free(struct CmpAi *cmp_ai)
+static void cmp_ai_soul_free(struct CmpAi *this)
 {
-	free_or_die(cmp_ai);
+	struct CmpAiSoul *derived = (struct CmpAiSoul*)this;
+	cmp_ai_soul_deinit(derived);
+	free_or_die(this);
+}
+
+void cmp_ai_soul_init(
+		struct CmpAiSoul *ai,
+		struct Graph *graph,
+		struct CmpOri *ori,
+		struct CmpDrv *drv)
+{
+	ai->base.free = cmp_ai_soul_free;
+	ai->base.update = cmp_ai_soul_update;
+
+	ai->state = CMP_AI_SOUL_STATE_IDLE;
+
+	ai->think_timer = 0.0;
+	ai->think_timer_max = 10.0;
+
+	ai->graph = graph;
+	ai->ori = ori;
+
+	cmp_ai_soul_idle_drv_end(drv, (void*)ai);
+	cmp_drv_waypoint_on_end(drv, cmp_ai_soul_idle_drv_end, (void*)ai);
+}
+
+void cmp_ai_soul_deinit(struct CmpAiSoul *ai)
+{
+	(void)ai;
 }
 
 struct CmpAi *cmp_ai_soul_create(
@@ -155,20 +159,6 @@ struct CmpAi *cmp_ai_soul_create(
 		struct CmpDrv *drv)
 {
 	struct CmpAiSoul *result = malloc_or_die(sizeof(*result));
-
-	result->base.free = cmp_ai_soul_free;
-	result->base.update = cmp_ai_soul_update;
-
-	result->state = CMP_AI_SOUL_STATE_IDLE;
-
-	result->think_timer = 0.0;
-	result->think_timer_max = 10.0;
-
-	result->graph = graph;
-	result->ori = ori;
-
-	cmp_ai_soul_idle_drv_end(drv, (void*)result);
-	cmp_drv_waypoint_on_end(drv, cmp_ai_soul_idle_drv_end, (void*)result);
-
+	cmp_ai_soul_init(result, graph, ori, drv);
 	return (struct CmpAi*)result;
 }

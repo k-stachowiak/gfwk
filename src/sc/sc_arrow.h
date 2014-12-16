@@ -2,11 +2,16 @@
 
 #include <stdbool.h>
 
+#include "cmp_ori.h"
+#include "cmp_pain.h"
+
 struct Arrow {
     struct CmpAppr *appr;
-    struct CmpOri *ori;
     struct CmpDrv *drv;
-    struct CmpPain *pain;
+
+    struct CmpPain pain;
+	struct CmpOri ori;
+
     double timer; /* multi-purpose ill-designed helper counter. */
 };
 

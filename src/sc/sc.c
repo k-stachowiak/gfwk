@@ -172,7 +172,7 @@ static void sc_deinit_resources_complex(void)
 static void sc_shoot_arrow(void)
 {
     struct Arrow arrow;
-    struct PosRot hunter_pr = cmp_ori_get(hunter.ori);
+    struct PosRot hunter_pr = cmp_ori_get(&hunter.ori);
     struct WorldPos hunter_wp = { hunter_pr.x, hunter_pr.y };
     arrow_init(&arrow, hunter_wp.x, hunter_wp.y - 15.0, hunter.aim_angle);
     ARRAY_APPEND(arrows, arrow);
@@ -180,7 +180,7 @@ static void sc_shoot_arrow(void)
 
 static void sc_tick_camera(double dt)
 {
-    struct PosRot hunter_pr = cmp_ori_get(hunter.ori);
+    struct PosRot hunter_pr = cmp_ori_get(&hunter.ori);
     sc_cam_shift.x = hunter_pr.x;
     sc_cam_shift.y = hunter_pr.y;
 }
@@ -267,7 +267,7 @@ static void sc_tick_pain_feedback(void)
     for (i = 0; i < arrows.size; ++i) {
         
         struct Arrow *arrow = arrows.data + i;
-        struct CmpPain *pain = arrow->pain;
+        struct CmpPain *pain = &arrow->pain;
 
         for (j = 0; j < pain->queue_size; ++j) {
             if (pain->queue[j] == PT_SOUL) {
@@ -287,7 +287,7 @@ static void sc_tick(double dt)
 
     sc_tick_camera(dt);
     sc_tick_dumb(dt);
-    ts.hunter_pos = cmp_ori_get(hunter.ori);
+    ts.hunter_pos = cmp_ori_get(&hunter.ori);
     sc_tick_smart(&ts, dt);
 
     platform_collide(&hunter, &lvl);            /* Update platformer engine. */
@@ -351,7 +351,7 @@ static void sc_draw_debug_soul(struct Soul *soul)
 
     ALLEGRO_COLOR color = al_map_rgb_f(1.0f, 0.7f, 0.4f);
 
-	struct PosRot soul_pr = cmp_ori_get(soul->ori);
+	struct PosRot soul_pr = cmp_ori_get(&soul->ori);
 	struct WorldPos soul_wp = { soul_pr.x, soul_pr.y };
 	struct ScreenPos soul_sp = pos_world_to_screen(soul_wp);
 
@@ -384,7 +384,7 @@ static void sc_draw_arrow_array(struct ArrowArray *aa)
     struct WorldPos zero_wp = { 0.0, 0.0 };
     struct ScreenPos zero_sp = pos_world_to_screen(zero_wp);
     for (i = 0; i < aa->size; ++i) {
-        cmp_draw(aa->data[i].ori, aa->data[i].appr, -zero_sp.x, -zero_sp.y);
+        cmp_draw(&aa->data[i].ori, aa->data[i].appr, -zero_sp.x, -zero_sp.y);
     }
 }
 

@@ -3,16 +3,27 @@
 #include "cmp_pain.h"
 #include "memory.h"
 
+void cmp_pain_init(struct CmpPain *pain, enum PainType type)
+{
+	pain->type = type;
+	pain->queue_size = 0;
+}
+
+void cmp_pain_deinit(struct CmpPain* pain)
+{
+	(void)pain;
+}
+
 struct CmpPain *cmp_pain_create(enum PainType type)
 {
     struct CmpPain *result = malloc_or_die(sizeof(*result));
-    result->type = type;
-    result->queue_size = 0;
+	cmp_pain_init(result, type);
     return result;
 }
 
 void cmp_pain_free(struct CmpPain *cmp_pain)
 {
+	cmp_pain_deinit(cmp_pain);
     free_or_die(cmp_pain);
 }
 

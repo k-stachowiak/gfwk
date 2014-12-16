@@ -17,8 +17,12 @@ struct CmpPain {
     int queue_size;
 };
 
+void cmp_pain_init(struct CmpPain *pain, enum PainType type);
+void cmp_pain_deinit(struct CmpPain* pain);
+
 struct CmpPain *cmp_pain_create(enum PainType type);
 void cmp_pain_free(struct CmpPain *cmp_pain);
+
 void cmp_pain_reset(struct CmpPain *cmp_pain);
 void cmp_pain_queue_push(struct CmpPain *cmp_pain, enum PainType ct);
 
