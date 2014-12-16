@@ -41,4 +41,12 @@ struct CmpAppr *cmp_appr_anim_sprite_create(
         int init_def,
         int rep_count);
 
+struct CmpAppr *cmp_appr_proxy_create(
+		struct CmpAppr *children,
+		int children_count,
+		int init_child);
+
+/* TODO: Handle these hacks. */
+void cmp_appr_proxy_set_child(struct CmpAppr *this, int child);
+
 #endif

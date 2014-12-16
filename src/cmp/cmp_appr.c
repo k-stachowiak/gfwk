@@ -150,3 +150,51 @@ struct CmpAppr *cmp_appr_anim_sprite_create(
     return (struct CmpAppr*)result;
 }
 
+/* Proxy apperance implementation.
+ * -------------------------------
+ */
+
+struct CmpApprProxy {
+	struct CmpAppr base;
+	struct CmpAppr *children;
+	int children_count;
+	int current_child;
+};
+
+static void cmp_appr_proxy_update(struct CmpAppr *this, double dt)
+{
+	struct CmpApprProxy *derived = (struct CmpApprProxy*)this;
+	struct CmpAppr *child = derived->children + derived->current_child;
+	child->update(child, dt);
+}
+
+static void *cmp_appr_proxy_bitmap(struct CmpAppr *this)
+{
+	struct CmpApprProxy *derived = (struct CmpApprProxy*)this;
+	struct CmpAppr *child = derived->children + derived->current_child;
+	return child->bitmap(child);
+}
+
+struct CmpAppr *cmp_appr_proxy_create(
+		struct CmpAppr *children,
+		int children_count,
+		int init_child)
+{
+	struct CmpApprProxy *result = malloc_or_die(sizeof(*result));
+
+	result->base.free = cmp_appr_common_free;
+	result->base.update = cmp_appr_proxy_update;
+	result->base.bitmap = cmp_appr_proxy_bitmap;
+
+	result->children = children;
+	result->children_count = children_count;
+	result->current_child = init_child;
+
+	return (struct CmpAppr*)result;
+}
+
+void cmp_appr_proxy_set_child(struct CmpAppr *this, int child)
+{
+	struct CmpApprProxy *derived = (struct CmpApprProxy*)this;
+	derived->current_child = child;
+}
