@@ -16,17 +16,25 @@
 #include "sc_graph.h"
 #include "sc_collision.h"
 
-static inline double min(double a, double b)
+#ifdef min
+#	undef min
+#endif
+
+#ifdef max
+#	undef max
+#endif
+
+static double min(double a, double b)
 {
     return (a < b) ? a : b;
 }
 
-static inline double max(double a, double b)
+static double max(double a, double b)
 {
     return (a < b) ? b : a;
 }
 
-static inline bool eq_tilepos(struct TilePos *a, struct TilePos *b)
+static bool eq_tilepos(struct TilePos *a, struct TilePos *b)
 {
 	return a->x == b->x && a->y == b->y;
 }

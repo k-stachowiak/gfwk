@@ -9,12 +9,12 @@
 #include "sc_collision.h"
 #include "sc_data.h"
 
-static inline double dot(double x1, double y1, double x2, double y2)
+static double dot(double x1, double y1, double x2, double y2)
 {
     return x1 * x2 + y1 * y2;
 }
 
-static inline void point_to_screen(double xi, double yi, double *xo, double *yo)
+static void point_to_screen(double xi, double yi, double *xo, double *yo)
 {
     struct WorldPos wp = { xi, yi };
     struct ScreenPos sp = pos_world_to_screen(wp);

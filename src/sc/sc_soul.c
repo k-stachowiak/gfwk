@@ -24,8 +24,8 @@ void soul_init(struct Soul *soul, struct Graph *lgph, struct TilePos soul_tp)
 
     soul->appr = soul->appr_walk_right;
     soul->ori = cmp_ori_create(wp.x + sc_tile_w / 2, wp.y + sc_tile_w / 2, 0.0);
-    soul->drv = cmp_drv_waypoint_create(true, 150.0);
-    soul->ai = cmp_ai_soul_create(lgph);
+    soul->drv = cmp_drv_waypoint_create(150.0);
+    soul->ai = cmp_ai_soul_create(lgph, soul->ori, soul->drv);
     soul->pain = cmp_pain_create(PT_SOUL);
 
     soul->box_w = 30.0;
@@ -50,8 +50,8 @@ void soul_tick(struct Soul *soul, struct CmpAiTacticalStatus *ts, double dt)
 {
     struct Vel vel;
 
-    soul->appr->update(soul->appr, dt);
-    soul->drv->update(soul->drv, dt);
+	soul->appr->update(soul->appr, dt);
+	soul->drv->update(soul->drv, dt);
     soul->ai->update(soul->ai, soul->ori, soul->drv, ts, dt);
 
     vel = soul->drv->vel(soul->drv);

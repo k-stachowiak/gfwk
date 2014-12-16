@@ -120,7 +120,10 @@ static struct CollisionContext platform_analyze(
     struct PosRot pr = cmp_ori_get(hunter->ori);
     double w = hunter->box_w;
     double h = hunter->box_h;
-    struct TilePos tp = { pr.x / sc_tile_w, pr.y / sc_tile_w };
+    struct TilePos tp = {
+		(int)(pr.x / sc_tile_w),
+		(int)(pr.y / sc_tile_w)
+	};
     struct CollisionContext result;
 
     /* Bottom collision box. */

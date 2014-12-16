@@ -24,7 +24,10 @@ struct CmpAi {
         double);
 };
 
-struct CmpAi *cmp_ai_soul_create(struct Graph *graph);
+struct CmpAi *cmp_ai_soul_create(
+		struct Graph *graph,
+		struct CmpOri *ori,
+		struct CmpDrv *drv);
 
 #endif
 

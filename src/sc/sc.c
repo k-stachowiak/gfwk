@@ -351,7 +351,7 @@ static void sc_draw_debug_soul(struct Soul *soul)
 
     cmp_drv_waypoint_points(soul->drv, &points, &points_count);
 
-    for (i = 0; i < points_count; ++i) {
+    for (i = 0; i < (points_count - 1); ++i) {
 
         struct WorldPos
             wp1 = { points[2 * i + 0], points[2 * i + 1] },

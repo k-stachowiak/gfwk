@@ -247,14 +247,18 @@ struct CmpDrv *cmp_drv_platform_create(
  */
 
 struct CmpDrvWaypoint {
+
     struct CmpDrv base;
+
     double *points;
     int points_count;
-    bool patrol;
+
     double velocity;
     int step;
     double step_degree;
-    bool flag;
+
+	void *on_end_data;
+	CmpDrvCallback on_end;
 };
 
 static void cmp_drv_waypoint_free(struct CmpDrv *this)
@@ -269,42 +273,10 @@ static void cmp_drv_waypoint_local_points(
         double *x0, double *y0,
         double *x1, double *y1)
 {
-    if (!wayp->patrol || wayp->flag) {
-       *x0 = wayp->points[2 * wayp->step + 0];
-       *y0 = wayp->points[2 * wayp->step + 1];
-       *x1 = wayp->points[2 * wayp->step + 2];
-       *y1 = wayp->points[2 * wayp->step + 3];
-   } else {
-       *x0 = wayp->points[2 * wayp->step + 0];
-       *y0 = wayp->points[2 * wayp->step + 1];
-       *x1 = wayp->points[2 * wayp->step - 2];
-       *y1 = wayp->points[2 * wayp->step - 1];
-   }
-}
-
-static void cmp_drv_waypoint_step(struct CmpDrvWaypoint *wayp)
-{
-    if (wayp->patrol) {
-        if (wayp->flag) {
-            ++wayp->step;
-            if(wayp->step >= wayp->points_count - 1) {
-                wayp->flag = false;
-                wayp->step = wayp->points_count - 1;
-            }
-        } else {
-            --wayp->step;
-            if(wayp->step <= 0) {
-                wayp->step = 0;
-                wayp->flag = true;
-            }
-        }
-
-    } else if (wayp->flag == false) {
-        ++wayp->step;
-        if(wayp->step >= wayp->points_count) {
-            wayp->flag = true;
-        }
-    }
+    *x0 = wayp->points[2 * wayp->step + 0];
+    *y0 = wayp->points[2 * wayp->step + 1];
+    *x1 = wayp->points[2 * wayp->step + 2];
+    *y1 = wayp->points[2 * wayp->step + 3];
 }
 
 static void cmp_drv_waypoint_update(struct CmpDrv *this, double dt)
@@ -314,10 +286,6 @@ static void cmp_drv_waypoint_update(struct CmpDrv *this, double dt)
     double x0, y0, x1, y1;
     double dx, dy;
     double step_len, step_inc;
-
-    if (!derived->patrol && derived->flag) {
-        return;
-    }
 
     cmp_drv_waypoint_local_points(derived, &x0, &y0, &x1, &y1);
 
@@ -330,7 +298,10 @@ static void cmp_drv_waypoint_update(struct CmpDrv *this, double dt)
     derived->step_degree += step_inc;
     if (derived->step_degree > 1.0) {
         derived->step_degree -= 1.0;
-        cmp_drv_waypoint_step(derived);
+		++derived->step;
+		if (derived->step == (derived->points_count - 1)) { /* WHY -1 ? ;( */
+			derived->on_end(this, derived->on_end_data);
+		}
     }
 }
 
@@ -351,10 +322,6 @@ struct Vel cmp_drv_waypoint_vel(struct CmpDrv *this)
     double dx, dy;
     double rev_sqrt;
 
-    if (!derived->patrol && derived->flag) {
-        return result;
-    }
-
     cmp_drv_waypoint_local_points(derived, &x0, &y0, &x1, &y1);
 
     dx = x1 - x0;
@@ -368,8 +335,7 @@ struct Vel cmp_drv_waypoint_vel(struct CmpDrv *this)
     return result;
 }
 
-struct CmpDrv *cmp_drv_waypoint_create(
-        bool patrol, double velocity)
+struct CmpDrv *cmp_drv_waypoint_create(double velocity)
 {
     struct CmpDrvWaypoint *result = malloc_or_die(sizeof(*result));
 
@@ -382,13 +348,20 @@ struct CmpDrv *cmp_drv_waypoint_create(
 
     result->points = NULL;
     result->points_count = 0;
-    result->patrol = patrol;
     result->velocity = velocity;
     result->step = 0;
     result->step_degree = 0.0;
-    result->flag = patrol;
+	result->on_end_data = NULL;
+	result->on_end = NULL;
 
     return (struct CmpDrv*)result;
+}
+
+void cmp_drv_waypoint_on_end(struct CmpDrv *this, CmpDrvCallback on_end, void *data)
+{
+	struct CmpDrvWaypoint *derived = (struct CmpDrvWaypoint*)this;
+	derived->on_end = on_end;
+	derived->on_end_data = data;
 }
 
 void cmp_drv_waypoint_reset(struct CmpDrv *this, double *points, int points_count)
@@ -397,6 +370,8 @@ void cmp_drv_waypoint_reset(struct CmpDrv *this, double *points, int points_coun
     free_or_die(derived->points);
     derived->points = points;
     derived->points_count = points_count;
+	derived->step = 0;
+	derived->step_degree = 0;
 }
 
 void cmp_drv_waypoint_points(struct CmpDrv *this, double **points, int *points_count)
