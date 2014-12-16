@@ -13,18 +13,18 @@
 void arrow_init(struct Arrow *arrow, double x, double y, double angle)
 {
     static double vel = 600.0;
-    arrow->appr = cmp_appr_static_sprite_create(sc_arrow_bitmap);
     arrow->drv = cmp_drv_ballistic_create(true, cos(angle) * vel, sin(angle) * vel);
 	
+	cmp_appr_static_sprite_init(&arrow->appr, sc_arrow_bitmap);
 	cmp_pain_init(&arrow->pain, PT_ARROW);
 	cmp_ori_init(&arrow->ori, x, y, angle);
 }
 
 void arrow_deinit(struct Arrow *arrow)
 {
-    arrow->appr->free(arrow->appr);
     arrow->drv->free(arrow->drv);
 
+	cmp_appr_static_sprite_deinit(&arrow->appr);
     cmp_pain_deinit(&arrow->pain);
 	cmp_ori_deinit(&arrow->ori);
 }

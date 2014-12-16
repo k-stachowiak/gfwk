@@ -4,11 +4,12 @@
 
 #include "cmp_ori.h"
 #include "cmp_pain.h"
+#include "cmp_appr.h"
 
 struct Arrow {
-    struct CmpAppr *appr;
     struct CmpDrv *drv;
 
+	struct CmpApprStaticSprite appr;
     struct CmpPain pain;
 	struct CmpOri ori;
 

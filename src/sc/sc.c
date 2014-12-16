@@ -384,7 +384,7 @@ static void sc_draw_arrow_array(struct ArrowArray *aa)
     struct WorldPos zero_wp = { 0.0, 0.0 };
     struct ScreenPos zero_sp = pos_world_to_screen(zero_wp);
     for (i = 0; i < aa->size; ++i) {
-        cmp_draw(&aa->data[i].ori, aa->data[i].appr, -zero_sp.x, -zero_sp.y);
+        cmp_draw(&aa->data[i].ori, CMP_APPR(&aa->data[i].appr), -zero_sp.x, -zero_sp.y);
     }
 }
 

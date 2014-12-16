@@ -7,17 +7,26 @@
 
 #include "sc_data.h"
 
+#include "cmp_appr.h"
 #include "cmp_ori.h"
 
+enum HunterAppearance {
+	HUNTER_APPR_STAND_LEFT,
+	HUNTER_APPR_STAND_RIGHT,
+	HUNTER_APPR_WALK_LEFT,
+	HUNTER_APPR_WALK_RIGHT
+};
+
 struct Hunter {
-	struct CmpAppr *appr;
     struct CmpDrv *drv;
 
-    struct CmpAppr *appr_stand_right;
-    struct CmpAppr *appr_stand_left;
-    struct CmpAppr *appr_walk_right;
-    struct CmpAppr *appr_walk_left;
+	struct CmpApprStaticSprite appr_stand_right;
+	struct CmpApprStaticSprite appr_stand_left;
+	struct CmpApprAnimSprite appr_walk_right;
+	struct CmpApprAnimSprite appr_walk_left;
+	struct CmpAppr *appr_array[4];
 
+	struct CmpApprProxy appr;
 	struct CmpOri ori;
 
     double aim_angle;

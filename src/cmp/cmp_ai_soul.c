@@ -160,5 +160,5 @@ struct CmpAi *cmp_ai_soul_create(
 {
 	struct CmpAiSoul *result = malloc_or_die(sizeof(*result));
 	cmp_ai_soul_init(result, graph, ori, drv);
-	return (struct CmpAi*)result;
+	return CMP_AI(result);
 }
