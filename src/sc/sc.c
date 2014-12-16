@@ -285,10 +285,6 @@ static void sc_tick(double dt)
 {
     struct CmpAiTacticalStatus ts;
 
-	if (!sys_keys[ALLEGRO_KEY_RIGHT] && !sys_keys[ALLEGRO_KEY_LEFT]) {
-		return;
-	}
-
     sc_tick_camera(dt);
     sc_tick_dumb(dt);
     ts.hunter_pos = cmp_ori_get(hunter.ori);
@@ -308,7 +304,7 @@ static void sc_draw_debug_graph(void)
 
         struct Adj *adj;
         struct TilePos atp = lgph.nodes[i];
-        struct WorldPos awp = pos_tile_to_world(atp);
+		struct WorldPos awp = pos_tile_to_world_ground(atp);
         struct ScreenPos asp = pos_world_to_screen(awp);
         double x1 = asp.x;
         double y1 = asp.y;
@@ -316,7 +312,7 @@ static void sc_draw_debug_graph(void)
         for (adj = lgph.adjacency[i]; adj->neighbor != -1; ++adj) {
 
             struct TilePos btp = lgph.nodes[adj->neighbor];
-            struct WorldPos bwp = pos_tile_to_world(btp);
+			struct WorldPos bwp = pos_tile_to_world_ground(btp);
             struct ScreenPos bsp = pos_world_to_screen(bwp);
             double x2 = bsp.x;
             double y2 = bsp.y;

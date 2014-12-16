@@ -38,14 +38,14 @@ struct CmpAiSoul {
  * ===================================
  */
 
-static double *cmp_ai_tilepos_to_worldpos(
+static double *cmp_ai_tilepos_to_worldpos_ground(
 		struct TilePos *tile_pos_v,
 		int points_count)
 {
 	int i;
 	double *world_pos_v = malloc_or_die(points_count * 2 * sizeof(*world_pos_v));
 	for (i = 0; i < points_count; ++i) {
-		struct WorldPos wp = pos_tile_to_world(tile_pos_v[i]);
+		struct WorldPos wp = pos_tile_to_world_ground(tile_pos_v[i]);
 		world_pos_v[2 * i + 0] = wp.x;
 		world_pos_v[2 * i + 1] = wp.y;
 	}
@@ -91,7 +91,7 @@ static void cmp_ai_soul_idle_drv_end(struct CmpDrv *drv, void* ai_boxed)
 	int points_count;
 
 	lgph_dijkstra(lgph, src_pos, dst_pos, &tp_points, &points_count);
-	dbl_points = cmp_ai_tilepos_to_worldpos(tp_points, points_count);
+	dbl_points = cmp_ai_tilepos_to_worldpos_ground(tp_points, points_count);
 	cmp_ai_prepend_pos(wp.x, wp.y, &dbl_points, &points_count);
 
 	cmp_drv_waypoint_reset(drv, dbl_points, points_count);

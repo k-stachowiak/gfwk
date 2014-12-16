@@ -10,6 +10,7 @@ struct WorldPos { double x, y; };
 struct ScreenPos { double x, y; };
 
 struct WorldPos pos_tile_to_world(struct TilePos tile_pos);
+struct WorldPos pos_tile_to_world_ground(struct TilePos tile_pos);
 struct ScreenPos pos_world_to_screen(struct WorldPos world_pos);
 
     /* Configuration proxy. */

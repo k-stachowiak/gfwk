@@ -42,6 +42,14 @@ struct WorldPos pos_tile_to_world(struct TilePos tile_pos)
     return result;
 }
 
+struct WorldPos pos_tile_to_world_ground(struct TilePos tile_pos)
+{
+	struct WorldPos result = pos_tile_to_world(tile_pos);
+	result.x += 0.5 * sc_tile_w;
+	result.y += 0.5 * sc_tile_w;
+	return result;
+}
+
 struct ScreenPos pos_world_to_screen(struct WorldPos world_pos)
 {
     struct ScreenPos result = {

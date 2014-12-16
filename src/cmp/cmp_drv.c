@@ -286,7 +286,7 @@ static void cmp_drv_waypoint_update(struct CmpDrv *this, double dt)
     double x0, y0, x1, y1;
     double dx, dy;
 	double rev_sqrt;
-    double step_len, step_inc;
+    double step_inc;
 	 
     cmp_drv_waypoint_local_points(derived, &x0, &y0, &x1, &y1);
 
