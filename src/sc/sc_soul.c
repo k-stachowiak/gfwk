@@ -23,7 +23,7 @@ void soul_init(struct Soul *soul, struct Graph *lgph, struct TilePos soul_tp)
     soul->appr_caught = cmp_appr_static_sprite_create(sc_soul_caught);
 
     soul->appr = soul->appr_walk_right;
-    soul->ori = cmp_ori_create(wp.x + sc_tile_w / 2, wp.y + sc_tile_w / 2, 0.0);
+    soul->ori = cmp_ori_create(wp.x /* + sc_tile_w / 2 */, wp.y /* + sc_tile_w / 2 */, 0.0);
     soul->drv = cmp_drv_waypoint_create(150.0);
     soul->ai = cmp_ai_soul_create(lgph, soul->ori, soul->drv);
     soul->pain = cmp_pain_create(PT_SOUL);

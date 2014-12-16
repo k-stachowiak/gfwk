@@ -285,6 +285,10 @@ static void sc_tick(double dt)
 {
     struct CmpAiTacticalStatus ts;
 
+	if (!sys_keys[ALLEGRO_KEY_RIGHT] && !sys_keys[ALLEGRO_KEY_LEFT]) {
+		return;
+	}
+
     sc_tick_camera(dt);
     sc_tick_dumb(dt);
     ts.hunter_pos = cmp_ori_get(hunter.ori);
@@ -306,16 +310,16 @@ static void sc_draw_debug_graph(void)
         struct TilePos atp = lgph.nodes[i];
         struct WorldPos awp = pos_tile_to_world(atp);
         struct ScreenPos asp = pos_world_to_screen(awp);
-        double x1 = asp.x + sc_tile_w / 2.0;
-        double y1 = asp.y + sc_tile_w / 2.0;
+        double x1 = asp.x;
+        double y1 = asp.y;
 
         for (adj = lgph.adjacency[i]; adj->neighbor != -1; ++adj) {
 
             struct TilePos btp = lgph.nodes[adj->neighbor];
             struct WorldPos bwp = pos_tile_to_world(btp);
             struct ScreenPos bsp = pos_world_to_screen(bwp);
-            double x2 = bsp.x + sc_tile_w / 2.0;
-            double y2 = bsp.y + sc_tile_w / 2.0;
+            double x2 = bsp.x;
+            double y2 = bsp.y;
 
             ALLEGRO_COLOR color;
             switch (adj->type) {
@@ -334,6 +338,7 @@ static void sc_draw_debug_graph(void)
             sprintf(buf, "%d", i);
             draw_text(sc_debug_font, x1 + 2, y1 - 18, 0, 0, 0, 1, true, buf);
             draw_text(sc_debug_font, x1, y1 - 20, 1, 1, 1, 1, true, buf);
+
             sprintf(buf, "%d", adj->neighbor);
             draw_text(sc_debug_font, x2 + 2, y2 - 18, 0, 0, 0, 1, true, buf);
             draw_text(sc_debug_font, x2, y2 - 20, 1, 1, 1, 1, true, buf);
@@ -347,7 +352,14 @@ static void sc_draw_debug_soul(struct Soul *soul)
     int i;
     double *points;
     int points_count;
+
     ALLEGRO_COLOR color = al_map_rgb_f(1.0f, 0.7f, 0.4f);
+
+	struct PosRot soul_pr = cmp_ori_get(soul->ori);
+	struct WorldPos soul_wp = { soul_pr.x, soul_pr.y };
+	struct ScreenPos soul_sp = pos_world_to_screen(soul_wp);
+
+	al_draw_circle(soul_sp.x, soul_sp.y, 4, color, 1);
 
     cmp_drv_waypoint_points(soul->drv, &points, &points_count);
 
@@ -361,10 +373,10 @@ static void sc_draw_debug_soul(struct Soul *soul)
             sp1 = pos_world_to_screen(wp1),
             sp2 = pos_world_to_screen(wp2);
 
-        double x1 = sp1.x + sc_tile_w / 2.0;
-        double y1 = sp1.y + sc_tile_w / 2.0;
-        double x2 = sp2.x + sc_tile_w / 2.0;
-        double y2 = sp2.y + sc_tile_w / 2.0;
+        double x1 = sp1.x;
+        double y1 = sp1.y;
+        double x2 = sp2.x;
+        double y2 = sp2.y;
 
         al_draw_line(x1, y1, x2, y2, color, 2.0);
     }

@@ -285,21 +285,22 @@ static void cmp_drv_waypoint_update(struct CmpDrv *this, double dt)
 
     double x0, y0, x1, y1;
     double dx, dy;
+	double rev_sqrt;
     double step_len, step_inc;
-
+	 
     cmp_drv_waypoint_local_points(derived, &x0, &y0, &x1, &y1);
 
     dx = x1 - x0;
     dy = y1 - y0;
 
-    step_len = sqrt(dx * dx + dy * dy);
-    step_inc = (derived->velocity * dt) / step_len;
+    rev_sqrt = 1.0 / sqrt(dx * dx + dy * dy);
+    step_inc = derived->velocity * dt * rev_sqrt;
 
     derived->step_degree += step_inc;
-    if (derived->step_degree > 1.0) {
-        derived->step_degree -= 1.0;
+    if (derived->step_degree >= 1.0) {
+        derived->step_degree = 0.0;
 		++derived->step;
-		if (derived->step == (derived->points_count - 1)) { /* WHY -1 ? ;( */
+		if (derived->step == (derived->points_count - 1)) {
 			derived->on_end(this, derived->on_end_data);
 		}
     }
