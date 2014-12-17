@@ -9,6 +9,7 @@
 
 #include "cmp_appr.h"
 #include "cmp_ori.h"
+#include "cmp_drv.h"
 
 enum HunterAppearance {
 	HUNTER_APPR_STAND_LEFT,
@@ -18,14 +19,13 @@ enum HunterAppearance {
 };
 
 struct Hunter {
-    struct CmpDrv *drv;
-
 	struct CmpApprStaticSprite appr_stand_right;
 	struct CmpApprStaticSprite appr_stand_left;
 	struct CmpApprAnimSprite appr_walk_right;
 	struct CmpApprAnimSprite appr_walk_left;
 	struct CmpAppr *appr_array[4];
 
+	struct CmpDrvPlatform drv;
 	struct CmpApprProxy appr;
 	struct CmpOri ori;
 

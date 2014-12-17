@@ -22,8 +22,6 @@ enum SoulAppearance {
 };
 
 struct Soul {
-	struct CmpDrv *drv;
-
     struct CmpApprStaticSprite appr_stand_right;
 	struct CmpApprStaticSprite appr_stand_left;
     struct CmpApprAnimSprite appr_walk_right;
@@ -31,6 +29,7 @@ struct Soul {
 	struct CmpApprStaticSprite appr_caught;
 	struct CmpAppr *appr_array[5];
 
+	struct CmpDrvWaypoint drv;
     struct CmpApprProxy appr;
 	struct CmpOri ori;
 	struct CmpPain pain;

@@ -2,13 +2,13 @@
 
 #include <stdbool.h>
 
+#include "cmp_drv.h"
 #include "cmp_ori.h"
 #include "cmp_pain.h"
 #include "cmp_appr.h"
 
 struct Arrow {
-    struct CmpDrv *drv;
-
+    struct CmpDrvBallistic drv;
 	struct CmpApprStaticSprite appr;
     struct CmpPain pain;
 	struct CmpOri ori;

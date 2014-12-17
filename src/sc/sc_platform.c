@@ -33,7 +33,7 @@ static void platform_handle_vertical(struct Hunter *hunter, struct CollisionCont
     if ((cc->ltiles[0] == '#' && col_aabb_vline(cc->ltile_aabbs[0], cc->lsline)) ||
         (cc->ltiles[1] == '#' && col_aabb_vline(cc->ltile_aabbs[1], cc->lsline)) ||
         (cc->ltiles[2] == '#' && col_aabb_vline(cc->ltile_aabbs[2], cc->lsline))) {
-            hunter->drv->stop_x(hunter->drv);
+            hunter->drv.base.stop_x(CMP_DRV(&hunter->drv));
             hunter->ori.current.x =
                 cc->ltile_aabbs[0].bx +
                 hunter->box_w / 2.0 +
@@ -42,7 +42,7 @@ static void platform_handle_vertical(struct Hunter *hunter, struct CollisionCont
     if ((cc->rtiles[0] == '#' && col_aabb_vline(cc->ltile_aabbs[0], cc->rsline)) ||
         (cc->rtiles[1] == '#' && col_aabb_vline(cc->ltile_aabbs[1], cc->rsline)) ||
         (cc->rtiles[2] == '#' && col_aabb_vline(cc->ltile_aabbs[2], cc->rsline))) {
-            hunter->drv->stop_x(hunter->drv);
+			hunter->drv.base.stop_x(CMP_DRV(&hunter->drv));
             hunter->ori.current.x =
                 cc->rtile_aabbs[0].ax -
                 hunter->box_w / 2.0 -
@@ -89,7 +89,7 @@ static void platform_handle_midair(
                                   col_aabb_vline(cc->btile_aabbs[2], cc->rsline)));
 
     if (collided_up) {
-        hunter->drv->stop_y(hunter->drv);
+		hunter->drv.base.stop_y(CMP_DRV(&hunter->drv));
         hunter->ori.current.y =
             cc->utile_aabbs[0].by +
             hunter->box_h / 2.0 +
@@ -99,7 +99,7 @@ static void platform_handle_midair(
     if (collided_bottom) {
             /* TODO: consider getting rid of the move cancelling operation. */
             hunter->standing = true;
-            hunter->drv->stop_y(hunter->drv);
+			hunter->drv.base.stop_y(CMP_DRV(&hunter->drv));
             hunter->ori.current.y =
                 cc->btile_aabbs[0].ay -
                 hunter->box_h / 2.0 -

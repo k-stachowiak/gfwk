@@ -15,8 +15,6 @@ void soul_init(struct Soul *soul, struct Graph *lgph, struct TilePos soul_tp)
 {
     struct WorldPos wp = pos_tile_to_world_ground(soul_tp);
 
-	soul->drv = cmp_drv_waypoint_create(150.0);
-
 	cmp_appr_anim_sprite_init(&soul->appr_walk_right, sc_soul_walk_right_common, 2, -1);
 	cmp_appr_anim_sprite_init(&soul->appr_walk_left, sc_soul_walk_left_common, 2, -1);
 	cmp_appr_static_sprite_init(&soul->appr_stand_right, sc_soul_stand_right);
@@ -29,11 +27,11 @@ void soul_init(struct Soul *soul, struct Graph *lgph, struct TilePos soul_tp)
 	soul->appr_array[SOUL_APPR_WALK_RIGHT] = CMP_APPR(&soul->appr_walk_right);
 	soul->appr_array[SOUL_APPR_CAUGHT] = CMP_APPR(&soul->appr_caught);
 
+	cmp_drv_waypoint_init(&soul->drv, 150.0);
 	cmp_appr_proxy_init(&soul->appr, soul->appr_array, 5, SOUL_APPR_WALK_RIGHT);
-
 	cmp_ori_init(&soul->ori, wp.x, wp.y, 0.0);
 	cmp_pain_init(&soul->pain, PT_SOUL);
-	cmp_ai_soul_init(&soul->ai, lgph, &soul->ori, soul->drv);
+	cmp_ai_soul_init(&soul->ai, lgph, &soul->ori, CMP_DRV(&soul->drv));
 
     soul->box_w = 30.0;
     soul->box_h = 60.0;
@@ -41,8 +39,6 @@ void soul_init(struct Soul *soul, struct Graph *lgph, struct TilePos soul_tp)
 
 void soul_deinit(struct Soul *soul)
 {
-	soul->drv->free(soul->drv);
-
 	cmp_appr_anim_sprite_deinit(&soul->appr_walk_right);
 	cmp_appr_anim_sprite_deinit(&soul->appr_walk_left);
 	cmp_appr_static_sprite_deinit(&soul->appr_stand_right);
@@ -50,6 +46,7 @@ void soul_deinit(struct Soul *soul)
 	cmp_appr_static_sprite_deinit(&soul->appr_caught);
 	cmp_appr_proxy_deinit(&soul->appr);
 
+	cmp_drv_waypoint_deinit(&soul->drv);
 	cmp_ai_soul_deinit(&soul->ai);
 	cmp_pain_deinit(&soul->pain);
 	cmp_ori_deinit(&soul->ori);
@@ -59,12 +56,12 @@ void soul_tick(struct Soul *soul, struct CmpAiTacticalStatus *ts, double dt)
 {
     struct Vel vel;
 
-	soul->drv->update(soul->drv, dt);
-
+	soul->drv.base.update(CMP_DRV(&soul->drv), dt);
 	soul->appr.base.update(CMP_APPR(&soul->appr), dt);
-    soul->ai.base.update(CMP_AI(&soul->ai), &soul->ori, soul->drv, ts, dt);
+	soul->ai.base.update(CMP_AI(&soul->ai), &soul->ori, CMP_DRV(&soul->drv), ts, dt);
 
-    vel = soul->drv->vel(soul->drv);
+	/* TODO: Cast the driver once in the begining of the function. */
+	vel = soul->drv.base.vel(CMP_DRV(&soul->drv));
 
     if (vel.vx > 0) {
 		cmp_appr_proxy_set_child(CMP_APPR(&soul->appr), SOUL_APPR_WALK_RIGHT);
@@ -73,7 +70,7 @@ void soul_tick(struct Soul *soul, struct CmpAiTacticalStatus *ts, double dt)
     }
 
 	cmp_think(CMP_AI(&soul->ai));
-    cmp_drive(&soul->ori, soul->drv, dt);
+	cmp_drive(&soul->ori, CMP_DRV(&soul->drv), dt);
 }
 
 void soul_draw(struct Soul *soul)

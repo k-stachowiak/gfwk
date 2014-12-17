@@ -4,8 +4,6 @@
 
 #include <allegro5/allegro_primitives.h>
 
-#include "cmp_appr.h"
-#include "cmp_drv.h"
 #include "cmp_operations.h"
 #include "sc_hunter.h"
 #include "resources.h"
@@ -14,9 +12,6 @@
 
 void hunter_init(struct Hunter *hunter)
 {
-    hunter->drv = cmp_drv_platform_create(
-            &hunter->inx, &hunter->jump_req, &hunter->standing);
-
 	cmp_appr_anim_sprite_init(&hunter->appr_walk_right, sc_hunter_walk_right_common, 2, -1);
 	cmp_appr_anim_sprite_init(&hunter->appr_walk_left, sc_hunter_walk_left_common, 2, -1);
 	cmp_appr_static_sprite_init(&hunter->appr_stand_right, sc_hunter_stand_right);
@@ -27,6 +22,7 @@ void hunter_init(struct Hunter *hunter)
 	hunter->appr_array[HUNTER_APPR_WALK_LEFT] = CMP_APPR(&hunter->appr_walk_left);
 	hunter->appr_array[HUNTER_APPR_WALK_RIGHT] = CMP_APPR(&hunter->appr_walk_right);
 
+	cmp_drv_platform_init(&hunter->drv,	&hunter->inx, &hunter->jump_req, &hunter->standing);
 	cmp_appr_proxy_init(&hunter->appr, hunter->appr_array, 4, HUNTER_APPR_STAND_RIGHT);
 	cmp_ori_init(&hunter->ori, 0.0, 0.0, 0.0);
 
@@ -40,8 +36,7 @@ void hunter_init(struct Hunter *hunter)
 
 void hunter_deinit(struct Hunter *hunter)
 {
-    hunter->drv->free(hunter->drv);
-
+    cmp_drv_platform_deinit(&hunter->drv);
 	cmp_appr_anim_sprite_deinit(&hunter->appr_walk_right);
 	cmp_appr_anim_sprite_deinit(&hunter->appr_walk_left);
 	cmp_appr_static_sprite_deinit(&hunter->appr_stand_right);
@@ -98,9 +93,9 @@ static void hunter_tick_input(struct Hunter *hunter, double dt)
 
 void hunter_tick(struct Hunter *hunter, double dt)
 {
-	hunter->drv->update(hunter->drv, dt);
+	hunter->drv.base.update(CMP_DRV(&hunter->drv), dt);
 	hunter->appr.base.update(CMP_APPR(&hunter->appr), dt);
-    cmp_drive(&hunter->ori, hunter->drv, dt);
+	cmp_drive(&hunter->ori, CMP_DRV(&hunter->drv), dt);
     hunter_tick_input(hunter, dt);
 }
 
