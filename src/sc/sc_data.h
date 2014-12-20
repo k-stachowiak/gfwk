@@ -3,8 +3,6 @@
 #ifndef SC_DATA_H
 #define SC_DATA_H
 
-#include <stdbool.h>
-
 struct TilePos { int x, y; };
 struct WorldPos { double x, y; };
 struct ScreenPos { double x, y; };
@@ -13,7 +11,7 @@ struct WorldPos pos_tile_to_world(struct TilePos tile_pos);
 struct WorldPos pos_tile_to_world_ground(struct TilePos tile_pos);
 struct ScreenPos pos_world_to_screen(struct WorldPos world_pos);
 
-    /* Configuration proxy. */
+/* Configuration cache. */
 extern int sc_screen_w;
 extern int sc_screen_h;
 extern int sc_tile_w;
@@ -42,5 +40,25 @@ extern struct CmpApprAnimSpriteCommon *sc_soul_walk_left_common;
 
 /* View state. */
 extern struct WorldPos sc_cam_shift;
+
+/* Entities. */
+enum SCPainType {
+	PT_PLAYER,
+	PT_SOUL,
+	PT_ARROW
+};
+
+extern struct Level lvl;
+extern struct Graph lgph;
+extern struct Hunter hunter;
+extern struct Soul soul;
+
+struct ArrowArray {
+	struct Arrow *data;
+	int size, cap;
+};
+
+extern struct ArrowArray arrows;
+extern struct ArrowArray arrows_stuck;
 
 #endif

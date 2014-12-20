@@ -1,6 +1,7 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
-#include <stdbool.h>
+#ifndef SC_ARROW_H
+#define AC_ARROW_H
 
 #include "cmp_drv.h"
 #include "cmp_ori.h"
@@ -18,5 +19,5 @@ struct Arrow {
 
 void arrow_init(struct Arrow *arrow, double x, double y, double angle);
 void arrow_deinit(struct Arrow *arrow);
-bool arrow_tick(struct Arrow *arrow, double dt);
 
+#endif

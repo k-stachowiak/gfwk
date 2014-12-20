@@ -3,9 +3,7 @@
 #ifndef SC_COLLISION_H
 #define SC_COLLISION_H
 
-#include "sc_level.h"
-#include "sc_hunter.h"
-#include "sc_soul.h"
+#include <stdbool.h>
 
 struct VLine {
     double x;

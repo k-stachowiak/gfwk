@@ -5,25 +5,21 @@
 
 #define CMP_PAIN_QUEUE_MAX 4
 
-enum PainType {
-    PT_PLAYER,
-    PT_SOUL,
-    PT_ARROW
-};
+typedef int PainType;
 
 struct CmpPain {
-    enum PainType type;
-    enum PainType queue[CMP_PAIN_QUEUE_MAX];
+    PainType type;
+    PainType queue[CMP_PAIN_QUEUE_MAX];
     int queue_size;
 };
 
-void cmp_pain_init(struct CmpPain *pain, enum PainType type);
+void cmp_pain_init(struct CmpPain *pain, PainType type);
 void cmp_pain_deinit(struct CmpPain* pain);
 
-struct CmpPain *cmp_pain_create(enum PainType type);
+struct CmpPain *cmp_pain_create(PainType type);
 void cmp_pain_free(struct CmpPain *cmp_pain);
 
 void cmp_pain_reset(struct CmpPain *cmp_pain);
-void cmp_pain_queue_push(struct CmpPain *cmp_pain, enum PainType ct);
+void cmp_pain_queue_push(struct CmpPain *cmp_pain, PainType ct);
 
 #endif

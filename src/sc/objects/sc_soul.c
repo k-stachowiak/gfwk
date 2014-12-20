@@ -1,15 +1,8 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
-#include <stdlib.h>
+#include "sc_data.h"
 
-#include "cmp_appr.h"
-#include "cmp_drv.h"
-#include "cmp_pain.h"
-#include "cmp_operations.h"
 #include "sc_soul.h"
-
-#include "diagnostics.h"
-#include "resources.h"
 
 void soul_init(struct Soul *soul, struct Graph *lgph, struct TilePos soul_tp)
 {
@@ -33,6 +26,7 @@ void soul_init(struct Soul *soul, struct Graph *lgph, struct TilePos soul_tp)
 	cmp_pain_init(&soul->pain, PT_SOUL);
 	cmp_ai_soul_init(&soul->ai, lgph, &soul->ori, CMP_DRV(&soul->drv));
 
+	soul->health = 100;
     soul->box_w = 30.0;
     soul->box_h = 60.0;
 }
@@ -50,33 +44,5 @@ void soul_deinit(struct Soul *soul)
 	cmp_ai_soul_deinit(&soul->ai);
 	cmp_pain_deinit(&soul->pain);
 	cmp_ori_deinit(&soul->ori);
-}
-
-void soul_tick(struct Soul *soul, struct CmpAiTacticalStatus *ts, double dt)
-{
-    struct Vel vel;
-
-	soul->drv.base.update(CMP_DRV(&soul->drv), dt);
-	soul->appr.base.update(CMP_APPR(&soul->appr), dt);
-	soul->ai.base.update(CMP_AI(&soul->ai), &soul->ori, CMP_DRV(&soul->drv), ts, dt);
-
-	/* TODO: Cast the driver once in the begining of the function. */
-	vel = soul->drv.base.vel(CMP_DRV(&soul->drv));
-
-    if (vel.vx > 0) {
-		cmp_appr_proxy_set_child(CMP_APPR(&soul->appr), SOUL_APPR_WALK_RIGHT);
-    } else if (vel.vx < 0) {
-		cmp_appr_proxy_set_child(CMP_APPR(&soul->appr), SOUL_APPR_WALK_LEFT);
-    }
-
-	cmp_think(CMP_AI(&soul->ai));
-	cmp_drive(&soul->ori, CMP_DRV(&soul->drv), dt);
-}
-
-void soul_draw(struct Soul *soul)
-{
-    struct WorldPos zero_wp = { 0.0, 0.0 };
-    struct ScreenPos zero_sp = pos_world_to_screen(zero_wp);
-	cmp_draw(&soul->ori, CMP_APPR(&soul->appr), -zero_sp.x, -zero_sp.y);
 }
 

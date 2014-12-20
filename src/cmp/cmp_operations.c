@@ -36,5 +36,4 @@ void cmp_deal_pain(struct CmpPain *x, struct CmpPain *y)
 {
     cmp_pain_queue_push(x, y->type);
     cmp_pain_queue_push(y, x->type);
-    DIAG_TRACE("pejn");
 }

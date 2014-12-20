@@ -1,20 +1,16 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
+#include <stdbool.h>
 #include <stdio.h>
-#include <string.h>
-#include <float.h>
-#include <math.h>
 
-#include <allegro5/allegro_primitives.h>
-
-#include "random.h"
-#include "memory.h"
-#include "draw.h"
 #include "array.h"
+#include "memory.h"
 #include "diagnostics.h"
+
+#include "sc_data.h"
+
 #include "sc_level.h"
 #include "sc_graph.h"
-#include "sc_collision.h"
 
 #ifdef min
 #	undef min
@@ -37,29 +33,6 @@ static double max(double a, double b)
 static bool eq_tilepos(struct TilePos *a, struct TilePos *b)
 {
 	return a->x == b->x && a->y == b->y;
-}
-
-static void lvl_draw_tile(struct TilePos tile_pos, char c)
-{
-    struct WorldPos world_pos;
-    struct ScreenPos screen_pos;
-    void *bitmap;
-
-    if (c == '#') {
-        bitmap = sc_tile;
-    } else if (c == 's') {
-        bitmap = sc_soulbooth;
-    } else {
-        return;
-    }
-
-    world_pos = pos_tile_to_world(tile_pos);
-    screen_pos = pos_world_to_screen(world_pos);
-    draw_bitmap(
-        bitmap,
-        screen_pos.x + sc_tile_w / 2,
-        screen_pos.y + sc_tile_w / 2,
-        0.0);
 }
 
 static int lvl_load_read_line(FILE *f, char **buffer, int *length)
@@ -149,11 +122,6 @@ int lvl_get_tile(struct Level *lvl, int x, int y)
     }
 }
 
-void lvl_draw(struct Level *lvl)
-{
-    lvl_for_each_tile(lvl, lvl_draw_tile);
-}
-
 /**
  * Fills a node array with nodes for all the horizontal edges in the level.
  * Note that the y coordinates of the edge nodes will be one tile above the
@@ -213,8 +181,8 @@ static void lgph_init_graph_add_descent(
         }
 
         y = lower.y;
-        x1 = min(result->data[i].x, result->data[i + 1].x);
-        x2 = max(result->data[i].x, result->data[i + 1].x);
+        x1 = (int)min(result->data[i].x, result->data[i + 1].x);
+		x2 = (int)max(result->data[i].x, result->data[i + 1].x);
 
 		/* Discard if the edge doesn't include the lower point. */
         if (lower.x <= x1 || lower.x >= x2) {

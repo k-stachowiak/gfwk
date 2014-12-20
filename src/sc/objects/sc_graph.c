@@ -1,11 +1,16 @@
-#include <stdlib.h>
-#include <math.h>
+/* Copyright (C) 2014 Krzysztof Stachowiak */
+
+#include <stdbool.h>
 #include <float.h>
+#include <stdlib.h>
 
 #include "diagnostics.h"
+#include "memory.h"
 #include "random.h"
 #include "array.h"
-#include "memory.h"
+
+#include "sc_data.h"
+
 #include "sc_graph.h"
 
 static bool op_leq(double x, double y)
@@ -110,12 +115,9 @@ void lgph_dijkstra(
 	double *lens;
 	bool *visit;
 
-	if (!(preds = malloc_or_die(lgph->nodes_count * sizeof(*preds))) ||
-		!(lens = malloc_or_die(lgph->nodes_count * sizeof(*lens))) ||
-		!(visit = malloc_or_die(lgph->nodes_count * sizeof(*visit)))) {
-		DIAG_ERROR("Allocation failure.");
-		exit(1);
-	}
+	preds = malloc_or_die(lgph->nodes_count * sizeof(*preds));
+	lens = malloc_or_die(lgph->nodes_count * sizeof(*lens));
+	visit = malloc_or_die(lgph->nodes_count * sizeof(*visit));
 
 	for (i = 0; i < lgph->nodes_count; ++i) {
 		preds[i] = i;

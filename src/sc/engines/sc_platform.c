@@ -1,9 +1,11 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
-#include "sc_platform.h"
+#include "sc_data.h"
+
 #include "sc_collision.h"
-#include "cmp_drv.h"
-#include "cmp_ori.h"
+
+#include "sc_hunter.h"
+#include "sc_level.h"
 
 struct CollisionContext {
     struct AABB bbox;

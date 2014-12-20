@@ -3,8 +3,6 @@
 #ifndef SC_GRAPH_H
 #define SC_GRAPH_H
 
-#include "sc_data.h"
-
 enum AdjType {
     ADJ_WALK,
     ADJ_JUMP,

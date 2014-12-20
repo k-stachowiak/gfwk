@@ -1,11 +1,12 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
-#include <stdio.h>
-#include <string.h>
-
-#include "array.h"
-#include "diagnostics.h"
 #include "sc_data.h"
+
+#include "sc_hunter.h"
+#include "sc_soul.h"
+#include "sc_arrow.h"
+#include "sc_level.h"
+#include "sc_graph.h"
 
 int sc_screen_w;
 int sc_screen_h;
@@ -32,6 +33,14 @@ struct CmpApprAnimSpriteCommon *sc_soul_walk_right_common;
 struct CmpApprAnimSpriteCommon *sc_soul_walk_left_common;
 
 struct WorldPos sc_cam_shift;
+
+struct Level lvl;
+struct Graph lgph;
+struct Hunter hunter;
+struct Soul soul;
+
+struct ArrowArray arrows;
+struct ArrowArray arrows_stuck;
 
 struct WorldPos pos_tile_to_world(struct TilePos tile_pos)
 {

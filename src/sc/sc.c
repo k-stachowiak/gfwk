@@ -1,43 +1,33 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
 #include <stdbool.h>
+#include <stdlib.h>
 
-#include <allegro5/allegro_primitives.h>
-
-#include "array.h"
 #include "memory.h"
-#include "sc.h"
-#include "cmp_ori.h"
-#include "cmp_drv.h"
-#include "cmp_appr.h"
-#include "cmp_ai.h"
-#include "cmp_operations.h"
-#include "sc_data.h"
-#include "sc_hunter.h"
-#include "sc_soul.h"
-#include "sc_level.h"
-#include "sc_graph.h"
-#include "sc_platform.h"
-#include "sc_pain.h"
+
+#include "system.h"
 #include "resources.h"
 #include "database.h"
+
 #include "menu.h"
-#include "draw.h"
+
+#include "cmp_ai.h"
+
+#include "sc_data.h"
+#include "sc_level.h"
+#include "sc_graph.h"
+#include "sc_hunter.h"
+#include "sc_soul.h"
+
+#include "sc_arms.h"
+#include "sc_draw.h"
+#include "sc_tick.h"
+#include "sc_platform.h"
+#include "sc_pain.h"
 
 /* Local state. */
 static bool sc_alive;
 static struct SysClient *sc_next;
-
-/* Entities. */
-struct Level lvl;
-struct Graph lgph;
-struct Hunter hunter;
-struct Soul soul;
-
-struct ArrowArray {
-    struct Arrow *data;
-    int size, cap;
-} arrows, arrows_stuck;
 
 /* Resources management logic. */
 static void sc_init_resources_basic(void)
@@ -168,23 +158,6 @@ static void sc_deinit_resources_complex(void)
     cmp_appr_anim_sprite_common_free(sc_soul_walk_left_common);
 }
 
-/* Common logic. */
-static void sc_shoot_arrow(void)
-{
-    struct Arrow arrow;
-    struct PosRot hunter_pr = cmp_ori_get(&hunter.ori);
-    struct WorldPos hunter_wp = { hunter_pr.x, hunter_pr.y };
-    arrow_init(&arrow, hunter_wp.x, hunter_wp.y - 15.0, hunter.aim_angle);
-    ARRAY_APPEND(arrows, arrow);
-}
-
-static void sc_tick_camera(double dt)
-{
-    struct PosRot hunter_pr = cmp_ori_get(&hunter.ori);
-    sc_cam_shift.x = hunter_pr.x;
-    sc_cam_shift.y = hunter_pr.y;
-}
-
 /* Client API.
  * ===========
  */
@@ -229,179 +202,38 @@ static void sc_deinit(void)
     sc_deinit_resources_basic();
 }
 
-/** Dumb objects' frame (e.g. projectiles). */
-static void sc_tick_dumb(double dt)
-{
-    int i;
-
-    hunter_tick(&hunter, dt);
-
-    for (i = 0; i < arrows.size; ++i) {
-        struct Arrow *arrow = arrows.data + i;
-        if (!arrow_tick(arrow, dt)) {
-            arrow_deinit(arrow);
-            ARRAY_REMOVE(arrows, i);
-            --i;
-        }
-    }
-
-    for (i = 0; i < arrows_stuck.size; ++i) {
-        struct Arrow *arrow = arrows_stuck.data + i;
-        if ((arrow-> timer -= dt) <= 0) {
-            arrow_deinit(arrow);
-            ARRAY_REMOVE(arrows_stuck, i);
-            --i;
-        }
-    }
-}
-
-/** Smart object's frame (wiht AI). */
-static void sc_tick_smart(struct CmpAiTacticalStatus *ts, double dt)
-{
-    soul_tick(&soul, ts, dt);
-}
-
-static void sc_tick_pain_feedback(void)
-{
-    int i, j;
-    for (i = 0; i < arrows.size; ++i) {
-        
-        struct Arrow *arrow = arrows.data + i;
-        struct CmpPain *pain = &arrow->pain;
-
-        for (j = 0; j < pain->queue_size; ++j) {
-            if (pain->queue[j] == PT_SOUL) {
-                arrow->timer = 1.0;
-                ARRAY_APPEND(arrows_stuck, *arrow);
-                ARRAY_REMOVE(arrows, i);
-                --i;
-                break;
-            }
-        }
-    }
-}
-
 static void sc_tick(double dt)
 {
     struct CmpAiTacticalStatus ts;
 
     sc_tick_camera(dt);
-    sc_tick_dumb(dt);
+	sc_tick_arrows_regular(&arrows, dt);
+	sc_tick_arrows_stuck(&arrows_stuck, dt);
+	sc_tick_hunter(&hunter, dt);
+
     ts.hunter_pos = cmp_ori_get(&hunter.ori);
-    sc_tick_smart(&ts, dt);
 
-    platform_collide(&hunter, &lvl);            /* Update platformer engine. */
-    pain_tick(arrows.data, arrows.size, &soul); /* Update pain engine. */
-    sc_tick_pain_feedback();
-}
+	sc_tick_soul(&soul, &ts, dt);
 
-static void sc_draw_debug_graph(void)
-{
-    int i;
-    char buf[10];
-
-    for (i = 0; i < lgph.nodes_count; ++i) {
-
-        struct Adj *adj;
-        struct TilePos atp = lgph.nodes[i];
-		struct WorldPos awp = pos_tile_to_world_ground(atp);
-        struct ScreenPos asp = pos_world_to_screen(awp);
-        double x1 = asp.x;
-        double y1 = asp.y;
-
-        for (adj = lgph.adjacency[i]; adj->neighbor != -1; ++adj) {
-
-            struct TilePos btp = lgph.nodes[adj->neighbor];
-			struct WorldPos bwp = pos_tile_to_world_ground(btp);
-            struct ScreenPos bsp = pos_world_to_screen(bwp);
-            double x2 = bsp.x;
-            double y2 = bsp.y;
-
-            ALLEGRO_COLOR color;
-            switch (adj->type) {
-            case ADJ_WALK:
-                color = al_map_rgb_f(0.5f, 1.0f, 0.5f);
-                break;
-            case ADJ_JUMP:
-                color = al_map_rgb_f(0.5f, 0.5f, 1.0f);
-                break;
-            }
-
-            al_draw_line(x1, y1, x2, y2, color, 1.0);
-            al_draw_filled_circle(x1 - 4.0, y1, 5.0, color);
-            al_draw_circle(x2 + 4.0, y2, 5.0, color, 1.0);
-
-            sprintf(buf, "%d", i);
-            draw_text(sc_debug_font, x1 + 2, y1 - 18, 0, 0, 0, 1, true, buf);
-            draw_text(sc_debug_font, x1, y1 - 20, 1, 1, 1, 1, true, buf);
-
-            sprintf(buf, "%d", adj->neighbor);
-            draw_text(sc_debug_font, x2 + 2, y2 - 18, 0, 0, 0, 1, true, buf);
-            draw_text(sc_debug_font, x2, y2 - 20, 1, 1, 1, 1, true, buf);
-
-        }
-    }
-}
-
-static void sc_draw_debug_soul(struct Soul *soul)
-{
-    int i;
-    double *points;
-    int points_count;
-
-    ALLEGRO_COLOR color = al_map_rgb_f(1.0f, 0.7f, 0.4f);
-
-	struct PosRot soul_pr = cmp_ori_get(&soul->ori);
-	struct WorldPos soul_wp = { soul_pr.x, soul_pr.y };
-	struct ScreenPos soul_sp = pos_world_to_screen(soul_wp);
-
-	al_draw_circle(soul_sp.x, soul_sp.y, 4, color, 1);
-
-    cmp_drv_waypoint_points(CMP_DRV(&soul->drv), &points, &points_count);
-
-    for (i = 0; i < (points_count - 1); ++i) {
-
-        struct WorldPos
-            wp1 = { points[2 * i + 0], points[2 * i + 1] },
-            wp2 = { points[2 * i + 2], points[2 * i + 3] };
-
-        struct ScreenPos
-            sp1 = pos_world_to_screen(wp1),
-            sp2 = pos_world_to_screen(wp2);
-
-        double x1 = sp1.x;
-        double y1 = sp1.y;
-        double x2 = sp2.x;
-        double y2 = sp2.y;
-
-        al_draw_line(x1, y1, x2, y2, color, 2.0);
-    }
-}
-
-static void sc_draw_arrow_array(struct ArrowArray *aa)
-{
-    int i;
-    struct WorldPos zero_wp = { 0.0, 0.0 };
-    struct ScreenPos zero_sp = pos_world_to_screen(zero_wp);
-    for (i = 0; i < aa->size; ++i) {
-        cmp_draw(&aa->data[i].ori, CMP_APPR(&aa->data[i].appr), -zero_sp.x, -zero_sp.y);
-    }
+    platform_collide(&hunter, &lvl);
+    pain_tick(arrows.data, arrows.size, &soul);
 }
 
 static void sc_draw(double weight)
 {
     al_clear_to_color(al_map_rgb_f(0.0, 0.0, 0.0));
-    lvl_draw(&lvl);
-    hunter_draw(&hunter);
-    soul_draw(&soul);
-    sc_draw_arrow_array(&arrows);
-    sc_draw_arrow_array(&arrows_stuck);
+
+	sc_draw_level(&lvl);
+	sc_draw_hunter(&hunter);
+	sc_draw_soul(&soul);
+	sc_draw_arrows(&arrows);
+    sc_draw_arrows(&arrows_stuck);
 
     if (!sys_keys[ALLEGRO_KEY_F1]) {
         platform_draw_debug();
         pain_draw_debug();
-        sc_draw_debug_graph();
-        sc_draw_debug_soul(&soul);
+		sc_draw_graph_dbg(&lgph);
+        sc_draw_soul_dbg(&soul);
     }
 
     al_flip_display();

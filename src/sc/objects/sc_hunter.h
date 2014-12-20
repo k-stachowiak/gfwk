@@ -5,8 +5,6 @@
 
 #include <stdbool.h>
 
-#include "sc_data.h"
-
 #include "cmp_appr.h"
 #include "cmp_ori.h"
 #include "cmp_drv.h"
@@ -38,7 +36,5 @@ struct Hunter {
 
 void hunter_init(struct Hunter *hunter);
 void hunter_deinit(struct Hunter *hunter);
-void hunter_tick(struct Hunter *hunter, double dt);
-void hunter_draw(struct Hunter *hunter);
 
 #endif
