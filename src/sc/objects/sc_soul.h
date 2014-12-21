@@ -26,6 +26,7 @@ struct Soul {
 	struct CmpApprStaticSprite appr_caught;
 	struct CmpAppr *appr_array[5];
 
+	long id;
 	struct CmpDrvWaypoint drv;
     struct CmpApprProxy appr;
 	struct CmpOri ori;
@@ -36,7 +37,7 @@ struct Soul {
     double box_w, box_h;
 };
 
-void soul_init(struct Soul *soul, struct Graph *lgph, struct TilePos tp);
+void soul_init(struct Soul *soul, long id, struct Graph *lgph, struct TilePos tp);
 void soul_deinit(struct Soul *soul);
 
 #endif

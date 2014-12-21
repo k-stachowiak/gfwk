@@ -3,15 +3,45 @@
 #include <math.h>
 
 #include "array.h"
+#include "memory.h"
 
 #include "cmp_operations.h"
 
 #include "sc_data.h"
 
 #include "sc_collision.h"
+#include "sc_pain.h"
 
 #include "sc_soul.h"
 #include "sc_arrow.h"
+
+struct PainCallbackNode {
+	long id;
+	void *data; /* TODO: drop data and force client to map data to id ??? */
+	PainCallback callback;
+	struct PainCallbackNode *next;
+} *pain_callback_nodes;
+
+static struct PainCallbackNode *sc_pain_callback_seek(long id)
+{
+	struct PainCallbackNode *current = pain_callback_nodes;
+	while (current) {
+		if (current->id == id) {
+			break;
+		}
+	}
+	return current;
+}
+
+static void sc_pain_callback_insert(long id, void *data, PainCallback callback)
+{
+	struct PainCallbackNode *node = malloc_or_die(sizeof *node);
+	node->id = id;
+	node->data = data;
+	node->callback = callback;
+	node->next = pain_callback_nodes;
+	pain_callback_nodes = node;
+}
 
 struct PainContext {
     struct {
@@ -108,7 +138,10 @@ static void pain_tick_feedback_arrows(
 
 static void pain_tick_feedback_soul(struct Soul *soul)
 {
-	(void)soul;
+	struct PainCallbackNode *found = sc_pain_callback_seek(soul->id);
+	if (found) {
+		found->callback(found->id, found->data);
+	}
 }
 
 static void pain_tick_feedback(
@@ -118,6 +151,22 @@ static void pain_tick_feedback(
 {
 	pain_tick_feedback_arrows(arrows, arrows_stuck);
 	pain_tick_feedback_soul(soul);
+}
+
+
+
+void sc_pain_init(void)
+{
+	pain_callback_nodes = NULL;
+}
+
+void sc_pain_deinit(void)
+{
+	while (pain_callback_nodes) {
+		struct PainCallbackNode* current = pain_callback_nodes;
+		pain_callback_nodes = pain_callback_nodes->next;
+		free_or_die(current);
+	}
 }
 
 void pain_draw_debug(void)
@@ -138,3 +187,13 @@ void pain_tick(
 	pain_tick_feedback(arrows, arrows_stuck, soul);
 }
 
+void sc_pain_callback_register(long id, void *data, PainCallback callback)
+{
+	struct PainCallbackNode *found = sc_pain_callback_seek(id);
+
+	if (!found) {
+		sc_pain_callback_insert(id, data, callback);
+	} else {
+		found->callback = callback;
+	}
+}

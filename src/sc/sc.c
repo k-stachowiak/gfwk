@@ -28,6 +28,7 @@
 /* Local state. */
 static bool sc_alive;
 static struct SysClient *sc_next;
+static long sc_entity_id;
 
 /* Resources management logic. */
 static void sc_init_resources_basic(void)
@@ -166,6 +167,7 @@ static void sc_init(void)
 {
     sc_alive = true;
     sc_next = NULL;
+	sc_entity_id = 0;
 
     sc_screen_w = db_integer("screen_w");
     sc_screen_h = db_integer("screen_h");
@@ -178,7 +180,7 @@ static void sc_init(void)
     lgph = lvl_init_graph(&lvl);
 
     hunter_init(&hunter);
-    soul_init(&soul, &lgph, lgph.nodes[10]);
+    soul_init(&soul, ++sc_entity_id, &lgph, lgph.nodes[10]);
 
     arrows.data = NULL;
     arrows.size = 0;

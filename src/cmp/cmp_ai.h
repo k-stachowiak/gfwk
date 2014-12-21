@@ -56,6 +56,7 @@ struct CmpAiSoul {
 
 void cmp_ai_soul_init(
 		struct CmpAiSoul *ai,
+		long id,
 		struct Graph *graph,
 		struct CmpOri *ori,
 		struct CmpDrv *drv);
@@ -63,8 +64,9 @@ void cmp_ai_soul_init(
 void cmp_ai_soul_deinit(struct CmpAiSoul *ai);
 
 struct CmpAi *cmp_ai_soul_create(
-	struct Graph *graph,
-	struct CmpOri *ori,
-	struct CmpDrv *drv);
+		long id,
+		struct Graph *graph,
+		struct CmpOri *ori,
+		struct CmpDrv *drv);
 
 #endif

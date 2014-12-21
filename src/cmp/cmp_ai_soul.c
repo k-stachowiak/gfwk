@@ -5,9 +5,11 @@
 
 #include "diagnostics.h"
 #include "memory.h"
+
 #include "cmp_ai.h"
 
 #include "sc_data.h"
+#include "sc_pain.h"
 #include "sc_graph.h"
 
 /* Common waypoint related opretaions.
@@ -116,6 +118,15 @@ static void cmp_ai_soul_update(
     }
 }
 
+/* Pain reaction.
+ * ==============
+ */
+
+static void cmp_ai_soul_on_pain(long id, void *ai_boxed)
+{
+	printf("pejnerson.");
+}
+
 /* Lifetime management operations.
  * ===============================
  */
@@ -129,6 +140,7 @@ static void cmp_ai_soul_free(struct CmpAi *this)
 
 void cmp_ai_soul_init(
 		struct CmpAiSoul *ai,
+		long id,
 		struct Graph *graph,
 		struct CmpOri *ori,
 		struct CmpDrv *drv)
@@ -146,6 +158,8 @@ void cmp_ai_soul_init(
 
 	cmp_ai_soul_idle_drv_end(drv, (void*)ai);
 	cmp_drv_waypoint_on_end(drv, cmp_ai_soul_idle_drv_end, (void*)ai);
+
+	sc_pain_callback_register(id, (void*)ai, cmp_ai_soul_on_pain);
 }
 
 void cmp_ai_soul_deinit(struct CmpAiSoul *ai)
@@ -154,11 +168,12 @@ void cmp_ai_soul_deinit(struct CmpAiSoul *ai)
 }
 
 struct CmpAi *cmp_ai_soul_create(
+		long id,
 		struct Graph *graph,
 		struct CmpOri *ori,
 		struct CmpDrv *drv)
 {
 	struct CmpAiSoul *result = malloc_or_die(sizeof(*result));
-	cmp_ai_soul_init(result, graph, ori, drv);
+	cmp_ai_soul_init(result, id, graph, ori, drv);
 	return CMP_AI(result);
 }

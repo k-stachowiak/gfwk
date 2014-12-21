@@ -4,7 +4,7 @@
 
 #include "sc_soul.h"
 
-void soul_init(struct Soul *soul, struct Graph *lgph, struct TilePos soul_tp)
+void soul_init(struct Soul *soul, long id, struct Graph *lgph, struct TilePos soul_tp)
 {
     struct WorldPos wp = pos_tile_to_world_ground(soul_tp);
 
@@ -20,11 +20,13 @@ void soul_init(struct Soul *soul, struct Graph *lgph, struct TilePos soul_tp)
 	soul->appr_array[SOUL_APPR_WALK_RIGHT] = CMP_APPR(&soul->appr_walk_right);
 	soul->appr_array[SOUL_APPR_CAUGHT] = CMP_APPR(&soul->appr_caught);
 
+	soul->id = id;
+
 	cmp_drv_waypoint_init(&soul->drv, 150.0);
 	cmp_appr_proxy_init(&soul->appr, soul->appr_array, 5, SOUL_APPR_WALK_RIGHT);
 	cmp_ori_init(&soul->ori, wp.x, wp.y, 0.0);
 	cmp_pain_init(&soul->pain, PT_SOUL);
-	cmp_ai_soul_init(&soul->ai, lgph, &soul->ori, CMP_DRV(&soul->drv));
+	cmp_ai_soul_init(&soul->ai, id, lgph, &soul->ori, CMP_DRV(&soul->drv));
 
 	soul->health = 100;
     soul->box_w = 30.0;
