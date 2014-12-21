@@ -37,22 +37,22 @@ static void pain_tick_soul(
 	soul_cir->r = 25.0;
 }
 
-static void pain_reset_arrows(struct Arrow *arrows, int arrows_count)
+static void pain_reset_arrows(struct ArrowArray *arrows)
 {
 	int i;
-	for (i = 0; i < arrows_count; ++i) {
-		cmp_pain_reset(&arrows[i].pain);
+	for (i = 0; i < arrows->size; ++i) {
+		cmp_pain_reset(&arrows->data[i].pain);
 	}
 }
 
 static void pain_tick_arrows(
-        struct Arrow *arrows, int arrows_count,
+		struct ArrowArray *arrows,
         struct Soul *soul, struct Circle *soul_cir)
 {
     int i;
-    for (i = 0; i < arrows_count; ++i) {
+    for (i = 0; i < arrows->size; ++i) {
 
-        struct PosRot arrow_pr = cmp_ori_get(&arrows[i].ori);
+		struct PosRot arrow_pr = cmp_ori_get(&arrows->data[i].ori);
         struct Segment arrow_seg;
 
         arrow_seg.ax = arrow_pr.x;
@@ -63,14 +63,12 @@ static void pain_tick_arrows(
         ARRAY_APPEND(pc_last.arrow_segs, arrow_seg);
 
         if (col_segment_circle(arrow_seg, *soul_cir)) {
-            cmp_deal_pain(&soul->pain, &arrows[i].pain);
+			cmp_deal_pain(&soul->pain, &arrows->data[i].pain);
         }
     }
 }
 
-static void pain_tick_interaction(
-		struct Arrow *arrows, int arrows_count,
-		struct Soul *soul)
+static void pain_tick_interaction(struct ArrowArray *arrows, struct Soul *soul)
 {
 	struct PosRot soul_pr;
 	struct Circle soul_cir;
@@ -78,32 +76,48 @@ static void pain_tick_interaction(
 	ARRAY_FREE(pc_last.arrow_segs);
 
 	pain_reset_soul(soul);
-	pain_reset_arrows(arrows, arrows_count);
+	pain_reset_arrows(arrows);
 
 	pain_tick_soul(soul, &soul_pr, &soul_cir);
-	pain_tick_arrows(arrows, arrows_count, soul, &soul_cir);
+	pain_tick_arrows(arrows, soul, &soul_cir);
 
 	pc_last.soul_cir = soul_cir;
 }
 
-static void pain_tick_feedback(void)
+static void pain_tick_feedback_arrows(
+		struct ArrowArray *arrows,
+		struct ArrowArray *arrows_stuck)
 {
 	int i, j;
-	for (i = 0; i < arrows.size; ++i) {
+	for (i = 0; i < arrows->size; ++i) {
 
-		struct Arrow *arrow = arrows.data + i;
+		struct Arrow *arrow = arrows->data + i;
 		struct CmpPain *pain = &arrow->pain;
 
 		for (j = 0; j < pain->queue_size; ++j) {
 			if (pain->queue[j] == PT_SOUL) {
 				arrow->timer = 1.0;
-				ARRAY_APPEND(arrows_stuck, *arrow);
-				ARRAY_REMOVE(arrows, i);
+				ARRAY_APPEND(*arrows_stuck, *arrow);
+				ARRAY_REMOVE(*arrows, i);
 				--i;
 				break;
 			}
 		}
 	}
+}
+
+static void pain_tick_feedback_soul(struct Soul *soul)
+{
+	(void)soul;
+}
+
+static void pain_tick_feedback(
+		struct ArrowArray *arrows,
+		struct ArrowArray *arrows_stuck,
+		struct Soul *soul)
+{
+	pain_tick_feedback_arrows(arrows, arrows_stuck);
+	pain_tick_feedback_soul(soul);
 }
 
 void pain_draw_debug(void)
@@ -116,10 +130,11 @@ void pain_draw_debug(void)
 }
 
 void pain_tick(
-        struct Arrow *arrows, int arrows_count,
-        struct Soul *soul)
+		struct ArrowArray *arrows,
+		struct ArrowArray *arrows_stuck,
+		struct Soul *soul)
 {
-	pain_tick_interaction(arrows, arrows_count, soul);
-	pain_tick_feedback();
+	pain_tick_interaction(arrows, soul);
+	pain_tick_feedback(arrows, arrows_stuck, soul);
 }
 

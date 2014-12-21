@@ -216,7 +216,7 @@ static void sc_tick(double dt)
 	sc_tick_soul(&soul, &ts, dt);
 
     platform_collide(&hunter, &lvl);
-    pain_tick(arrows.data, arrows.size, &soul);
+    pain_tick(&arrows, &arrows_stuck, &soul);
 }
 
 static void sc_draw(double weight)

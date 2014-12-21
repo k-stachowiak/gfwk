@@ -6,7 +6,8 @@
 void pain_draw_debug(void);
 
 void pain_tick(
-        struct Arrow *arrows, int arrows_count,
-        struct Soul *soul);
+		struct ArrowArray *arrows,
+		struct ArrowArray *arrows_stuck,
+		struct Soul *soul);
 
 #endif
