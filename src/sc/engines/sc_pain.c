@@ -118,6 +118,7 @@ static void pain_tick_feedback_arrows(
 		struct ArrowArray *arrows,
 		struct ArrowArray *arrows_stuck)
 {
+	/* TODO: Handle with a callback as well. */
 	int i, j;
 	for (i = 0; i < arrows->size; ++i) {
 
@@ -138,9 +139,15 @@ static void pain_tick_feedback_arrows(
 
 static void pain_tick_feedback_soul(struct Soul *soul)
 {
-	struct PainCallbackNode *found = sc_pain_callback_seek(soul->id);
-	if (found) {
-		found->callback(found->id, found->data);
+	int i;
+	struct CmpPain *pain = &soul->pain;
+	for (i = 0; i < pain->queue_size; ++i) {
+		if (pain->queue[i] == PT_ARROW) {
+			struct PainCallbackNode *found = sc_pain_callback_seek(soul->id);
+			if (found) {
+				found->callback(found->id, found->data);
+			}
+		}
 	}
 }
 
