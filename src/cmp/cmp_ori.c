@@ -4,27 +4,32 @@
 #include <math.h>
 
 #include "diagnostics.h"
+#include "memory.h"
 #include "cmp_ori.h"
+
+void cmp_ori_init(struct CmpOri *ori, double x, double y, double theta)
+{
+	struct PosRot init_pr = { x, y, theta };
+	ori->current = init_pr;
+	ori->prev = init_pr;
+}
+
+void cmp_ori_deinit(struct CmpOri *ori)
+{
+	(void)ori;
+}
 
 struct CmpOri *cmp_ori_create(double x, double y, double theta)
 {
-    struct CmpOri *result = malloc(sizeof(*result));
-    struct PosRot init_pr = { x, y, theta };
-
-    if (!result) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
-
-    result->current = init_pr;
-    result->prev = init_pr;
-
+    struct CmpOri *result = malloc_or_die(sizeof(*result));
+	cmp_ori_init(result, x, y, theta);
     return result;
 }
 
 void cmp_ori_free(struct CmpOri *cmp_ori)
 {
-    free(cmp_ori);
+	cmp_ori_deinit(cmp_ori);
+    free_or_die(cmp_ori);
 }
 
 void cmp_ori_shift_rotate(
@@ -50,6 +55,12 @@ void cmp_ori_cancel_y(struct CmpOri *cmp_ori)
 struct PosRot cmp_ori_get(struct CmpOri *cmp_ori)
 {
     return cmp_ori->current;
+}
+
+void cmp_ori_get_shift(struct CmpOri *cmp_ori, double *dx, double *dy)
+{
+    *dx = cmp_ori->current.x - cmp_ori->prev.x;
+    *dy = cmp_ori->current.y - cmp_ori->prev.y;
 }
 
 double cmp_ori_distance(struct CmpOri *a, struct CmpOri *b)

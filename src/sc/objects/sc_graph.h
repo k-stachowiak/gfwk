@@ -3,8 +3,6 @@
 #ifndef SC_GRAPH_H
 #define SC_GRAPH_H
 
-#include "sc_data.h"
-
 enum AdjType {
     ADJ_WALK,
     ADJ_JUMP,
@@ -33,15 +31,14 @@ void lgph_init(
         struct Adj **adjacency);
 
 void lgph_deinit(struct Graph *lgph);
-int lgph_find_index(struct Graph *lgph, struct TilePos pos);
-int lgph_find_farthest(struct Graph *lgph, struct TilePos bad);
+int lgph_find_index(struct Graph *lgph, struct TilePos tp);
+int lgph_find_random(struct Graph *lgph);
+int lgph_find_random_skip(struct Graph *lgph, int skipped);
+int lgph_find_nearest(struct Graph *lgph, struct WorldPos wp);
+int lgph_find_farthest(struct Graph *lgph, struct WorldPos wp);
 
-void lgph_runaway_path(
-        struct Graph *lgph, struct TilePos src, struct TilePos bad,
-        struct TilePos **points, int *points_count);
-
-void lgph_random_path(
-        struct Graph *lgph, struct TilePos src,
-        struct TilePos **points, int *points_count);
+void lgph_dijkstra(
+	struct Graph *lgph, struct TilePos src_pos, struct TilePos dst_pos,
+	struct TilePos **points, int *points_count);
 
 #endif

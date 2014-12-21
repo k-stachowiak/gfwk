@@ -1,16 +1,14 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
+#include <stdbool.h>
 #include <stdio.h>
-#include <string.h>
-#include <float.h>
-#include <math.h>
 
-#include <allegro5/allegro_primitives.h>
-
-#include "random.h"
-#include "draw.h"
 #include "array.h"
+#include "memory.h"
 #include "diagnostics.h"
+
+#include "sc_data.h"
+
 #include "sc_level.h"
 #include "sc_graph.h"
 
@@ -37,39 +35,6 @@ static bool eq_tilepos(struct TilePos *a, struct TilePos *b)
 	return a->x == b->x && a->y == b->y;
 }
 
-static void lvl_draw_tile(struct TilePos tile_pos, char c)
-{
-    struct WorldPos world_pos;
-    struct ScreenPos screen_pos;
-    struct AABB tile_aabb;
-    void *bitmap;
-
-    if (c == '#') {
-        bitmap = sc_tile;
-    } else if (c == 's') {
-        bitmap = sc_soulbooth;
-    } else {
-        return;
-    }
-
-    world_pos = pos_tile_to_world(tile_pos);
-    tile_aabb.ax = world_pos.x;
-    tile_aabb.ay = world_pos.y;
-    tile_aabb.bx = world_pos.x + sc_tile_w;
-    tile_aabb.by = world_pos.y + sc_tile_w;
-    if (!aabb_aabb(tile_aabb, sc_screen_aabb)) {
-        return;
-    }
-
-    screen_pos = pos_world_to_screen(world_pos);
-
-    draw_bitmap(
-        bitmap,
-        screen_pos.x + sc_tile_w / 2,
-        screen_pos.y + sc_tile_w / 2,
-        0.0);
-}
-
 static int lvl_load_read_line(FILE *f, char **buffer, int *length)
 {
     int c;
@@ -83,11 +48,7 @@ static int lvl_load_read_line(FILE *f, char **buffer, int *length)
     }
 
     *length = result.size;
-    *buffer = malloc(result.size);
-    if (!(*buffer)) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    *buffer = malloc_or_die(result.size);
     memcpy(*buffer, result.data, result.size);
 
     ARRAY_FREE(result);
@@ -110,28 +71,20 @@ void lvl_load(struct Level *lvl, char *filename)
     width = line_length;
 
     map_cap = line_length;
-    map = malloc(map_cap);
-    if (!map) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    map = malloc_or_die(map_cap);
     memcpy(map, line, line_length);
-    free(line);
+    free_or_die(line);
     map_size = map_cap;
 
     while (c != EOF) {
         c = lvl_load_read_line(in, &line, &line_length);
         if (line_length != 1) {
             map_cap += line_length;
-            map = realloc(map, map_cap);
-            if (!map) {
-                DIAG_ERROR("Allocation failure.");
-                exit(1);
-            }
+            map = realloc_or_die(map, map_cap);
             memcpy(map + map_size, line, line_length);
             map_size = map_cap;
         }
-        free(line);
+        free_or_die(line);
     }
 
     fclose(in);
@@ -146,7 +99,7 @@ void lvl_unload(struct Level *lvl)
 {
     lvl->width = 0;
     lvl->map_size = 0;
-    free(lvl->map);
+    free_or_die(lvl->map);
 }
 
 void lvl_for_each_tile(struct Level *lvl, void (*f)(struct TilePos, char))
@@ -167,11 +120,6 @@ int lvl_get_tile(struct Level *lvl, int x, int y)
     } else {
         return lvl->map[y * lvl->width + x];
     }
-}
-
-void lvl_draw(struct Level *lvl)
-{
-    lvl_for_each_tile(lvl, lvl_draw_tile);
 }
 
 /**
@@ -233,8 +181,8 @@ static void lgph_init_graph_add_descent(
         }
 
         y = lower.y;
-        x1 = min(result->data[i].x, result->data[i + 1].x);
-        x2 = max(result->data[i].x, result->data[i + 1].x);
+        x1 = (int)min(result->data[i].x, result->data[i + 1].x);
+		x2 = (int)max(result->data[i].x, result->data[i + 1].x);
 
 		/* Discard if the edge doesn't include the lower point. */
         if (lower.x <= x1 || lower.x >= x2) {
@@ -407,11 +355,7 @@ struct Graph lvl_init_graph(struct Level *lvl)
 
     uniques = lvl_init_graph_find_unique_nodes(&all_nodes);
 
-    adjacency = malloc(uniques.size * sizeof(*adjacency));
-    if (!adjacency) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    adjacency = malloc_or_die(uniques.size * sizeof(*adjacency));
     for (i = 0; i < uniques.size; ++i) {
         adjacency[i] = lvl_init_graph_find_adjacency(
             uniques.data[i], &uniques, &all_nodes);

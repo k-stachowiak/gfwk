@@ -19,6 +19,10 @@
     do { \
         int size = src.cap * sizeof(*dst.data); \
         dst.data = malloc(size); \
+        if (!dst.data) { \
+            fprintf(stderr, "Allocation failure.\n"); \
+            exit(1); \
+        } \
         memcpy(dst.data, src.data, size); \
         dst.size = src.size; \
         dst.cap = src.cap; \
@@ -59,7 +63,8 @@
 
 #define ARRAY_REMOVE(MACRO_ARRAY, MACRO_INDEX) \
     do { \
-        (MACRO_ARRAY).data[(MACRO_INDEX)] = (MACRO_ARRAY).data[(MACRO_ARRAY).size - 1]; \
+        (MACRO_ARRAY).data[(MACRO_INDEX)] = \
+            (MACRO_ARRAY).data[(MACRO_ARRAY).size - 1]; \
         (MACRO_ARRAY).size -= 1; \
     } while(0)
 

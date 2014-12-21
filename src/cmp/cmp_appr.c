@@ -5,6 +5,7 @@
 #include <allegro5/allegro.h>
 
 #include "diagnostics.h"
+#include "memory.h"
 #include "resources.h"
 #include "cmp_appr.h"
 
@@ -15,9 +16,9 @@
 void cmp_appr_anim_sprite_common_free(struct CmpApprAnimSpriteCommon* common)
 {
     res_dispose_frame_sheet(common->frames, common->frames_count);
-    free(common->frame_indices);
-    free(common->frame_times);
-    free(common);
+    free_or_die(common->frame_indices);
+    free_or_die(common->frame_times);
+    free_or_die(common);
 }
 
 struct CmpApprAnimSpriteCommon *cmp_appr_anim_sprite_common_create(
@@ -25,11 +26,7 @@ struct CmpApprAnimSpriteCommon *cmp_appr_anim_sprite_common_create(
         int *frame_indices, double *frame_times, int frame_defs_count,
         int frame_w)
 {
-    struct CmpApprAnimSpriteCommon *result = malloc(sizeof(*result));
-    if (!result) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    struct CmpApprAnimSpriteCommon *result = malloc_or_die(sizeof(*result));
 
     result->frames = frames;
     result->frames_count = frames_count;
@@ -51,17 +48,12 @@ struct CmpApprAnimSpriteCommon *cmp_appr_anim_sprite_common_create(
 
 static void cmp_appr_common_free(struct CmpAppr *this)
 {
-    free(this);
+    free_or_die(this);
 }
 
 /* Static sprite implementation.
  * -----------------------------
  */
-
-struct CmpApprStaticSprite {
-    struct CmpAppr base;
-    void *bitmap;
-};
 
 static void cmp_appr_static_sprite_update(struct CmpAppr *this, double dt)
 {
@@ -75,36 +67,29 @@ static void *cmp_appr_static_sprite_bitmap(struct CmpAppr *this)
     return derived->bitmap;
 }
 
+void cmp_appr_static_sprite_init(struct CmpApprStaticSprite *appr, void *sprite)
+{
+	appr->base.free = cmp_appr_common_free;
+	appr->base.update = cmp_appr_static_sprite_update;
+	appr->base.bitmap = cmp_appr_static_sprite_bitmap;
+	appr->bitmap = sprite;
+}
+
+void cmp_appr_static_sprite_deinit(struct CmpApprStaticSprite *appr)
+{
+	(void)appr;
+}
+
 struct CmpAppr *cmp_appr_static_sprite_create(void *sprite)
 {
-    struct CmpApprStaticSprite *result = malloc(sizeof(*result));
-
-    if (!result) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
-
-    result->base.free = cmp_appr_common_free;
-    result->base.update = cmp_appr_static_sprite_update;
-    result->base.bitmap = cmp_appr_static_sprite_bitmap;
-
-    result->bitmap = sprite;
-
-    return (struct CmpAppr*)result;
+    struct CmpApprStaticSprite *result = malloc_or_die(sizeof(*result));
+	cmp_appr_static_sprite_init(result, sprite);
+    return CMP_APPR(result);
 }
 
 /* Animated sprite implementation.
  * -------------------------------
  */
-
-struct CmpApprAnimSprite {
-    struct CmpAppr base;
-    struct CmpApprAnimSpriteCommon *common;
-    int current_def;
-    int rep_count;
-    double time_to_switch;
-    bool done;
-};
 
 static void cmp_appr_anim_sprite_update(
         struct CmpAppr *this,
@@ -140,26 +125,92 @@ static void *cmp_appr_anim_sprite_bitmap(struct CmpAppr *this)
     return derived->common->frames[derived->common->frame_indices[derived->current_def]];
 }
 
+void cmp_appr_anim_sprite_init(
+		struct CmpApprAnimSprite *appr,
+		struct CmpApprAnimSpriteCommon *common,
+		int init_def,
+		int rep_count)
+{
+	appr->base.free = cmp_appr_common_free;
+	appr->base.update = cmp_appr_anim_sprite_update;
+	appr->base.bitmap = cmp_appr_anim_sprite_bitmap;
+
+	appr->common = common;
+	appr->current_def = init_def;
+	appr->rep_count = rep_count;
+	appr->time_to_switch = common->frame_times[init_def];
+	appr->done = false;
+}
+
+void cmp_appr_anim_sprite_deinit(struct CmpApprAnimSprite *appr)
+{
+	(void)appr;
+}
+
 struct CmpAppr *cmp_appr_anim_sprite_create(
         struct CmpApprAnimSpriteCommon *common, int init_def, int rep_count)
 {
-    struct CmpApprAnimSprite *result = malloc(sizeof(*result));
-
-    if (!result) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
-
-    result->base.free = cmp_appr_common_free;
-    result->base.update = cmp_appr_anim_sprite_update;
-    result->base.bitmap = cmp_appr_anim_sprite_bitmap;
-
-    result->common = common;
-    result->current_def = init_def;
-    result->rep_count = rep_count;
-    result->time_to_switch = common->frame_times[init_def];
-    result->done = false;
-
+    struct CmpApprAnimSprite *result = malloc_or_die(sizeof(*result));
+	cmp_appr_anim_sprite_init(result, common, init_def, rep_count);
     return (struct CmpAppr*)result;
 }
 
+/* Proxy apperance implementation.
+ * -------------------------------
+ */
+
+static void cmp_appr_proxy_update(struct CmpAppr *this, double dt)
+{
+	struct CmpApprProxy *derived = (struct CmpApprProxy*)this;
+	struct CmpAppr *child = derived->children[derived->current_child];
+	child->update(child, dt);
+}
+
+static void *cmp_appr_proxy_bitmap(struct CmpAppr *this)
+{
+	struct CmpApprProxy *derived = (struct CmpApprProxy*)this;
+	struct CmpAppr *child = derived->children[derived->current_child];
+	return child->bitmap(child);
+}
+
+void cmp_appr_proxy_init(
+		struct CmpApprProxy *appr,
+		struct CmpAppr *children[],
+		int children_count,
+		int init_child)
+{
+	appr->base.free = cmp_appr_common_free;
+	appr->base.update = cmp_appr_proxy_update;
+	appr->base.bitmap = cmp_appr_proxy_bitmap;
+
+	appr->children = children;
+	appr->children_count = children_count;
+	appr->current_child = init_child;
+}
+
+void cmp_appr_proxy_deinit(struct CmpApprProxy *appr)
+{
+	(void)appr;
+}
+
+struct CmpAppr *cmp_appr_proxy_create(
+		struct CmpAppr *children[],
+		int children_count,
+		int init_child)
+{
+	struct CmpApprProxy *result = malloc_or_die(sizeof(*result));
+	cmp_appr_proxy_init(result, children, children_count, init_child);
+	return (struct CmpAppr*)result;
+}
+
+int cmp_appr_proxy_get_child(struct CmpAppr *this)
+{
+	struct CmpApprProxy *derived = (struct CmpApprProxy*)this;
+	return derived->current_child;
+}
+
+void cmp_appr_proxy_set_child(struct CmpAppr *this, int child)
+{
+	struct CmpApprProxy *derived = (struct CmpApprProxy*)this;
+	derived->current_child = child;
+}

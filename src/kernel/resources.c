@@ -6,6 +6,7 @@
 #include <allegro5/allegro_audio.h>
 
 #include "diagnostics.h"
+#include "memory.h"
 #include "resources.h"
 
 struct ResNodeBitmap {
@@ -76,27 +77,27 @@ void res_deinit(void)
     while (bitmaps) {
         DIAG_WARNING("Uninitialized bitmap (%s)", bitmaps->path);
         btemp = bitmaps->next;
-        free(bitmaps->path);
+        free_or_die(bitmaps->path);
         al_destroy_bitmap(bitmaps->value);
-        free(bitmaps);
+        free_or_die(bitmaps);
         bitmaps = btemp;
     }
 
     while (samples) {
         DIAG_WARNING("Uninitialized sample (%s)", samples->path);
         stemp = samples->next;
-        free(samples->path);
+        free_or_die(samples->path);
         al_destroy_sample(samples->value);
-        free(samples);
+        free_or_die(samples);
         samples = stemp;
     }
 
     while (fonts) {
         DIAG_WARNING("Uninitialized font (%s)", fonts->path);
         ftemp = fonts->next;
-        free(fonts->path);
+        free_or_die(fonts->path);
         al_destroy_font(fonts->value);
-        free(fonts);
+        free_or_die(fonts);
         fonts = ftemp;
     }
 }
@@ -114,13 +115,8 @@ void *res_load_bitmap(char *path)
     }
 
     path_len = strlen(path);
-    path_copy = malloc(path_len + 1);
-    new_node = malloc(sizeof(*new_node));
-
-    if (!new_node || !path_copy) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    path_copy = malloc_or_die(path_len + 1);
+    new_node = malloc_or_die(sizeof(*new_node));
 
     if (!(value = al_load_bitmap(path))) {
         DIAG_ERROR("Failed loading bitmap \"%s\".", path);
@@ -146,7 +142,7 @@ void res_dispose_bitmap(void *bitmap)
         al_destroy_bitmap(bitmaps->value);
         temp = bitmaps;
         bitmaps = bitmaps->next;
-        free(temp);
+        free_or_die(temp);
         return;
     }
 
@@ -157,7 +153,7 @@ void res_dispose_bitmap(void *bitmap)
         if (curr->value == (ALLEGRO_BITMAP*)bitmap) {
             al_destroy_bitmap(curr->value);
             prev->next = curr->next;
-            free(curr);
+            free_or_die(curr);
             return;
         }
         prev = curr;
@@ -177,12 +173,7 @@ void res_cut_frame_sheet(
     int bitmap_h = al_get_bitmap_height((ALLEGRO_BITMAP*)bitmap);
 
     *frames_count = bitmap_w / frame_w;
-    *frames = malloc(*frames_count * sizeof(**frames));
-
-    if (!(*frames)) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    *frames = malloc_or_die(*frames_count * sizeof(**frames));
 
     for(i = 0; i < *frames_count; ++i) {
         ALLEGRO_BITMAP* frame_bitmap = al_create_sub_bitmap(
@@ -201,7 +192,7 @@ void res_dispose_frame_sheet(void **frames, int frames_count)
     for (i = 0; i < frames_count; ++i) {
         al_destroy_bitmap((ALLEGRO_BITMAP*)frames[i]);
     }
-    free(frames);
+    free_or_die(frames);
 }
 
 void *res_load_sample(char *path)
@@ -217,13 +208,8 @@ void *res_load_sample(char *path)
     }
 
     path_len = strlen(path);
-    path_copy = malloc(path_len + 1);
-    new_node = malloc(sizeof(*new_node));
-
-    if (!new_node || !path_copy) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    path_copy = malloc_or_die(path_len + 1);
+    new_node = malloc_or_die(sizeof(*new_node));
 
     if (!(value = al_load_sample(path))) {
         DIAG_ERROR("Failed loading sample \"%s\".", path);
@@ -249,7 +235,7 @@ void res_dispose_sample(void *sample)
         al_destroy_sample(samples->value);
         temp = samples;
         samples = samples->next;
-        free(temp);
+        free_or_die(temp);
         return;
     }
 
@@ -260,7 +246,7 @@ void res_dispose_sample(void *sample)
         if (curr->value == (ALLEGRO_SAMPLE*)sample) {
             al_destroy_sample(curr->value);
             prev->next = curr->next;
-            free(curr);
+            free_or_die(curr);
             return;
         }
         prev = curr;
@@ -284,13 +270,8 @@ void *res_load_font(char *path, int size)
     }
 
     path_len = strlen(path);
-    path_copy = malloc(path_len + 1);
-    new_node = malloc(sizeof(*new_node));
-
-    if (!new_node || !path_copy) {
-        DIAG_ERROR("Allocation failure.");
-        exit(1);
-    }
+    path_copy = malloc_or_die(path_len + 1);
+    new_node = malloc_or_die(sizeof(*new_node));
 
     if (!(value = al_load_font(path, -size, 0))) {
         DIAG_ERROR("Failed loading font \"%s\".", path);
@@ -317,7 +298,7 @@ void res_dispose_font(void *font)
         al_destroy_font(fonts->value);
         temp = fonts;
         fonts = fonts->next;
-        free(temp);
+        free_or_die(temp);
         return;
     }
 
@@ -328,7 +309,7 @@ void res_dispose_font(void *font)
         if (curr->value == (ALLEGRO_FONT*)font) {
             al_destroy_font(curr->value);
             prev->next = curr->next;
-            free(curr);
+            free_or_die(curr);
             return;
         }
         prev = curr;
