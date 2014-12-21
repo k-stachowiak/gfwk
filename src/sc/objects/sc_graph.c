@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <float.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "diagnostics.h"
 #include "memory.h"

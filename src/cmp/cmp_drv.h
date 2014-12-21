@@ -9,6 +9,8 @@
  * ==================
  */
 
+struct CmpDrv;
+
 typedef void(*CmpDrvCallback)(struct CmpDrv*, void*);
 
 struct Vel {

@@ -71,7 +71,7 @@ void sc_tick_arrows_stuck(struct ArrowArray *array, double dt)
 	}
 }
 
-static sc_tick_hunter_input(struct Hunter *hunter, double dt)
+static void sc_tick_hunter_input(struct Hunter *hunter, double dt)
 {
 	double rot_speed = 3.1415 / 2.0;
 	int rot = sys_keys[ALLEGRO_KEY_UP] - sys_keys[ALLEGRO_KEY_DOWN];
