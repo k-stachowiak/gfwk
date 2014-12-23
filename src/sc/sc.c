@@ -217,8 +217,8 @@ static void sc_tick(double dt)
 
 	sc_tick_soul(&soul, &ts, dt);
 
-    platform_collide(&hunter, &lvl);
-    pain_tick(&arrows, &arrows_stuck, &soul);
+	sc_platform_collide(&hunter, &lvl);
+	sc_pain_tick(&arrows, &arrows_stuck, &soul);
 }
 
 static void sc_draw(double weight)
@@ -232,8 +232,8 @@ static void sc_draw(double weight)
     sc_draw_arrows(&arrows_stuck);
 
     if (!sys_keys[ALLEGRO_KEY_F1]) {
-        platform_draw_debug();
-        pain_draw_debug();
+		sc_platform_draw_debug();
+		sc_pain_draw_debug();
 		sc_draw_graph_dbg(&lgph);
         sc_draw_soul_dbg(&soul);
     }

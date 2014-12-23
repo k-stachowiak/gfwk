@@ -5,6 +5,7 @@
 #include "array.h"
 #include "memory.h"
 
+#include "cmp_shape.h"
 #include "cmp_operations.h"
 
 #include "sc_data.h"
@@ -51,12 +52,12 @@ struct PainContext {
     struct Circle soul_cir;
 } pc_last;
 
-static void pain_reset_soul(struct Soul *soul)
+static void sc_pain_reset_soul(struct Soul *soul)
 {
 	cmp_pain_reset(&soul->pain);
 }
 
-static void pain_tick_soul(
+static void sc_pain_tick_soul(
 		struct Soul *soul,
 		struct PosRot *soul_pr,
 		struct Circle *soul_cir)
@@ -67,7 +68,7 @@ static void pain_tick_soul(
 	soul_cir->r = 25.0;
 }
 
-static void pain_reset_arrows(struct ArrowArray *arrows)
+static void sc_pain_reset_arrows(struct ArrowArray *arrows)
 {
 	int i;
 	for (i = 0; i < arrows->size; ++i) {
@@ -75,21 +76,16 @@ static void pain_reset_arrows(struct ArrowArray *arrows)
 	}
 }
 
-static void pain_tick_arrows(
+static void sc_pain_tick_arrows(
 		struct ArrowArray *arrows,
         struct Soul *soul, struct Circle *soul_cir)
 {
     int i;
     for (i = 0; i < arrows->size; ++i) {
 
-		struct PosRot arrow_pr = cmp_ori_get(&arrows->data[i].ori);
+		struct Arrow *arrow = arrows->data + i;
         struct Segment arrow_seg;
-
-        arrow_seg.ax = arrow_pr.x;
-        arrow_seg.ay = arrow_pr.y;
-        arrow_seg.bx = arrow_pr.x + 25 * cos(arrow_pr.theta);
-        arrow_seg.by = arrow_pr.y + 25 * sin(arrow_pr.theta);
-
+		col_convert_segment_cmp(&arrow->ori, &arrow->shape.body.segment, &arrow_seg);
         ARRAY_APPEND(pc_last.arrow_segs, arrow_seg);
 
         if (col_segment_circle(arrow_seg, *soul_cir)) {
@@ -98,23 +94,23 @@ static void pain_tick_arrows(
     }
 }
 
-static void pain_tick_interaction(struct ArrowArray *arrows, struct Soul *soul)
+static sc_pain_tick_interaction(struct ArrowArray *arrows, struct Soul *soul)
 {
 	struct PosRot soul_pr;
 	struct Circle soul_cir;
 
 	ARRAY_FREE(pc_last.arrow_segs);
 
-	pain_reset_soul(soul);
-	pain_reset_arrows(arrows);
+	sc_pain_reset_soul(soul);
+	sc_pain_reset_arrows(arrows);
 
-	pain_tick_soul(soul, &soul_pr, &soul_cir);
-	pain_tick_arrows(arrows, soul, &soul_cir);
+	sc_pain_tick_soul(soul, &soul_pr, &soul_cir);
+	sc_pain_tick_arrows(arrows, soul, &soul_cir);
 
 	pc_last.soul_cir = soul_cir;
 }
 
-static void pain_tick_feedback_arrows(
+static void sc_pain_tick_feedback_arrows(
 		struct ArrowArray *arrows,
 		struct ArrowArray *arrows_stuck)
 {
@@ -137,7 +133,7 @@ static void pain_tick_feedback_arrows(
 	}
 }
 
-static void pain_tick_feedback_soul(struct Soul *soul)
+static void sc_pain_tick_feedback_soul(struct Soul *soul)
 {
 	int i;
 	struct CmpPain *pain = &soul->pain;
@@ -151,13 +147,13 @@ static void pain_tick_feedback_soul(struct Soul *soul)
 	}
 }
 
-static void pain_tick_feedback(
+static void sc_pain_tick_feedback(
 		struct ArrowArray *arrows,
 		struct ArrowArray *arrows_stuck,
 		struct Soul *soul)
 {
-	pain_tick_feedback_arrows(arrows, arrows_stuck);
-	pain_tick_feedback_soul(soul);
+	sc_pain_tick_feedback_arrows(arrows, arrows_stuck);
+	sc_pain_tick_feedback_soul(soul);
 }
 
 
@@ -176,7 +172,7 @@ void sc_pain_deinit(void)
 	}
 }
 
-void pain_draw_debug(void)
+void sc_pain_draw_debug(void)
 {
 	int i;
 	col_draw_circle(pc_last.soul_cir, 1, 1, 1);
@@ -185,13 +181,13 @@ void pain_draw_debug(void)
     }
 }
 
-void pain_tick(
+void sc_pain_tick(
 		struct ArrowArray *arrows,
 		struct ArrowArray *arrows_stuck,
 		struct Soul *soul)
 {
-	pain_tick_interaction(arrows, soul);
-	pain_tick_feedback(arrows, arrows_stuck, soul);
+	sc_pain_tick_interaction(arrows, soul);
+	sc_pain_tick_feedback(arrows, arrows_stuck, soul);
 }
 
 void sc_pain_callback_register(long id, void *data, PainCallback callback)

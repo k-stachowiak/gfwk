@@ -3,7 +3,7 @@
 #ifndef SC_PLATFORM_H
 #define SC_PLATFORM_H
 
-void platform_draw_debug(void);
-void platform_collide(struct Hunter *hunter, struct Level *lvl);
+void sc_platform_draw_debug(void);
+void sc_platform_collide(struct Hunter *hunter, struct Level *lvl);
 
 #endif

@@ -7,12 +7,14 @@
 #include "cmp_ori.h"
 #include "cmp_pain.h"
 #include "cmp_appr.h"
+#include "cmp_shape.h"
 
 struct Arrow {
     struct CmpDrvBallistic drv;
 	struct CmpApprStaticSprite appr;
     struct CmpPain pain;
 	struct CmpOri ori;
+	struct CmpShape shape;
 
     double timer; /* multi-purpose ill-designed helper counter. */
 };

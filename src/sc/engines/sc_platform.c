@@ -21,7 +21,7 @@ struct CollisionContext {
 } cc_last;
 
 /** AABB structure for the tile of the given tile coordinates. */
-static struct AABB col_tile_aabb(int x, int y)
+static struct AABB sc_col_tile_aabb(int x, int y)
 {
     struct TilePos tp = { x, y };
     struct WorldPos wp = pos_tile_to_world(tp);
@@ -30,7 +30,7 @@ static struct AABB col_tile_aabb(int x, int y)
 }
 
 /** Collision of the sides (common to all the character states). */
-static void platform_handle_vertical(struct Hunter *hunter, struct CollisionContext *cc)
+static void sc_platform_handle_vertical(struct Hunter *hunter, struct CollisionContext *cc)
 {
     if ((cc->ltiles[0] == '#' && col_aabb_vline(cc->ltile_aabbs[0], cc->lsline)) ||
         (cc->ltiles[1] == '#' && col_aabb_vline(cc->ltile_aabbs[1], cc->lsline)) ||
@@ -53,7 +53,7 @@ static void platform_handle_vertical(struct Hunter *hunter, struct CollisionCont
 }
 
 /** On the ground specific top/bottom collision. */
-static void platform_handle_standing(struct Hunter *hunter, struct CollisionContext *cc)
+static void sc_platform_handle_standing(struct Hunter *hunter, struct CollisionContext *cc)
 {
     /* If all of the bottom tiles are non-solid, or don't collide with the
      * bottom box, then start falling.
@@ -66,7 +66,7 @@ static void platform_handle_standing(struct Hunter *hunter, struct CollisionCont
 }
 
 /** In the air specific top/bottom collision. */
-static void platform_handle_midair(
+static void sc_platform_handle_midair(
         struct Hunter *hunter,
         struct CollisionContext *cc)
 {
@@ -114,7 +114,7 @@ static void platform_handle_midair(
  * their collision structures and the hunter's collision detection shapes in the
  * current context (taking into account the current hunter's position.
  */
-static struct CollisionContext platform_analyze(
+static struct CollisionContext sc_platform_analyze(
         struct Hunter *hunter,
         struct Level *lvl)
 {
@@ -157,23 +157,23 @@ static struct CollisionContext platform_analyze(
     result.rtiles[2] = lvl_get_tile(lvl, tp.x + 1, tp.y + 1);
 
     /* Surrounding tile bounding boxes. */
-    result.utile_aabbs[0] = col_tile_aabb(tp.x, tp.y - 1);
-    result.utile_aabbs[1] = col_tile_aabb(tp.x - 1, tp.y - 1);
-    result.utile_aabbs[2] = col_tile_aabb(tp.x + 1, tp.y - 1);
-    result.btile_aabbs[0] = col_tile_aabb(tp.x, tp.y + 1);
-    result.btile_aabbs[1] = col_tile_aabb(tp.x - 1, tp.y + 1);
-    result.btile_aabbs[2] = col_tile_aabb(tp.x + 1, tp.y + 1);
-    result.ltile_aabbs[0] = col_tile_aabb(tp.x - 1, tp.y);
-    result.ltile_aabbs[1] = col_tile_aabb(tp.x - 1, tp.y - 1);
-    result.ltile_aabbs[2] = col_tile_aabb(tp.x - 1, tp.y + 1);
-    result.rtile_aabbs[0] = col_tile_aabb(tp.x + 1, tp.y);
-    result.rtile_aabbs[1] = col_tile_aabb(tp.x + 1, tp.y - 1);
-    result.rtile_aabbs[2] = col_tile_aabb(tp.x + 1, tp.y + 1);
+    result.utile_aabbs[0] = sc_col_tile_aabb(tp.x, tp.y - 1);
+    result.utile_aabbs[1] = sc_col_tile_aabb(tp.x - 1, tp.y - 1);
+    result.utile_aabbs[2] = sc_col_tile_aabb(tp.x + 1, tp.y - 1);
+    result.btile_aabbs[0] = sc_col_tile_aabb(tp.x, tp.y + 1);
+    result.btile_aabbs[1] = sc_col_tile_aabb(tp.x - 1, tp.y + 1);
+    result.btile_aabbs[2] = sc_col_tile_aabb(tp.x + 1, tp.y + 1);
+    result.ltile_aabbs[0] = sc_col_tile_aabb(tp.x - 1, tp.y);
+    result.ltile_aabbs[1] = sc_col_tile_aabb(tp.x - 1, tp.y - 1);
+    result.ltile_aabbs[2] = sc_col_tile_aabb(tp.x - 1, tp.y + 1);
+    result.rtile_aabbs[0] = sc_col_tile_aabb(tp.x + 1, tp.y);
+    result.rtile_aabbs[1] = sc_col_tile_aabb(tp.x + 1, tp.y - 1);
+    result.rtile_aabbs[2] = sc_col_tile_aabb(tp.x + 1, tp.y + 1);
 
     return result;
 }
 
-void platform_draw_debug(void)
+void sc_platform_draw_debug(void)
 {
     col_draw_aabb(cc_last.bbox, true, 1, 1, 0);
     col_draw_vline(cc_last.lsline, 1, 1, 0);
@@ -188,15 +188,15 @@ void platform_draw_debug(void)
     col_draw_aabb(cc_last.rtile_aabbs[0], cc_last.rtiles[0] == '#', 1, 0, 1);
 }
 
-void platform_collide(struct Hunter *hunter, struct Level *lvl)
+void sc_platform_collide(struct Hunter *hunter, struct Level *lvl)
 {
-    cc_last = platform_analyze(hunter, lvl);
+	cc_last = sc_platform_analyze(hunter, lvl);
 
-    platform_handle_vertical(hunter, &cc_last);
+	sc_platform_handle_vertical(hunter, &cc_last);
     if (hunter->standing) {
-        platform_handle_standing(hunter, &cc_last);
+		sc_platform_handle_standing(hunter, &cc_last);
     } else {
-        platform_handle_midair(hunter, &cc_last);
+		sc_platform_handle_midair(hunter, &cc_last);
     }
 }
 
