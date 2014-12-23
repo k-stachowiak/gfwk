@@ -81,7 +81,7 @@ void sc_draw_soul_dbg(struct Soul *soul)
 
 	al_draw_circle(soul_sp.x, soul_sp.y, 4, color, 1);
 
-	cmp_drv_waypoint_points(CMP_DRV(&soul->drv), &points, &points_count);
+	cmp_drv_waypoint_points(&soul->drv_walk, &points, &points_count);
 
 	for (i = 0; i < (points_count - 1); ++i) {
 

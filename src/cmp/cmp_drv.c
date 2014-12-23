@@ -375,26 +375,94 @@ struct CmpDrv *cmp_drv_waypoint_create(double velocity)
     return (struct CmpDrv*)result;
 }
 
-void cmp_drv_waypoint_on_end(struct CmpDrv *this, CmpDrvCallback on_end, void *data)
+void cmp_drv_waypoint_on_end(struct CmpDrvWaypoint *this, CmpDrvCallback on_end, void *data)
 {
-	struct CmpDrvWaypoint *derived = (struct CmpDrvWaypoint*)this;
-	derived->on_end = on_end;
-	derived->on_end_data = data;
+	this->on_end = on_end;
+	this->on_end_data = data;
 }
 
-void cmp_drv_waypoint_reset(struct CmpDrv *this, double *points, int points_count)
+void cmp_drv_waypoint_reset(struct CmpDrvWaypoint *this, double *points, int points_count)
 {
-    struct CmpDrvWaypoint *derived = (struct CmpDrvWaypoint*)this;
-    free_or_die(derived->points);
-    derived->points = points;
-    derived->points_count = points_count;
-	derived->step = 0;
-	derived->step_degree = 0;
+	free_or_die(this->points);
+    this->points = points;
+    this->points_count = points_count;
+	this->step = 0;
+	this->step_degree = 0;
 }
 
-void cmp_drv_waypoint_points(struct CmpDrv *this, double **points, int *points_count)
+void cmp_drv_waypoint_points(struct CmpDrvWaypoint *this, double **points, int *points_count)
 {
-    struct CmpDrvWaypoint *derived = (struct CmpDrvWaypoint*)this;
-    *points = derived->points;
-    *points_count = derived->points_count;
+	*points = this->points;
+	*points_count = this->points_count;
+}
+
+
+/* Proxy driver implementation.
+* =============================
+*/
+
+static void cmp_drv_proxy_update(struct CmpDrv* this, double dt)
+{
+	struct CmpDrvProxy *derived = (struct CmpDrvProxy*)this;
+	struct CmpDrv *child = derived->children[derived->current_child];
+	child->update(child, dt);
+}
+
+static void cmp_drv_proxy_stop(struct CmpDrv* this, bool x, bool y)
+{
+	struct CmpDrvProxy *derived = (struct CmpDrvProxy*)this;
+	struct CmpDrv *child = derived->children[derived->current_child];
+	child->stop(child, x, y);
+}
+
+static struct Vel cmp_drv_proxy_vel(struct CmpDrv* this)
+{
+	struct CmpDrvProxy *derived = (struct CmpDrvProxy*)this;
+	struct CmpDrv *child = derived->children[derived->current_child];
+	return child->vel(child);
+}
+
+void cmp_drv_proxy_init(
+		struct CmpDrvProxy *drv,
+		struct CmpDrv *children[],
+		int children_count,
+		int init_child)
+{
+	cmp_drv_base_init((struct CmpDrv*)drv, children[init_child]->affect_rot);
+
+	drv->base.update = cmp_drv_proxy_update;
+	drv->base.stop = cmp_drv_proxy_stop;
+	drv->base.vel = cmp_drv_proxy_vel;
+
+	drv->children = children;
+	drv->children_count = children_count;
+	drv->current_child = init_child;
+}
+
+void cmp_drv_proxy_deinit(struct CmpDrvProxy *drv)
+{
+	(void)drv;
+}
+
+struct CmpDrv *cmp_drv_proxy_create(
+		struct CmpDrv *children[],
+		int children_count,
+		int init_child)
+
+{
+	struct CmpDrvProxy *result = malloc_or_die(sizeof(*result));
+	cmp_drv_proxy_init(result, children, children_count, init_child);
+	return (struct CmpDrv*)result;
+}
+
+int cmp_drv_proxy_get_child(struct CmpDrv *this)
+{
+	struct CmpDrvProxy *derived = (struct CmpDrvProxy*)this;
+	return derived->current_child;
+}
+
+void cmp_drv_proxy_set_child(struct CmpDrv *this, int child)
+{
+	struct CmpDrvProxy *derived = (struct CmpDrvProxy*)this;
+	derived->current_child = child;
 }

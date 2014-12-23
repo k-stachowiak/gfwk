@@ -52,10 +52,13 @@ static void cmp_ai_prepend_pos(
 static void cmp_ai_soul_idle_drv_end(struct CmpDrv *drv, void* ai_boxed)
 {
 	struct CmpAiSoul *ai = (struct CmpAiSoul*)ai_boxed;
+
 	struct CmpOri *ori = ai->ori;
+	struct Graph *lgph = ai->graph;
+	struct CmpDrvWaypoint *drv_wp = (struct CmpDrvWaypoint*)drv;
+
 	struct PosRot pr = cmp_ori_get(ori);
 	struct WorldPos wp = { pr.x, pr.y };
-	struct Graph *lgph = ai->graph;
 
 	int src_index = lgph_find_nearest(lgph, wp),
 		dst_index = lgph_find_random_skip(lgph, src_index);
@@ -72,7 +75,7 @@ static void cmp_ai_soul_idle_drv_end(struct CmpDrv *drv, void* ai_boxed)
 	dbl_points = cmp_ai_tilepos_to_worldpos_ground(tp_points, points_count);
 	cmp_ai_prepend_pos(wp.x, wp.y, &dbl_points, &points_count);
 
-	cmp_drv_waypoint_reset(drv, dbl_points, points_count);
+	cmp_drv_waypoint_reset(drv_wp, dbl_points, points_count);
 
 	free_or_die(tp_points);
 }
@@ -143,7 +146,8 @@ void cmp_ai_soul_init(
 		long id,
 		struct Graph *graph,
 		struct CmpOri *ori,
-		struct CmpDrv *drv)
+		struct CmpDrv *drv,
+		struct CmpDrvWaypoint *drv_wp)
 {
 	ai->base.free = cmp_ai_soul_free;
 	ai->base.update = cmp_ai_soul_update;
@@ -155,9 +159,10 @@ void cmp_ai_soul_init(
 
 	ai->graph = graph;
 	ai->ori = ori;
+	ai->drv = drv;
 
-	cmp_ai_soul_idle_drv_end(drv, (void*)ai);
-	cmp_drv_waypoint_on_end(drv, cmp_ai_soul_idle_drv_end, (void*)ai);
+	cmp_ai_soul_idle_drv_end((struct CmpDrv *)drv_wp, (void*)ai);
+	cmp_drv_waypoint_on_end(drv_wp, cmp_ai_soul_idle_drv_end, (void*)ai);
 
 	sc_pain_callback_register(id, (void*)ai, cmp_ai_soul_on_pain);
 }
@@ -171,9 +176,10 @@ struct CmpAi *cmp_ai_soul_create(
 		long id,
 		struct Graph *graph,
 		struct CmpOri *ori,
-		struct CmpDrv *drv)
+		struct CmpDrv *drv,
+		struct CmpDrvWaypoint *drv_wp)
 {
 	struct CmpAiSoul *result = malloc_or_die(sizeof(*result));
-	cmp_ai_soul_init(result, id, graph, ori, drv);
+	cmp_ai_soul_init(result, id, graph, ori, drv, drv_wp);
 	return CMP_AI(result);
 }

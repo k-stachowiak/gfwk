@@ -52,6 +52,7 @@ struct CmpAiSoul {
 	double think_timer_max;
 	struct Graph *graph;
 	struct CmpOri *ori;
+	struct CmpDrv *drv;
 };
 
 void cmp_ai_soul_init(
@@ -59,7 +60,8 @@ void cmp_ai_soul_init(
 		long id,
 		struct Graph *graph,
 		struct CmpOri *ori,
-		struct CmpDrv *drv);
+		struct CmpDrv *drv,
+		struct CmpDrvWaypoint *drv_wp);
 
 void cmp_ai_soul_deinit(struct CmpAiSoul *ai);
 
@@ -67,6 +69,7 @@ struct CmpAi *cmp_ai_soul_create(
 		long id,
 		struct Graph *graph,
 		struct CmpOri *ori,
-		struct CmpDrv *drv);
+		struct CmpDrv *drv,
+		struct CmpDrvWaypoint *drv_wp);
 
 #endif
