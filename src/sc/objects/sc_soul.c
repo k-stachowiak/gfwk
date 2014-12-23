@@ -33,8 +33,13 @@ void soul_init(struct Soul *soul, long id, struct Graph *lgph, struct TilePos so
 	cmp_ori_init(&soul->ori, wp.x, wp.y, 0.0);
 	cmp_pain_init(&soul->pain, PT_SOUL);
 
-	cmp_ai_soul_init(
-		&soul->ai, id, lgph, &soul->ori, CMP_DRV(&soul->drv), &soul->drv_walk);
+	cmp_ai_soul_init(&soul->ai,
+		id,
+		lgph,
+		&soul->ori,
+		CMP_DRV(&soul->drv),
+		&soul->drv_walk,
+		CMP_APPR(&soul->appr));
 
 	soul->health = 100;
     soul->box_w = 30.0;

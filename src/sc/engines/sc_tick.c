@@ -135,7 +135,7 @@ void sc_tick_soul(struct Soul *soul, struct CmpAiTacticalStatus *ts, double dt)
 
 	soul->drv.base.update(CMP_DRV(&soul->drv), dt);
 	soul->appr.base.update(CMP_APPR(&soul->appr), dt);
-	soul->ai.base.update(CMP_AI(&soul->ai), &soul->ori, CMP_DRV(&soul->drv), ts, dt);
+	soul->ai.base.update(CMP_AI(&soul->ai), ts, dt);
 
 	/* TODO: Cast the driver once in the begining of the function. */
 	vel = soul->drv.base.vel(CMP_DRV(&soul->drv));

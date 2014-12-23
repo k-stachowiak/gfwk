@@ -24,12 +24,7 @@ struct CmpAiTacticalStatus {
 
 struct CmpAi {
     void (*free)(struct CmpAi*);
-    void (*update)(
-        struct CmpAi*,
-        struct CmpOri*,
-        struct CmpDrv*,
-        struct CmpAiTacticalStatus*,
-        double);
+	void(*update)(struct CmpAi*, struct CmpAiTacticalStatus*, double);
 };
 
 #define CMP_AI(T) (struct CmpAi*)(T)
@@ -53,6 +48,7 @@ struct CmpAiSoul {
 	struct Graph *graph;
 	struct CmpOri *ori;
 	struct CmpDrv *drv;
+	struct CmpAppr *appr;
 };
 
 void cmp_ai_soul_init(
@@ -61,7 +57,8 @@ void cmp_ai_soul_init(
 		struct Graph *graph,
 		struct CmpOri *ori,
 		struct CmpDrv *drv,
-		struct CmpDrvWaypoint *drv_wp);
+		struct CmpDrvWaypoint *drv_wp,
+		struct CmpAppr *appr);
 
 void cmp_ai_soul_deinit(struct CmpAiSoul *ai);
 
@@ -70,6 +67,7 @@ struct CmpAi *cmp_ai_soul_create(
 		struct Graph *graph,
 		struct CmpOri *ori,
 		struct CmpDrv *drv,
-		struct CmpDrvWaypoint *drv_wp);
+		struct CmpDrvWaypoint *drv_wp,
+		struct CmpAppr *appr);
 
 #endif

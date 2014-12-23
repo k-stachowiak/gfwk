@@ -11,6 +11,7 @@
 #include "sc_data.h"
 #include "sc_pain.h"
 #include "sc_graph.h"
+#include "sc_soul.h"
 
 /* Common waypoint related opretaions.
  * ===================================
@@ -80,6 +81,27 @@ static void cmp_ai_soul_idle_drv_end(struct CmpDrv *drv, void* ai_boxed)
 	free_or_die(tp_points);
 }
 
+/* Transition operations.
+ * ======================
+ */
+
+static void cmp_ai_soul_goto_idle(struct CmpAiSoul *this)
+{
+	this->state = CMP_AI_SOUL_STATE_IDLE;
+	cmp_appr_proxy_set_child(this->appr, SOUL_APPR_WALK_RIGHT);
+	cmp_drv_proxy_set_child(this->drv, SOUL_DRV_WALK);
+}
+
+static void cmp_ai_soul_goto_ko(struct CmpAiSoul *this)
+{
+	this->state = CMP_AI_SOUL_STATE_KO;
+	this->think_timer = 5.0;
+
+	cmp_appr_proxy_set_child(this->appr, SOUL_APPR_CAUGHT);
+	cmp_drv_proxy_set_child(this->drv, SOUL_DRV_STAND);
+}
+
+
 /* Update operation.
  * =================
  */
@@ -88,8 +110,13 @@ static void cmp_ai_soul_update_panic(void)
 {
 }
 
-static void cmp_ai_soul_update_ko(void)
+static void cmp_ai_soul_update_ko(struct CmpAiSoul *this, double dt)
 {
+	if ((this->think_timer -= dt) > 0.0) {
+		return;
+	}
+
+	cmp_ai_soul_goto_idle(this);
 }
 
 static void cmp_ai_soul_update_hanging(void)
@@ -98,8 +125,6 @@ static void cmp_ai_soul_update_hanging(void)
 
 static void cmp_ai_soul_update(
         struct CmpAi *this,
-        struct CmpOri* ori,
-        struct CmpDrv *drv,
         struct CmpAiTacticalStatus *ts,
         double dt)
 {
@@ -113,7 +138,7 @@ static void cmp_ai_soul_update(
         cmp_ai_soul_update_panic();
         break;
     case CMP_AI_SOUL_STATE_KO:
-        cmp_ai_soul_update_ko();
+        cmp_ai_soul_update_ko(derived, dt);
         break;
     case CMP_AI_SOUL_STATE_HANGING:
         cmp_ai_soul_update_hanging();
@@ -127,7 +152,8 @@ static void cmp_ai_soul_update(
 
 static void cmp_ai_soul_on_pain(long id, void *ai_boxed)
 {
-	printf("pejnerson.");
+	struct CmpAiSoul *ai = (struct CmpAiSoul *)ai_boxed;
+	cmp_ai_soul_goto_ko(ai);
 }
 
 /* Lifetime management operations.
@@ -147,22 +173,21 @@ void cmp_ai_soul_init(
 		struct Graph *graph,
 		struct CmpOri *ori,
 		struct CmpDrv *drv,
-		struct CmpDrvWaypoint *drv_wp)
+		struct CmpDrvWaypoint *drv_wp, /* TODO: Consider handling the details outside AI. */
+		struct CmpAppr *appr)
 {
 	ai->base.free = cmp_ai_soul_free;
 	ai->base.update = cmp_ai_soul_update;
 
-	ai->state = CMP_AI_SOUL_STATE_IDLE;
-
-	ai->think_timer = 0.0;
-	ai->think_timer_max = 10.0;
-
 	ai->graph = graph;
 	ai->ori = ori;
 	ai->drv = drv;
+	ai->appr = appr;
 
 	cmp_ai_soul_idle_drv_end((struct CmpDrv *)drv_wp, (void*)ai);
 	cmp_drv_waypoint_on_end(drv_wp, cmp_ai_soul_idle_drv_end, (void*)ai);
+
+	cmp_ai_soul_goto_idle(ai);
 
 	sc_pain_callback_register(id, (void*)ai, cmp_ai_soul_on_pain);
 }
@@ -177,9 +202,10 @@ struct CmpAi *cmp_ai_soul_create(
 		struct Graph *graph,
 		struct CmpOri *ori,
 		struct CmpDrv *drv,
-		struct CmpDrvWaypoint *drv_wp)
+		struct CmpDrvWaypoint *drv_wp,
+		struct CmpAppr *appr)
 {
 	struct CmpAiSoul *result = malloc_or_die(sizeof(*result));
-	cmp_ai_soul_init(result, id, graph, ori, drv, drv_wp);
+	cmp_ai_soul_init(result, id, graph, ori, drv, drv_wp, appr);
 	return CMP_AI(result);
 }
