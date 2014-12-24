@@ -94,7 +94,10 @@ static void sc_pain_tick_arrows(
     }
 }
 
-static sc_pain_tick_interaction(struct ArrowArray *arrows, struct Soul *soul)
+static sc_pain_tick_interaction(
+		struct ArrowArray *arrows,
+		struct Soul *soul,
+		struct Hunter *hunter)
 {
 	struct PosRot soul_pr;
 	struct Circle soul_cir;
@@ -102,9 +105,11 @@ static sc_pain_tick_interaction(struct ArrowArray *arrows, struct Soul *soul)
 	ARRAY_FREE(pc_last.arrow_segs);
 
 	sc_pain_reset_soul(soul);
+	sc_pain_reset_hunter(hunter);
 	sc_pain_reset_arrows(arrows);
 
 	sc_pain_tick_soul(soul, &soul_pr, &soul_cir);
+	sc_pain_tick_hunter(hunter, soul, &soul_cir);
 	sc_pain_tick_arrows(arrows, soul, &soul_cir);
 
 	pc_last.soul_cir = soul_cir;
@@ -184,9 +189,10 @@ void sc_pain_draw_debug(void)
 void sc_pain_tick(
 		struct ArrowArray *arrows,
 		struct ArrowArray *arrows_stuck,
-		struct Soul *soul)
+		struct Soul *soul,
+		struct Hunter *hunter)
 {
-	sc_pain_tick_interaction(arrows, soul);
+	sc_pain_tick_interaction(arrows, soul, hunter);
 	sc_pain_tick_feedback(arrows, arrows_stuck, soul);
 }
 
