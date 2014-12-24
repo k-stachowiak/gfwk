@@ -8,6 +8,8 @@
 #include "cmp_appr.h"
 #include "cmp_ori.h"
 #include "cmp_drv.h"
+#include "cmp_pain.h"
+#include "cmp_shape.h"
 
 enum HunterAppearance {
 	HUNTER_APPR_STAND_LEFT,
@@ -26,6 +28,8 @@ struct Hunter {
 	struct CmpDrvPlatform drv;
 	struct CmpApprProxy appr;
 	struct CmpOri ori;
+	struct CmpPain pain;
+	struct CmpShape shape;
 
     double aim_angle;
     double box_w, box_h;

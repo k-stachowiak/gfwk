@@ -32,6 +32,7 @@ void soul_init(struct Soul *soul, long id, struct Graph *lgph, struct TilePos so
 	cmp_appr_proxy_init(&soul->appr, soul->appr_array, 5, SOUL_APPR_WALK_RIGHT);
 	cmp_ori_init(&soul->ori, wp.x, wp.y, 0.0);
 	cmp_pain_init(&soul->pain, PT_SOUL);
+	cmp_shape_circle_init(&soul->shape, 25.0);
 
 	cmp_ai_soul_init(&soul->ai,
 		id,
@@ -62,5 +63,6 @@ void soul_deinit(struct Soul *soul)
 	cmp_ai_soul_deinit(&soul->ai);
 	cmp_pain_deinit(&soul->pain);
 	cmp_ori_deinit(&soul->ori);
+	cmp_shape_circle_deinit(&soul->shape);
 }
 

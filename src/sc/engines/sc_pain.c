@@ -15,6 +15,7 @@
 
 #include "sc_soul.h"
 #include "sc_arrow.h"
+#include "sc_hunter.h"
 
 struct PainCallbackNode {
 	long id;
@@ -50,6 +51,7 @@ struct PainContext {
         int size, cap;
     } arrow_segs;
     struct Circle soul_cir;
+	struct Circle hunter_cir;
 } pc_last;
 
 static void sc_pain_reset_soul(struct Soul *soul)
@@ -57,15 +59,9 @@ static void sc_pain_reset_soul(struct Soul *soul)
 	cmp_pain_reset(&soul->pain);
 }
 
-static void sc_pain_tick_soul(
-		struct Soul *soul,
-		struct PosRot *soul_pr,
-		struct Circle *soul_cir)
+static void sc_pain_reset_hunter(struct Hunter *hunter)
 {
-	*soul_pr = cmp_ori_get(&soul->ori);
-	soul_cir->x = soul_pr->x;
-	soul_cir->y = soul_pr->y;
-	soul_cir->r = 25.0;
+	cmp_pain_reset(&hunter->pain);
 }
 
 static void sc_pain_reset_arrows(struct ArrowArray *arrows)
@@ -73,6 +69,15 @@ static void sc_pain_reset_arrows(struct ArrowArray *arrows)
 	int i;
 	for (i = 0; i < arrows->size; ++i) {
 		cmp_pain_reset(&arrows->data[i].pain);
+	}
+}
+
+static void sc_pain_tick_hunter(
+		struct Hunter *hunter, struct Circle hunter_cir,
+		struct Soul *soul, struct Circle soul_cir)
+{
+	if (sc_col_circle_circle(hunter_cir, soul_cir)) {
+		cmp_deal_pain(&soul->pain, &hunter->pain);
 	}
 }
 
@@ -85,10 +90,10 @@ static void sc_pain_tick_arrows(
 
 		struct Arrow *arrow = arrows->data + i;
         struct Segment arrow_seg;
-		col_convert_segment_cmp(&arrow->ori, &arrow->shape.body.segment, &arrow_seg);
+		sc_col_convert_segment_cmp(&arrow->ori, &arrow->shape.body.segment, &arrow_seg);
         ARRAY_APPEND(pc_last.arrow_segs, arrow_seg);
 
-        if (col_segment_circle(arrow_seg, *soul_cir)) {
+		if (sc_col_segment_circle(arrow_seg, *soul_cir)) {
 			cmp_deal_pain(&soul->pain, &arrows->data[i].pain);
         }
     }
@@ -99,20 +104,23 @@ static sc_pain_tick_interaction(
 		struct Soul *soul,
 		struct Hunter *hunter)
 {
-	struct PosRot soul_pr;
 	struct Circle soul_cir;
+	struct Circle hunter_cir;
 
 	ARRAY_FREE(pc_last.arrow_segs);
+
+	sc_col_convert_circle_cmp(&soul->ori, &soul->shape.body.circle, &soul_cir);
+	sc_col_convert_circle_cmp(&hunter->ori, &hunter->shape.body.circle, &hunter_cir);
 
 	sc_pain_reset_soul(soul);
 	sc_pain_reset_hunter(hunter);
 	sc_pain_reset_arrows(arrows);
 
-	sc_pain_tick_soul(soul, &soul_pr, &soul_cir);
-	sc_pain_tick_hunter(hunter, soul, &soul_cir);
+	sc_pain_tick_hunter(hunter, hunter_cir, soul, soul_cir);
 	sc_pain_tick_arrows(arrows, soul, &soul_cir);
 
 	pc_last.soul_cir = soul_cir;
+	pc_last.hunter_cir = hunter_cir;
 }
 
 static void sc_pain_tick_feedback_arrows(
@@ -143,11 +151,20 @@ static void sc_pain_tick_feedback_soul(struct Soul *soul)
 	int i;
 	struct CmpPain *pain = &soul->pain;
 	for (i = 0; i < pain->queue_size; ++i) {
-		if (pain->queue[i] == PT_ARROW) {
-			struct PainCallbackNode *found = sc_pain_callback_seek(soul->id);
-			if (found) {
-				found->callback(found->id, found->data);
+		switch (pain->queue[i]) {
+		case PT_ARROW:
+			{
+				struct PainCallbackNode *found = sc_pain_callback_seek(soul->id);
+				if (found) {
+					found->callback(found->id, found->data);
+				}
 			}
+			break;
+		case PT_HUNTER:
+			{
+				exit(3);
+			}
+			break;
 		}
 	}
 }
@@ -180,9 +197,10 @@ void sc_pain_deinit(void)
 void sc_pain_draw_debug(void)
 {
 	int i;
-	col_draw_circle(pc_last.soul_cir, 1, 1, 1);
+	sc_col_draw_circle(pc_last.soul_cir, 1, 1, 1);
+	sc_col_draw_circle(pc_last.hunter_cir, 1, 0.5, 0.5);
     for (i = 0; i < pc_last.arrow_segs.size; ++i) {
-        col_draw_segment(pc_last.arrow_segs.data[i], 1, 1, 1);
+		sc_col_draw_segment(pc_last.arrow_segs.data[i], 0.5, 1, 0.5);
     }
 }
 

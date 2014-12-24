@@ -32,18 +32,18 @@ static struct AABB sc_col_tile_aabb(int x, int y)
 /** Collision of the sides (common to all the character states). */
 static void sc_platform_handle_vertical(struct Hunter *hunter, struct CollisionContext *cc)
 {
-    if ((cc->ltiles[0] == '#' && col_aabb_vline(cc->ltile_aabbs[0], cc->lsline)) ||
-        (cc->ltiles[1] == '#' && col_aabb_vline(cc->ltile_aabbs[1], cc->lsline)) ||
-        (cc->ltiles[2] == '#' && col_aabb_vline(cc->ltile_aabbs[2], cc->lsline))) {
+	if ((cc->ltiles[0] == '#' && sc_col_aabb_vline(cc->ltile_aabbs[0], cc->lsline)) ||
+		(cc->ltiles[1] == '#' && sc_col_aabb_vline(cc->ltile_aabbs[1], cc->lsline)) ||
+		(cc->ltiles[2] == '#' && sc_col_aabb_vline(cc->ltile_aabbs[2], cc->lsline))) {
             hunter->drv.base.stop_x(CMP_DRV(&hunter->drv));
             hunter->ori.current.x =
                 cc->ltile_aabbs[0].bx +
                 hunter->box_w / 2.0 +
                 1.0;
     }
-    if ((cc->rtiles[0] == '#' && col_aabb_vline(cc->ltile_aabbs[0], cc->rsline)) ||
-        (cc->rtiles[1] == '#' && col_aabb_vline(cc->ltile_aabbs[1], cc->rsline)) ||
-        (cc->rtiles[2] == '#' && col_aabb_vline(cc->ltile_aabbs[2], cc->rsline))) {
+	if ((cc->rtiles[0] == '#' && sc_col_aabb_vline(cc->ltile_aabbs[0], cc->rsline)) ||
+		(cc->rtiles[1] == '#' && sc_col_aabb_vline(cc->ltile_aabbs[1], cc->rsline)) ||
+		(cc->rtiles[2] == '#' && sc_col_aabb_vline(cc->ltile_aabbs[2], cc->rsline))) {
 			hunter->drv.base.stop_x(CMP_DRV(&hunter->drv));
             hunter->ori.current.x =
                 cc->rtile_aabbs[0].ax -
@@ -58,9 +58,9 @@ static void sc_platform_handle_standing(struct Hunter *hunter, struct CollisionC
     /* If all of the bottom tiles are non-solid, or don't collide with the
      * bottom box, then start falling.
      */
-    if ((cc->btiles[0] != '#' || !col_aabb_aabb(cc->bbox, cc->btile_aabbs[0])) &&
-        (cc->btiles[1] != '#' || !col_aabb_aabb(cc->bbox, cc->btile_aabbs[1])) &&
-        (cc->btiles[2] != '#' || !col_aabb_aabb(cc->bbox, cc->btile_aabbs[2]))) {
+	if ((cc->btiles[0] != '#' || !sc_col_aabb_aabb(cc->bbox, cc->btile_aabbs[0])) &&
+		(cc->btiles[1] != '#' || !sc_col_aabb_aabb(cc->bbox, cc->btile_aabbs[1])) &&
+		(cc->btiles[2] != '#' || !sc_col_aabb_aabb(cc->bbox, cc->btile_aabbs[2]))) {
             hunter->standing = false;
     }
 }
@@ -71,24 +71,24 @@ static void sc_platform_handle_midair(
         struct CollisionContext *cc)
 {
     bool collided_up = 
-        (cc->utiles[0] == '#' && (col_aabb_vline(cc->utile_aabbs[0], cc->lsline) ||
-                                  col_aabb_vline(cc->utile_aabbs[0], cc->rsline))) ||
+		(cc->utiles[0] == '#' && (sc_col_aabb_vline(cc->utile_aabbs[0], cc->lsline) ||
+								  sc_col_aabb_vline(cc->utile_aabbs[0], cc->rsline))) ||
 
-        (cc->utiles[1] == '#' && (col_aabb_vline(cc->utile_aabbs[1], cc->lsline) ||
-                                  col_aabb_vline(cc->utile_aabbs[1], cc->rsline))) ||
+		(cc->utiles[1] == '#' && (sc_col_aabb_vline(cc->utile_aabbs[1], cc->lsline) ||
+								  sc_col_aabb_vline(cc->utile_aabbs[1], cc->rsline))) ||
 
-        (cc->utiles[2] == '#' && (col_aabb_vline(cc->utile_aabbs[2], cc->lsline) ||
-                                  col_aabb_vline(cc->utile_aabbs[2], cc->rsline)));
+		(cc->utiles[2] == '#' && (sc_col_aabb_vline(cc->utile_aabbs[2], cc->lsline) ||
+								  sc_col_aabb_vline(cc->utile_aabbs[2], cc->rsline)));
 
     bool collided_bottom =
-        (cc->btiles[0] == '#' && (col_aabb_vline(cc->btile_aabbs[0], cc->lsline) ||
-                                  col_aabb_vline(cc->btile_aabbs[0], cc->rsline))) ||
+		(cc->btiles[0] == '#' && (sc_col_aabb_vline(cc->btile_aabbs[0], cc->lsline) ||
+								  sc_col_aabb_vline(cc->btile_aabbs[0], cc->rsline))) ||
 
-        (cc->btiles[1] == '#' && (col_aabb_vline(cc->btile_aabbs[1], cc->lsline) ||
-                                  col_aabb_vline(cc->btile_aabbs[1], cc->rsline))) ||
+		(cc->btiles[1] == '#' && (sc_col_aabb_vline(cc->btile_aabbs[1], cc->lsline) ||
+								  sc_col_aabb_vline(cc->btile_aabbs[1], cc->rsline))) ||
 
-        (cc->btiles[2] == '#' && (col_aabb_vline(cc->btile_aabbs[2], cc->lsline) ||
-                                  col_aabb_vline(cc->btile_aabbs[2], cc->rsline)));
+		(cc->btiles[2] == '#' && (sc_col_aabb_vline(cc->btile_aabbs[2], cc->lsline) ||
+								  sc_col_aabb_vline(cc->btile_aabbs[2], cc->rsline)));
 
     if (collided_up) {
 		hunter->drv.base.stop_y(CMP_DRV(&hunter->drv));
@@ -175,17 +175,17 @@ static struct CollisionContext sc_platform_analyze(
 
 void sc_platform_draw_debug(void)
 {
-    col_draw_aabb(cc_last.bbox, true, 1, 1, 0);
-    col_draw_vline(cc_last.lsline, 1, 1, 0);
-    col_draw_vline(cc_last.rsline, 1, 1, 0);
-    col_draw_aabb(cc_last.utile_aabbs[0], cc_last.utiles[0] == '#', 0, 1, 1);
-    col_draw_aabb(cc_last.utile_aabbs[1], cc_last.utiles[1] == '#', 0, 1, 1);
-    col_draw_aabb(cc_last.utile_aabbs[2], cc_last.utiles[2] == '#', 0, 1, 1);
-    col_draw_aabb(cc_last.btile_aabbs[0], cc_last.btiles[0] == '#', 0, 1, 1);
-    col_draw_aabb(cc_last.btile_aabbs[1], cc_last.btiles[1] == '#', 0, 1, 1);
-    col_draw_aabb(cc_last.btile_aabbs[2], cc_last.btiles[2] == '#', 0, 1, 1);
-    col_draw_aabb(cc_last.ltile_aabbs[0], cc_last.ltiles[0] == '#', 1, 0, 1);
-    col_draw_aabb(cc_last.rtile_aabbs[0], cc_last.rtiles[0] == '#', 1, 0, 1);
+    sc_col_draw_aabb(cc_last.bbox, true, 1, 1, 0);
+    sc_col_draw_vline(cc_last.lsline, 1, 1, 0);
+    sc_col_draw_vline(cc_last.rsline, 1, 1, 0);
+    sc_col_draw_aabb(cc_last.utile_aabbs[0], cc_last.utiles[0] == '#', 0, 1, 1);
+    sc_col_draw_aabb(cc_last.utile_aabbs[1], cc_last.utiles[1] == '#', 0, 1, 1);
+    sc_col_draw_aabb(cc_last.utile_aabbs[2], cc_last.utiles[2] == '#', 0, 1, 1);
+    sc_col_draw_aabb(cc_last.btile_aabbs[0], cc_last.btiles[0] == '#', 0, 1, 1);
+    sc_col_draw_aabb(cc_last.btile_aabbs[1], cc_last.btiles[1] == '#', 0, 1, 1);
+    sc_col_draw_aabb(cc_last.btile_aabbs[2], cc_last.btiles[2] == '#', 0, 1, 1);
+    sc_col_draw_aabb(cc_last.ltile_aabbs[0], cc_last.ltiles[0] == '#', 1, 0, 1);
+    sc_col_draw_aabb(cc_last.rtile_aabbs[0], cc_last.rtiles[0] == '#', 1, 0, 1);
 }
 
 void sc_platform_collide(struct Hunter *hunter, struct Level *lvl)

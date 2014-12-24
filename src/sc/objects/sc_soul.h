@@ -7,6 +7,7 @@
 #include "cmp_ori.h"
 #include "cmp_pain.h"
 #include "cmp_ai.h"
+#include "cmp_shape.h"
 
 struct CmpAiTacticalStatus;
 
@@ -41,6 +42,7 @@ struct Soul {
 	struct CmpOri ori;
 	struct CmpPain pain;
 	struct CmpAiSoul ai;
+	struct CmpShape shape;
 
 	double health;
     double box_w, box_h;

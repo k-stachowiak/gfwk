@@ -43,7 +43,7 @@ extern struct WorldPos sc_cam_shift;
 
 /* Entities. */
 enum SCPainType {
-	PT_PLAYER,
+	PT_HUNTER,
 	PT_SOUL,
 	PT_ARROW
 };

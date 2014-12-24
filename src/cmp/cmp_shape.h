@@ -25,12 +25,12 @@ struct CmpShape {
 	} body;
 };
 
-void cmp_shape_circle_init(struct CmpShapeCircle *circle, double r);
-void cmp_shape_circle_deinit(struct CmpShapeCircle *circle);
+void cmp_shape_circle_init(struct CmpShape *circle, double r);
+void cmp_shape_circle_deinit(struct CmpShape *circle);
 struct CmpShape *cmp_shape_circle_create(double r);
 
-void cmp_shape_segment_init(struct CmpShapeSegment *segment, double x1, double y1);
-void cmp_shape_segment_deinit(struct CmpShapeSegment *segment);
+void cmp_shape_segment_init(struct CmpShape *segment, double x1, double y1);
+void cmp_shape_segment_deinit(struct CmpShape *segment);
 struct CmpShape *cmp_shape_segment_create(double x1, double y1);
 
 void cmp_shape_free(struct CmpShape *shape);

@@ -13,7 +13,7 @@ void arrow_init(struct Arrow *arrow, double x, double y, double angle)
 	cmp_appr_static_sprite_init(&arrow->appr, sc_arrow_bitmap);
 	cmp_pain_init(&arrow->pain, PT_ARROW);
 	cmp_ori_init(&arrow->ori, x, y, angle);
-	cmp_shape_segment_init(&arrow->shape.body.segment, 25.0, 0.0);
+	cmp_shape_segment_init(&arrow->shape, 25.0, 0.0);
 }
 
 void arrow_deinit(struct Arrow *arrow)
@@ -22,5 +22,5 @@ void arrow_deinit(struct Arrow *arrow)
 	cmp_appr_static_sprite_deinit(&arrow->appr);
     cmp_pain_deinit(&arrow->pain);
 	cmp_ori_deinit(&arrow->ori);
-	cmp_shape_segment_deinit(&arrow->shape.body.segment);
+	cmp_shape_segment_deinit(&arrow->shape);
 }

@@ -21,6 +21,8 @@ void hunter_init(struct Hunter *hunter)
 	cmp_drv_platform_init(&hunter->drv,	&hunter->inx, &hunter->jump_req, &hunter->standing);
 	cmp_appr_proxy_init(&hunter->appr, hunter->appr_array, 4, HUNTER_APPR_STAND_RIGHT);
 	cmp_ori_init(&hunter->ori, 0.0, 0.0, 0.0);
+	cmp_pain_init(&hunter->pain, PT_HUNTER);
+	cmp_shape_circle_init(&hunter->shape, 25.0);
 
     hunter->aim_angle = 0.0;
     hunter->box_w = 30.0;
@@ -39,5 +41,7 @@ void hunter_deinit(struct Hunter *hunter)
 	cmp_appr_static_sprite_deinit(&hunter->appr_stand_left);
 	cmp_appr_proxy_deinit(&hunter->appr);
 	cmp_ori_deinit(&hunter->ori);
+	cmp_pain_deinit(&hunter->pain);
+	cmp_shape_circle_deinit(&hunter->shape);
 }
 
