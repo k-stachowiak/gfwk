@@ -15,6 +15,11 @@
         (MACRO_ARRAY).cap = 0; \
     } while(0)
 
+#define ARRAY_CLEAR(MACRO_ARRAY) \
+	do { \
+		(MACRO_ARRAY).size = 0; \
+	} while(0)
+
 #define ARRAY_COPY(dst, src) \
     do { \
         int size = src.cap * sizeof(*dst.data); \

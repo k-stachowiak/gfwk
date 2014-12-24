@@ -34,6 +34,8 @@ struct CmpApprAnimSpriteCommon *sc_soul_walk_left_common;
 
 struct WorldPos sc_cam_shift;
 
+long sc_entity_id;
+
 struct Level lvl;
 struct Graph lgph;
 struct Hunter hunter;

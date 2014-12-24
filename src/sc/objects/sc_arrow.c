@@ -6,9 +6,10 @@
 
 #include "sc_arrow.h"
 
-void arrow_init(struct Arrow *arrow, double x, double y, double angle)
+void arrow_init(struct Arrow *arrow, long id, double x, double y, double angle)
 {
     static double vel = 600.0;
+	arrow->id = id;
 	cmp_drv_ballistic_init(&arrow->drv, true, cos(angle) * vel, sin(angle) * vel);
 	cmp_appr_static_sprite_init(&arrow->appr, sc_arrow_bitmap);
 	cmp_pain_init(&arrow->pain, PT_ARROW);

@@ -42,6 +42,8 @@ extern struct CmpApprAnimSpriteCommon *sc_soul_walk_left_common;
 extern struct WorldPos sc_cam_shift;
 
 /* Entities. */
+extern long sc_entity_id;
+
 enum SCPainType {
 	PT_HUNTER,
 	PT_SOUL,

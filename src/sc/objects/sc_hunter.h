@@ -25,6 +25,7 @@ struct Hunter {
 	struct CmpApprAnimSprite appr_walk_left;
 	struct CmpAppr *appr_array[4];
 
+	long id;
 	struct CmpDrvPlatform drv;
 	struct CmpApprProxy appr;
 	struct CmpOri ori;
@@ -38,7 +39,7 @@ struct Hunter {
     bool standing;
 };
 
-void hunter_init(struct Hunter *hunter);
+void hunter_init(struct Hunter *hunter, long id);
 void hunter_deinit(struct Hunter *hunter);
 
 #endif

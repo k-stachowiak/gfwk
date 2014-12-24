@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "memory.h"
+#include "array.h"
 
 #include "system.h"
 #include "resources.h"
@@ -18,6 +19,7 @@
 #include "sc_graph.h"
 #include "sc_hunter.h"
 #include "sc_soul.h"
+#include "sc_arrow.h"
 
 #include "sc_arms.h"
 #include "sc_draw.h"
@@ -28,7 +30,11 @@
 /* Local state. */
 static bool sc_alive;
 static struct SysClient *sc_next;
-static long sc_entity_id;
+
+struct {
+	long *data;
+	int size, cap;
+} arrows_to_stick = { NULL, 0, 0 };
 
 /* Resources management logic. */
 static void sc_init_resources_basic(void)
@@ -163,6 +169,36 @@ static void sc_deinit_resources_complex(void)
  * ===========
  */
 
+static void sc_arrow_pain_callback(
+	PainType pt_x,
+	long id_x,
+	PainType pt_y,
+	void *data)
+{
+	ARRAY_APPEND(arrows_to_stick, id_x);
+}
+
+static void sc_arrow_pain_stick(void)
+{
+	int i, j;
+	for (i = 0; i < arrows_to_stick.size; ++i) {
+		long id = arrows_to_stick.data[i];
+
+		for (j = 0; j < arrows.size; ++j) {
+			struct Arrow *arrow = arrows.data + j;
+
+			if (arrow->id != id) {
+				continue;
+			}
+
+			arrow->timer = 1.0;
+			ARRAY_APPEND(arrows_stuck, *arrow);
+			ARRAY_REMOVE(arrows, j);
+			break;
+		}
+	}
+}
+
 static void sc_init(void)
 {
     sc_alive = true;
@@ -176,10 +212,12 @@ static void sc_init(void)
     sc_init_resources_basic();
     sc_init_resources_complex();
 
+	sc_pain_callback_type_register(PT_ARROW, NULL, sc_arrow_pain_callback);
+
     lvl_load(&lvl, "data/map");
     lgph = lvl_init_graph(&lvl);
 
-    hunter_init(&hunter);
+    hunter_init(&hunter, ++sc_entity_id);
     soul_init(&soul, ++sc_entity_id, &lgph, lgph.nodes[10]);
 
     arrows.data = NULL;
@@ -218,7 +256,10 @@ static void sc_tick(double dt)
 	sc_tick_soul(&soul, &ts, dt);
 
 	sc_platform_collide(&hunter, &lvl);
-	sc_pain_tick(&arrows, &arrows_stuck, &soul, &hunter);
+
+	ARRAY_CLEAR(arrows_to_stick);
+	sc_pain_tick(&arrows, &soul, &hunter);
+	sc_arrow_pain_stick();
 }
 
 static void sc_draw(double weight)

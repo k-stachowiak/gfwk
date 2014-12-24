@@ -10,6 +10,7 @@
 #include "cmp_shape.h"
 
 struct Arrow {
+	long id;
     struct CmpDrvBallistic drv;
 	struct CmpApprStaticSprite appr;
     struct CmpPain pain;
@@ -19,7 +20,7 @@ struct Arrow {
     double timer; /* multi-purpose ill-designed helper counter. */
 };
 
-void arrow_init(struct Arrow *arrow, double x, double y, double angle);
+void arrow_init(struct Arrow *arrow, long id, double x, double y, double angle);
 void arrow_deinit(struct Arrow *arrow);
 
 #endif

@@ -6,7 +6,7 @@
 
 #include "sc_hunter.h"
 
-void hunter_init(struct Hunter *hunter)
+void hunter_init(struct Hunter *hunter, long id)
 {
 	cmp_appr_anim_sprite_init(&hunter->appr_walk_right, sc_hunter_walk_right_common, 2, -1);
 	cmp_appr_anim_sprite_init(&hunter->appr_walk_left, sc_hunter_walk_left_common, 2, -1);
@@ -17,6 +17,8 @@ void hunter_init(struct Hunter *hunter)
 	hunter->appr_array[HUNTER_APPR_STAND_RIGHT] = CMP_APPR(&hunter->appr_stand_right);
 	hunter->appr_array[HUNTER_APPR_WALK_LEFT] = CMP_APPR(&hunter->appr_walk_left);
 	hunter->appr_array[HUNTER_APPR_WALK_RIGHT] = CMP_APPR(&hunter->appr_walk_right);
+
+	hunter->id = id;
 
 	cmp_drv_platform_init(&hunter->drv,	&hunter->inx, &hunter->jump_req, &hunter->standing);
 	cmp_appr_proxy_init(&hunter->appr, hunter->appr_array, 4, HUNTER_APPR_STAND_RIGHT);

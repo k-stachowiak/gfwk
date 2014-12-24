@@ -150,10 +150,12 @@ static void cmp_ai_soul_update(
  * ==============
  */
 
-static void cmp_ai_soul_on_pain(long id, void *ai_boxed)
-{
-	struct CmpAiSoul *ai = (struct CmpAiSoul *)ai_boxed;
-	cmp_ai_soul_goto_ko(ai);
+static void cmp_ai_soul_on_pain(long id, PainType pt, void *ai_boxed)
+{	
+	if (pt == PT_ARROW) {
+		struct CmpAiSoul *ai = (struct CmpAiSoul *)ai_boxed;
+		cmp_ai_soul_goto_ko(ai);
+	}
 }
 
 /* Lifetime management operations.
@@ -189,7 +191,7 @@ void cmp_ai_soul_init(
 
 	cmp_ai_soul_goto_idle(ai);
 
-	sc_pain_callback_register(id, (void*)ai, cmp_ai_soul_on_pain);
+	sc_pain_callback_id_register(id, (void*)ai, cmp_ai_soul_on_pain);
 }
 
 void cmp_ai_soul_deinit(struct CmpAiSoul *ai)
