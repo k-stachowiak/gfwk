@@ -26,6 +26,7 @@ struct Hunter {
 	struct CmpAppr *appr_array[4];
 
 	long id;
+	bool has_soul;
 	struct CmpDrvPlatform drv;
 	struct CmpApprProxy appr;
 	struct CmpOri ori;

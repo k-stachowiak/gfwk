@@ -60,45 +60,54 @@ void sc_draw_hunter(struct Hunter *hunter)
 	draw_bitmap(sc_bow_bitmap, hunter_sp.x, hunter_sp.y, hunter->aim_angle);
 }
 
-void sc_draw_soul(struct Soul *soul)
+void sc_draw_souls(struct SoulArray *souls)
 {
 	struct WorldPos zero_wp = { 0.0, 0.0 };
 	struct ScreenPos zero_sp = pos_world_to_screen(zero_wp);
-	cmp_draw(&soul->ori, CMP_APPR(&soul->appr), -zero_sp.x, -zero_sp.y);
+	int i;
+
+	for (i = 0; i < souls->size; ++i) {
+		struct Soul *soul = souls->data + i;
+		cmp_draw(&soul->ori, CMP_APPR(&soul->appr), -zero_sp.x, -zero_sp.y);
+	}
 }
 
-void sc_draw_soul_dbg(struct Soul *soul)
+void sc_draw_souls_dbg(struct SoulArray *souls)
 {
-	int i;
+	int i, j;
 	double *points;
 	int points_count;
-
 	ALLEGRO_COLOR color = al_map_rgb_f(1.0f, 0.7f, 0.4f);
 
-	struct PosRot soul_pr = cmp_ori_get(&soul->ori);
-	struct WorldPos soul_wp = { soul_pr.x, soul_pr.y };
-	struct ScreenPos soul_sp = pos_world_to_screen(soul_wp);
+	for (i = 0; i < souls->size; ++i) {
 
-	al_draw_circle(soul_sp.x, soul_sp.y, 4, color, 1);
+		struct Soul *soul = souls->data + i;
 
-	cmp_drv_waypoint_points(&soul->drv_walk, &points, &points_count);
+		struct PosRot soul_pr = cmp_ori_get(&soul->ori);
+		struct WorldPos soul_wp = { soul_pr.x, soul_pr.y };
+		struct ScreenPos soul_sp = pos_world_to_screen(soul_wp);
 
-	for (i = 0; i < (points_count - 1); ++i) {
+		al_draw_circle(soul_sp.x, soul_sp.y, 4, color, 1);
 
-		struct WorldPos
-			wp1 = { points[2 * i + 0], points[2 * i + 1] },
-			wp2 = { points[2 * i + 2], points[2 * i + 3] };
+		cmp_drv_waypoint_points(&soul->drv_walk, &points, &points_count);
 
-		struct ScreenPos
-			sp1 = pos_world_to_screen(wp1),
-			sp2 = pos_world_to_screen(wp2);
+		for (j = 0; j < (points_count - 1); ++j) {
 
-		double x1 = sp1.x;
-		double y1 = sp1.y;
-		double x2 = sp2.x;
-		double y2 = sp2.y;
+			struct WorldPos
+				wp1 = { points[2 * j + 0], points[2 * j + 1] },
+				wp2 = { points[2 * j + 2], points[2 * j + 3] };
 
-		al_draw_line(x1, y1, x2, y2, color, 2.0);
+			struct ScreenPos
+				sp1 = pos_world_to_screen(wp1),
+				sp2 = pos_world_to_screen(wp2);
+
+			double x1 = sp1.x;
+			double y1 = sp1.y;
+			double x2 = sp2.x;
+			double y2 = sp2.y;
+
+			al_draw_line(x1, y1, x2, y2, color, 2.0);
+		}
 	}
 }
 

@@ -7,6 +7,6 @@ void sc_tick_camera(double dt);
 void sc_tick_arrows_regular(struct ArrowArray *array, double dt);
 void sc_tick_arrows_stuck(struct ArrowArray *array, double dt);
 void sc_tick_hunter(struct Hunter *hunter, double dt);
-void sc_tick_soul(struct Soul *soul, struct CmpAiTacticalStatus *ts, double dt);
+void sc_tick_souls(struct SoulArray *souls, struct CmpAiTacticalStatus *ts, double dt);
 
 #endif

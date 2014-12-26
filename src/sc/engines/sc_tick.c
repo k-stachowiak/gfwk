@@ -129,24 +129,29 @@ void sc_tick_hunter(struct Hunter *hunter, double dt)
 	sc_tick_hunter_input(hunter, dt);
 }
 
-void sc_tick_soul(struct Soul *soul, struct CmpAiTacticalStatus *ts, double dt)
+void sc_tick_souls(struct SoulArray *souls, struct CmpAiTacticalStatus *ts, double dt)
 {
-	struct Vel vel;
+	int i;
+	for (i = 0; i < souls->size; ++i) {
 
-	soul->drv.base.update(CMP_DRV(&soul->drv), dt);
-	soul->appr.base.update(CMP_APPR(&soul->appr), dt);
-	soul->ai.base.update(CMP_AI(&soul->ai), ts, dt);
+		struct Vel vel;
+		struct Soul *soul = souls->data + i;
 
-	/* TODO: Cast the driver once in the begining of the function. */
-	vel = soul->drv.base.vel(CMP_DRV(&soul->drv));
+		soul->drv.base.update(CMP_DRV(&soul->drv), dt);
+		soul->appr.base.update(CMP_APPR(&soul->appr), dt);
+		soul->ai.base.update(CMP_AI(&soul->ai), ts, dt);
 
-	if (vel.vx > 0) {
-		cmp_appr_proxy_set_child(CMP_APPR(&soul->appr), SOUL_APPR_WALK_RIGHT);
+		/* TODO: Cast the driver once in the begining of the function. */
+		vel = soul->drv.base.vel(CMP_DRV(&soul->drv));
+
+		if (vel.vx > 0) {
+			cmp_appr_proxy_set_child(CMP_APPR(&soul->appr), SOUL_APPR_WALK_RIGHT);
+		}
+		else if (vel.vx < 0) {
+			cmp_appr_proxy_set_child(CMP_APPR(&soul->appr), SOUL_APPR_WALK_LEFT);
+		}
+
+		cmp_think(CMP_AI(&soul->ai));
+		cmp_drive(&soul->ori, CMP_DRV(&soul->drv), dt);
 	}
-	else if (vel.vx < 0) {
-		cmp_appr_proxy_set_child(CMP_APPR(&soul->appr), SOUL_APPR_WALK_LEFT);
-	}
-
-	cmp_think(CMP_AI(&soul->ai));
-	cmp_drive(&soul->ori, CMP_DRV(&soul->drv), dt);
 }

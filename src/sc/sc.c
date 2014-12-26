@@ -5,14 +5,13 @@
 
 #include "memory.h"
 #include "array.h"
+#include "diagnostics.h"
 
 #include "system.h"
 #include "resources.h"
 #include "database.h"
 
 #include "menu.h"
-
-#include "cmp_ai.h"
 
 #include "sc_data.h"
 #include "sc_level.h"
@@ -35,6 +34,11 @@ struct {
 	long *data;
 	int size, cap;
 } arrows_to_stick = { NULL, 0, 0 };
+
+struct {
+	long *data;
+	int size, cap;
+} souls_to_collect = { NULL, 0, 0 };
 
 /* Resources management logic. */
 static void sc_init_resources_basic(void)
@@ -169,16 +173,12 @@ static void sc_deinit_resources_complex(void)
  * ===========
  */
 
-static void sc_arrow_pain_callback(
-	PainType pt_x,
-	long id_x,
-	PainType pt_y,
-	void *data)
+static void sc_arrow_pain_callback(PainType pt_x, long id_x, PainType pt_y, void *data)
 {
 	ARRAY_APPEND(arrows_to_stick, id_x);
 }
 
-static void sc_arrow_pain_stick(void)
+static void sc_arrows_pain_stick(void)
 {
 	int i, j;
 	for (i = 0; i < arrows_to_stick.size; ++i) {
@@ -199,8 +199,43 @@ static void sc_arrow_pain_stick(void)
 	}
 }
 
+static void sc_soul_pain_callback(PainType pt_x, long id_x, PainType pt_y, void *data)
+{
+	struct Soul *soul = sc_soul_find_id(id_x);
+
+	if (!soul) {
+		DIAG_ERROR("Soul of id %ld not found.", id_x);
+		exit(1);
+	}
+
+	if (soul->ai.state != CMP_AI_SOUL_STATE_KO) {
+		return;
+	}
+
+	if (pt_y != PT_HUNTER) {
+		return;
+	}
+
+	ARRAY_APPEND(souls_to_collect, soul->id);
+}
+
+static void sc_souls_collect(void)
+{
+	int i;
+	for (i = 0; i < souls_to_collect.size; ++i) {
+		long soul_id = souls_to_collect.data[i];
+		struct Soul *soul = sc_soul_find_id(soul_id);
+		if (!soul) {
+			DIAG_ERROR("Soul of id %ld not found.", soul_id);
+			exit(1);
+		}
+	}
+}
+
 static void sc_init(void)
 {
+	struct Soul soul_memory_template = { 0 };
+
     sc_alive = true;
     sc_next = NULL;
 	sc_entity_id = 0;
@@ -213,19 +248,24 @@ static void sc_init(void)
     sc_init_resources_complex();
 
 	sc_pain_callback_type_register(PT_ARROW, NULL, sc_arrow_pain_callback);
+	sc_pain_callback_type_register(PT_SOUL, NULL, sc_soul_pain_callback);
 
     lvl_load(&lvl, "data/map");
     lgph = lvl_init_graph(&lvl);
 
     hunter_init(&hunter, ++sc_entity_id);
-    soul_init(&soul, ++sc_entity_id, &lgph, lgph.nodes[10]);
 
-    arrows.data = NULL;
-    arrows.size = 0;
-    arrows.cap = 0;
-    arrows_stuck.data = NULL;
-    arrows_stuck.size = 0;
-    arrows_stuck.cap = 0;
+	ARRAY_FREE(arrows);
+	ARRAY_FREE(arrows_stuck);
+	ARRAY_FREE(souls);
+
+	ARRAY_APPEND(souls, soul_memory_template);
+	ARRAY_APPEND(souls, soul_memory_template);
+	ARRAY_APPEND(souls, soul_memory_template);
+
+	soul_init(souls.data + 0, ++sc_entity_id, &lgph, lgph.nodes[1]);
+	soul_init(souls.data + 1, ++sc_entity_id, &lgph, lgph.nodes[5]);
+	soul_init(souls.data + 2, ++sc_entity_id, &lgph, lgph.nodes[10]);
 
     sc_cam_shift.x = 0.0;
     sc_cam_shift.y = 0.0;
@@ -233,10 +273,15 @@ static void sc_init(void)
 
 static void sc_deinit(void)
 {
-    lgph_deinit(&lgph);
-    lvl_unload(&lvl);
-    hunter_deinit(&hunter);
-    soul_deinit(&soul);
+	int i;
+
+	lgph_deinit(&lgph);
+	lvl_unload(&lvl);
+	hunter_deinit(&hunter);
+
+	for (i = 0; i < souls.size; ++i) {
+		soul_deinit(souls.data + i);
+	}
 
     sc_deinit_resources_complex();
     sc_deinit_resources_basic();
@@ -244,22 +289,25 @@ static void sc_deinit(void)
 
 static void sc_tick(double dt)
 {
-    struct CmpAiTacticalStatus ts;
+	struct CmpAiTacticalStatus ts = {
+		cmp_ori_get(&hunter.ori)
+	};
+
+	ARRAY_CLEAR(arrows_to_stick);
+	ARRAY_CLEAR(souls_to_collect);
 
     sc_tick_camera(dt);
 	sc_tick_arrows_regular(&arrows, dt);
 	sc_tick_arrows_stuck(&arrows_stuck, dt);
+	sc_tick_souls(&souls, &ts, dt);
 	sc_tick_hunter(&hunter, dt);
-
-    ts.hunter_pos = cmp_ori_get(&hunter.ori);
-
-	sc_tick_soul(&soul, &ts, dt);
 
 	sc_platform_collide(&hunter, &lvl);
 
-	ARRAY_CLEAR(arrows_to_stick);
-	sc_pain_tick(&arrows, &soul, &hunter);
-	sc_arrow_pain_stick();
+	sc_pain_tick(&arrows, &souls, &hunter);
+
+	sc_arrows_pain_stick();
+	sc_souls_collect();
 }
 
 static void sc_draw(double weight)
@@ -268,7 +316,7 @@ static void sc_draw(double weight)
 
 	sc_draw_level(&lvl);
 	sc_draw_hunter(&hunter);
-	sc_draw_soul(&soul);
+	sc_draw_souls(&souls);
 	sc_draw_arrows(&arrows);
     sc_draw_arrows(&arrows_stuck);
 
@@ -276,7 +324,7 @@ static void sc_draw(double weight)
 		sc_platform_draw_debug();
 		sc_pain_draw_debug();
 		sc_draw_graph_dbg(&lgph);
-        sc_draw_soul_dbg(&soul);
+        sc_draw_souls_dbg(&souls);
     }
 
     al_flip_display();

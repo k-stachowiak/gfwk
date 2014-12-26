@@ -18,6 +18,7 @@ void hunter_init(struct Hunter *hunter, long id)
 	hunter->appr_array[HUNTER_APPR_WALK_LEFT] = CMP_APPR(&hunter->appr_walk_left);
 	hunter->appr_array[HUNTER_APPR_WALK_RIGHT] = CMP_APPR(&hunter->appr_walk_right);
 
+	hunter->has_soul = false;
 	hunter->id = id;
 
 	cmp_drv_platform_init(&hunter->drv,	&hunter->inx, &hunter->jump_req, &hunter->standing);

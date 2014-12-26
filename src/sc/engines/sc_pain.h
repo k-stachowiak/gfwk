@@ -13,7 +13,7 @@ void sc_pain_draw_debug(void);
 
 void sc_pain_tick(
 		struct ArrowArray *arrows,
-		struct Soul *soul,
+		struct SoulArray *souls,
 		struct Hunter *hunter);
 
 void sc_pain_callback_id_register(long id, void *data, PainCallbackId callback);

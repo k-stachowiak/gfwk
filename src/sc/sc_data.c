@@ -1,5 +1,7 @@
 /* Copyright (C) 2014 Krzysztof Stachowiak */
 
+#include <stdlib.h>
+
 #include "sc_data.h"
 
 #include "sc_hunter.h"
@@ -44,6 +46,8 @@ struct Soul soul;
 struct ArrowArray arrows;
 struct ArrowArray arrows_stuck;
 
+struct SoulArray souls;
+
 struct WorldPos pos_tile_to_world(struct TilePos tile_pos)
 {
     struct WorldPos result = {
@@ -70,3 +74,17 @@ struct ScreenPos pos_world_to_screen(struct WorldPos world_pos)
     return result;
 }
 
+struct Soul *sc_soul_find_id(long id)
+{
+	int i;
+	struct Soul *soul = NULL;
+
+	for (i = 0; i < souls.size; ++i) {
+		if (souls.data[i].id == id) {
+			soul = souls.data + i;
+			break;
+		}
+	}
+
+	return soul;
+}

@@ -53,7 +53,6 @@ enum SCPainType {
 extern struct Level lvl;
 extern struct Graph lgph;
 extern struct Hunter hunter;
-extern struct Soul soul;
 
 struct ArrowArray {
 	struct Arrow *data;
@@ -62,5 +61,14 @@ struct ArrowArray {
 
 extern struct ArrowArray arrows;
 extern struct ArrowArray arrows_stuck;
+
+struct SoulArray {
+	struct Soul *data;
+	int size, cap;
+};
+
+struct Soul *sc_soul_find_id(long id);
+
+extern struct SoulArray souls;
 
 #endif
