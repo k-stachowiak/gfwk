@@ -2,467 +2,468 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #include "diagnostics.h"
 #include "memory.h"
 #include "cmp_drv.h"
 #include "sc_data.h"
 
-/* Base class implementation.
- * ==========================
+/* NEW Impl. */
+
+static void vel_stop(struct Vel *vel, bool x, bool y)
+{
+	vel->vx -= (!!x) * vel->vx;
+	vel->vy -= (!!y) * vel->vy;
+}
+
+/* Linear implementation.
+ * ======================
  */
 
-static void cmp_drv_base_free(struct CmpDrv *this)
-{
-    free_or_die(this);
-}
-
-static void cmp_drv_base_stop_x(struct CmpDrv *this)
-{
-    this->stop(this, true, false);
-}
-
-static void cmp_drv_base_stop_y(struct CmpDrv *this)
-{
-    this->stop(this, false, true);
-}
-
-static void cmp_drv_base_init(struct CmpDrv *this, double affect_rot)
-{
-    this->affect_rot = affect_rot;
-    this->free = cmp_drv_base_free;
-    this->stop_x = cmp_drv_base_stop_x;
-    this->stop_y = cmp_drv_base_stop_y;
-}
-
-/* Common class implementation.
- * =============================
- */
-
-static void cmp_drv_common_update(struct CmpDrv *this, double dt)
-{
-    (void)this;
-    (void)dt;
-}
-
-static void cmp_drv_common_stop(struct CmpDrv *this, bool x, bool y)
-{
-    (void)this;
-    (void)x;
-    (void)y;
-    DIAG_WARNING("Attempt to stop incompatible driver component.");
-}
-
-
-/* Linear driver implementation.
- * =============================
- */
-
-static struct Vel cmp_drv_linear_vel(struct CmpDrv *this)
-{
-    struct CmpDrvLinear *derived = (struct CmpDrvLinear*)this;
-    return derived->vel;
-}
-
-void cmp_drv_linear_init(
-		struct CmpDrvLinear *drv,
-		bool affect_rot,
-		double vx, double vy,
-		double vtheta)
-{
-	cmp_drv_base_init((struct CmpDrv*)drv, affect_rot);
-
-	drv->base.update = cmp_drv_common_update;
-	drv->base.stop = cmp_drv_common_stop;
-	drv->base.vel = cmp_drv_linear_vel;
-
-	drv->vel.vx = vx;
-	drv->vel.vy = vy;
-	drv->vel.vtheta = vtheta;
-}
-
-void cmp_drv_linear_deinit(struct CmpDrvLinear* drv)
+static void cmp_drv_linear_deinit(struct CmpDrvLinear *drv)
 {
 	(void)drv;
 }
 
-struct CmpDrv *cmp_drv_linear_create(
-        bool affect_rot,
-        double vx, double vy,
-        double vtheta)
+static void cmp_drv_linear_update(struct CmpDrvLinear *drv, double dt)
 {
-    struct CmpDrvLinear *result = malloc_or_die(sizeof(*result));
-	cmp_drv_linear_init(result, affect_rot, vx, vy, vtheta);
-    return (struct CmpDrv*)result;
+	(void)drv;
+	(void)dt;
 }
 
-/* 8 directions input driver implementation.
- * =========================================
+static void cmp_drv_linear_stop(struct CmpDrvLinear *drv, bool x, bool y)
+{
+	vel_stop(&drv->vel, x, y);
+}
+
+static struct Vel cmp_drv_linear_vel(struct CmpDrvLinear *drv)
+{
+	return drv->vel;
+}
+
+/* Input 8 directions implementation.
+ * ==================================
  */
 
-static struct Vel cmp_drv_i8d_vel(struct CmpDrv *this)
-{
-    struct Vel result = { 0, };
-    struct CmpDrvI8d *derived = (struct CmpDrvI8d*)this;
-
-    result.vx = *derived->inx * derived->vel;
-    result.vy = *derived->iny * derived->vel;
-
-    return result;
-}
-
-void cmp_drv_i8d_init(
-		struct CmpDrvI8d *drv,
-		bool affect_rot,
-		double vel,
-		int *inx, int *iny)
-{
-	cmp_drv_base_init((struct CmpDrv*)drv      , affect_rot);
-
-	drv->base.update = cmp_drv_common_update;
-	drv->base.stop = cmp_drv_common_stop;
-	drv->base.vel = cmp_drv_i8d_vel;
-
-	drv->vel = vel;
-	drv->inx = inx;
-	drv->iny = iny;
-}
-
-void cmp_drv_i8d_deinit(struct CmpDrvI8d *drv)
+static void cmp_drv_i8d_deinit(struct CmpDrvI8d *drv)
 {
 	(void)drv;
 }
 
-struct CmpDrv *cmp_drv_i8d_create(
-        bool affect_rot,
-        double vel,
-        int *inx, int *iny)
+static void cmp_drv_i8d_update(struct CmpDrvI8d *drv, double dt)
 {
-    struct CmpDrvI8d *result = malloc_or_die(sizeof(*result));
-	cmp_drv_i8d_init(result, affect_rot, vel, inx, iny);
-    return (struct CmpDrv*)result;
+	(void)drv;
+	(void)dt;
 }
 
-/* Ballistic driver implementation.
- * ================================
+static void cmp_drv_i8d_stop(struct CmpDrvI8d *drv, bool x, bool y)
+{
+	(void)drv;
+	(void)x;
+	(void)y;
+}
+
+static struct Vel cmp_drv_i8d_vel(struct CmpDrvI8d *drv)
+{
+	struct Vel result = {
+		*drv->inx * drv->vel,
+		*drv->iny * drv->vel
+	};
+	return result;
+}
+
+/* Ballistic implementation.
+ * =========================
  */
 
-static void cmp_drv_ballistic_update(struct CmpDrv *this, double dt)
-{
-    struct CmpDrvBallistic *derived = (struct CmpDrvBallistic*)this;
-    derived->vel.vy += 10.0 * sc_tile_w * dt;
-}
-
-static void cmp_drv_ballistic_stop(struct CmpDrv *this, bool x, bool y)
-{
-    struct CmpDrvBallistic *derived = (struct CmpDrvBallistic*)this;
-    derived->vel.vx -= (!!x) * derived->vel.vx;
-    derived->vel.vy -= (!!y) * derived->vel.vy;
-}
-
-static struct Vel cmp_drv_ballistic_vel(struct CmpDrv *this)
-{
-    struct CmpDrvBallistic *derived = (struct CmpDrvBallistic*)this;
-    return derived->vel;
-}
-
-void cmp_drv_ballistic_init(
-		struct CmpDrvBallistic *drv,
-		bool affect_rot,
-		double vx,
-		double vy)
-{
-	cmp_drv_base_init((struct CmpDrv*)drv, affect_rot);
-
-	drv->base.update = cmp_drv_ballistic_update;
-	drv->base.stop = cmp_drv_ballistic_stop;
-	drv->base.vel = cmp_drv_ballistic_vel;
-
-	drv->vel.vx = vx;
-	drv->vel.vy = vy;
-	drv->vel.vtheta = 0.0;
-}
-
-void cmp_drv_ballistic_deinit(struct CmpDrvBallistic *drv)
+static void cmp_drv_ballistic_deinit(struct CmpDrvBallistic *drv)
 {
 	(void)drv;
 }
 
-struct CmpDrv *cmp_drv_ballistic_create(
-        bool affect_rot,
-        double vx, double vy)
+static void cmp_drv_ballistic_update(struct CmpDrvBallistic *drv, double dt)
 {
-    struct CmpDrvBallistic *result = malloc_or_die(sizeof(*result));
-	cmp_drv_ballistic_init(result, affect_rot, vx, vy);
-    return (struct CmpDrv*)result;
+	drv->vel.vy += 10.0 * sc_tile_w * dt;
 }
 
-/* Platform driver implementation.
- * ===============================
+static void cmp_drv_ballistic_stop(struct CmpDrvBallistic *drv, bool x, bool y)
+{
+	vel_stop(&drv->vel, x, y);
+}
+
+static struct Vel cmp_drv_ballistic_vel(struct CmpDrvBallistic *drv)
+{
+	return drv->vel;
+}
+
+/* Platform implementation.
+ * ========================
  */
 
-static void cmp_drv_platform_update(struct CmpDrv *this, double dt)
-{
-    struct CmpDrvPlatform *derived = (struct CmpDrvPlatform*)this;
-
-    if (*derived->standing) {
-        if (*derived->jump_req == true) {
-            *derived->standing = false;
-            derived->vel.vy = -7.0 * sc_tile_w;
-        }
-    } else {
-        derived->vel.vy += 10.0 * sc_tile_w * dt;
-    }
-
-    derived->vel.vx = *derived->inx * 200.0;
-
-    *derived->jump_req = false;
-}
-
-static void cmp_drv_platform_stop(struct CmpDrv *this, bool x, bool y)
-{
-    struct CmpDrvPlatform *derived = (struct CmpDrvPlatform*)this;
-    derived->vel.vx -= (!!x) * derived->vel.vx;
-    derived->vel.vy -= (!!y) * derived->vel.vy;
-}
-
-static struct Vel cmp_drv_platform_vel(struct CmpDrv *this)
-{
-    struct CmpDrvPlatform *derived = (struct CmpDrvPlatform*)this;
-    return derived->vel;
-}
-
-void cmp_drv_platform_init(
-		struct CmpDrvPlatform *drv,
-		int *inx,
-		bool *jump_req,
-		bool *standing)
-{
-	cmp_drv_base_init((struct CmpDrv*)drv, false);
-
-	drv->base.update = cmp_drv_platform_update;
-	drv->base.stop = cmp_drv_platform_stop;
-	drv->base.vel = cmp_drv_platform_vel;
-
-	drv->vel.vx = 0.0;
-	drv->vel.vy = 0.0;
-	drv->vel.vtheta = 0.0;
-	drv->inx = inx;
-	drv->jump_req = jump_req;
-	drv->standing = standing;
-}
-
-void cmp_drv_platform_deinit(struct CmpDrvPlatform *drv)
+static void cmp_drv_platform_deinit(struct CmpDrvPlatform *drv)
 {
 	(void)drv;
 }
 
-struct CmpDrv *cmp_drv_platform_create(
-        int *inx, bool *jump_req, bool *standing)
+static void cmp_drv_platform_update(struct CmpDrvPlatform *drv, double dt)
 {
-    struct CmpDrvPlatform *result = malloc_or_die(sizeof(*result));
-	cmp_drv_platform_init(result, inx, jump_req, standing);
-    return (struct CmpDrv*)result;
+	if (*drv->standing) {
+		if (*drv->jump_req == true) {
+			*drv->standing = false;
+			drv->vel.vy = -7.0 * sc_tile_w;
+		}
+	}
+	else {
+		drv->vel.vy += 10.0 * sc_tile_w * dt;
+	}
+
+	drv->vel.vx = *drv->inx * 200.0;
+
+	*drv->jump_req = false;
 }
 
-/* Waypoint driver implementation.
- * ===============================
+static void cmp_drv_platform_stop(struct CmpDrvPlatform *drv, bool x, bool y)
+{
+	vel_stop(&drv->vel, x, y);
+}
+
+static struct Vel cmp_drv_platform_vel(struct CmpDrvPlatform *drv)
+{
+	return drv->vel;
+}
+
+/* Waypoint implementation.
+ * ========================
  */
-
-static void cmp_drv_waypoint_free(struct CmpDrv *this)
-{
-    struct CmpDrvWaypoint *derived = (struct CmpDrvWaypoint*)this;
-	cmp_drv_waypoint_deinit(derived);
-	cmp_drv_base_free(this);
-	/* TODO: Get rid of this common base magic... */
-}
 
 static void cmp_drv_waypoint_local_points(
-        struct CmpDrvWaypoint *wayp,
-        double *x0, double *y0,
-        double *x1, double *y1)
+		struct CmpDrvWaypoint *wayp,
+		double *x0, double *y0,
+		double *x1, double *y1)
 {
-    *x0 = wayp->points[2 * wayp->step + 0];
-    *y0 = wayp->points[2 * wayp->step + 1];
-    *x1 = wayp->points[2 * wayp->step + 2];
-    *y1 = wayp->points[2 * wayp->step + 3];
+	*x0 = wayp->points[2 * wayp->step + 0];
+	*y0 = wayp->points[2 * wayp->step + 1];
+	*x1 = wayp->points[2 * wayp->step + 2];
+	*y1 = wayp->points[2 * wayp->step + 3];
 }
 
-static void cmp_drv_waypoint_update(struct CmpDrv *this, double dt)
-{
-    struct CmpDrvWaypoint *derived = (struct CmpDrvWaypoint*)this;
-
-    double x0, y0, x1, y1;
-    double dx, dy;
-	double rev_sqrt;
-    double step_inc;
-	 
-    cmp_drv_waypoint_local_points(derived, &x0, &y0, &x1, &y1);
-
-    dx = x1 - x0;
-    dy = y1 - y0;
-
-    rev_sqrt = 1.0 / sqrt(dx * dx + dy * dy);
-    step_inc = derived->velocity * dt * rev_sqrt;
-
-    derived->step_degree += step_inc;
-    if (derived->step_degree >= 1.0) {
-        derived->step_degree = 0.0;
-		++derived->step;
-		if (derived->step == (derived->points_count - 1)) {
-			derived->on_end(this, derived->on_end_data);
-		}
-    }
-}
-
-static void cmp_drv_waypoint_stop(struct CmpDrv *this, bool x, bool y)
-{
-    struct CmpDrvWaypoint *derived = (struct CmpDrvWaypoint*)this;
-    (void)x;
-    (void)y;
-    derived->velocity = 0;
-}
-
-struct Vel cmp_drv_waypoint_vel(struct CmpDrv *this)
-{
-    struct CmpDrvWaypoint *derived = (struct CmpDrvWaypoint*)this;
-    struct Vel result = { 0.0, 0.0, 0.0 };
-
-    double x0, y0, x1, y1;
-    double dx, dy;
-    double rev_sqrt;
-
-    cmp_drv_waypoint_local_points(derived, &x0, &y0, &x1, &y1);
-
-    dx = x1 - x0;
-    dy = y1 - y0;
-
-    rev_sqrt = 1.0 / sqrt(dx * dx + dy * dy);
-
-    result.vx = dx * rev_sqrt * derived->velocity;
-    result.vy = dy * rev_sqrt * derived->velocity;
-
-    return result;
-}
-
-void cmp_drv_waypoint_init(struct CmpDrvWaypoint *drv, double velocity)
-{
-	cmp_drv_base_init((struct CmpDrv*)drv, false);
-
-	drv->base.free = cmp_drv_waypoint_free;
-	drv->base.update = cmp_drv_waypoint_update;
-	drv->base.stop = cmp_drv_waypoint_stop;
-	drv->base.vel = cmp_drv_waypoint_vel;
-
-	drv->points = NULL;
-	drv->points_count = 0;
-	drv->velocity = velocity;
-	drv->step = 0;
-	drv->step_degree = 0.0;
-	drv->on_end_data = NULL;
-	drv->on_end = NULL;
-}
-
-void cmp_drv_waypoint_deinit(struct CmpDrvWaypoint *drv)
+static void cmp_drv_waypoint_deinit(struct CmpDrvWaypoint *drv)
 {
 	free_or_die(drv->points);
 }
 
-struct CmpDrv *cmp_drv_waypoint_create(double velocity)
+static void cmp_drv_waypoint_update(struct CmpDrvWaypoint *drv, double dt)
 {
-    struct CmpDrvWaypoint *result = malloc_or_die(sizeof(*result));
-	cmp_drv_waypoint_init(result, velocity);
-    return (struct CmpDrv*)result;
+	double x0, y0, x1, y1;
+	double dx, dy;
+	double rev_sqrt;
+	double step_inc;
+
+	cmp_drv_waypoint_local_points(drv, &x0, &y0, &x1, &y1);
+
+	dx = x1 - x0;
+	dy = y1 - y0;
+
+	rev_sqrt = 1.0 / sqrt(dx * dx + dy * dy);
+	step_inc = drv->velocity * dt * rev_sqrt;
+
+	drv->step_degree += step_inc;
+	if (drv->step_degree >= 1.0) {
+		drv->step_degree = 0.0;
+		++drv->step;
+		if (drv->step == (drv->points_count - 1)) {
+			drv->on_end((struct CmpDrv*)drv, drv->on_end_data);
+		}
+	}
 }
 
-void cmp_drv_waypoint_on_end(struct CmpDrvWaypoint *this, CmpDrvCallback on_end, void *data)
+static void cmp_drv_waypoint_stop(struct CmpDrvWaypoint *drv, bool x, bool y)
 {
-	this->on_end = on_end;
-	this->on_end_data = data;
+	(void)x;
+	(void)y;
+	drv->velocity = 0;
 }
 
-void cmp_drv_waypoint_reset(struct CmpDrvWaypoint *this, double *points, int points_count)
+struct Vel cmp_drv_waypoint_vel(struct CmpDrvWaypoint *drv)
 {
-	free_or_die(this->points);
-    this->points = points;
-    this->points_count = points_count;
-	this->step = 0;
-	this->step_degree = 0;
+	struct Vel result = { 0.0, 0.0, 0.0 };
+
+	double x0, y0, x1, y1;
+	double dx, dy;
+	double rev_sqrt;
+
+	cmp_drv_waypoint_local_points(drv, &x0, &y0, &x1, &y1);
+
+	dx = x1 - x0;
+	dy = y1 - y0;
+
+	rev_sqrt = 1.0 / sqrt(dx * dx + dy * dy);
+
+	result.vx = dx * rev_sqrt * drv->velocity;
+	result.vy = dy * rev_sqrt * drv->velocity;
+
+	return result;
 }
 
-void cmp_drv_waypoint_points(struct CmpDrvWaypoint *this, double **points, int *points_count)
+/* Proxy implementation.
+ * =====================
+ */
+
+static void cmp_drv_proxy_deinit(struct CmpDrvProxy *drv)
 {
-	*points = this->points;
-	*points_count = this->points_count;
+	int i;
+	for (i = 0; i < drv->children_count; ++i) {
+		cmp_drv_deinit(drv->children + i);
+	}
+	free_or_die(drv->children);
 }
 
-
-/* Proxy driver implementation.
-* =============================
-*/
-
-static void cmp_drv_proxy_update(struct CmpDrv* this, double dt)
+static void cmp_drv_proxy_update(struct CmpDrvProxy *drv, double dt)
 {
-	struct CmpDrvProxy *derived = (struct CmpDrvProxy*)this;
-	struct CmpDrv *child = derived->children[derived->current_child];
-	child->update(child, dt);
+	struct CmpDrv *child = drv->children + drv->current_child;
+	cmp_drv_update(child, dt);
 }
 
-static void cmp_drv_proxy_stop(struct CmpDrv* this, bool x, bool y)
+static void cmp_drv_proxy_stop(struct CmpDrvProxy *drv, bool x, bool y)
 {
-	struct CmpDrvProxy *derived = (struct CmpDrvProxy*)this;
-	struct CmpDrv *child = derived->children[derived->current_child];
-	child->stop(child, x, y);
+	struct CmpDrv *child = drv->children + drv->current_child;
+	cmp_drv_stop(child, x, y);
 }
 
-static struct Vel cmp_drv_proxy_vel(struct CmpDrv* this)
+static struct Vel cmp_drv_proxy_vel(struct CmpDrvProxy *drv)
 {
-	struct CmpDrvProxy *derived = (struct CmpDrvProxy*)this;
-	struct CmpDrv *child = derived->children[derived->current_child];
-	return child->vel(child);
+	struct CmpDrv *child = drv->children + drv->current_child;
+	return cmp_drv_vel(child);
+}
+
+/* NEW API. */
+
+void cmp_drv_linear_init(
+		struct CmpDrv *drv,
+		bool affect_rot,
+		double vx, double vy,
+		double vtheta)
+{
+	drv->type = CMP_DRV_LINEAR;
+	drv->affect_rot = affect_rot;
+	drv->body.linear.vel.vx = vx;
+	drv->body.linear.vel.vy = vy;
+	drv->body.linear.vel.vtheta = vtheta;
+}
+
+void cmp_drv_i8d_init(
+		struct CmpDrv *drv,
+		bool affect_rot,
+		double vel,
+		int *inx, int *iny)
+{
+	drv->type = CMP_DRV_I8D;
+	drv->type = affect_rot;
+	drv->body.i8d.vel = vel;
+	drv->body.i8d.inx = inx;
+	drv->body.i8d.iny = iny;
+}
+
+void cmp_drv_ballistic_init(
+		struct CmpDrv *drv,
+		bool affect_rot,
+		double vx,
+		double vy)
+{
+	drv->type = CMP_DRV_BALLISTIC;
+	drv->affect_rot = affect_rot;
+	drv->body.ballistic.vel.vx = vx;
+	drv->body.ballistic.vel.vy = vy;
+	drv->body.ballistic.vel.vtheta = 0.0;
+}
+
+void cmp_drv_platform_init(
+		struct CmpDrv *drv,
+		int *inx,
+		bool *jump_req,
+		bool *standing)
+{
+	drv->type = CMP_DRV_PLATFORM;
+	drv->affect_rot = false;
+	drv->body.platform.vel.vx = 0.0;
+	drv->body.platform.vel.vy = 0.0;
+	drv->body.platform.vel.vtheta = 0.0;
+	drv->body.platform.inx = inx;
+	drv->body.platform.jump_req = jump_req;
+	drv->body.platform.standing = standing;
+}
+
+void cmp_drv_waypoint_init(struct CmpDrv *drv, double velocity)
+{
+	drv->type = CMP_DRV_WAYPOINT;
+	drv->affect_rot = false;
+	drv->body.waypoint.points = NULL;
+	drv->body.waypoint.points_count = 0;
+	drv->body.waypoint.velocity = velocity;
+	drv->body.waypoint.step = 0;
+	drv->body.waypoint.step_degree = 0.0;
+	drv->body.waypoint.on_end_data = NULL;
+	drv->body.waypoint.on_end = NULL;
 }
 
 void cmp_drv_proxy_init(
-		struct CmpDrvProxy *drv,
-		struct CmpDrv *children[],
+		struct CmpDrv *drv,
+		struct CmpDrv children[],
 		int children_count,
 		int init_child)
 {
-	cmp_drv_base_init((struct CmpDrv*)drv, children[init_child]->affect_rot);
+	drv->type = CMP_DRV_PROXY;
+	drv->affect_rot = children[init_child].affect_rot;
 
-	drv->base.update = cmp_drv_proxy_update;
-	drv->base.stop = cmp_drv_proxy_stop;
-	drv->base.vel = cmp_drv_proxy_vel;
+	drv->body.proxy.children_count = children_count;
+	drv->body.proxy.current_child = init_child;
 
-	drv->children = children;
-	drv->children_count = children_count;
-	drv->current_child = init_child;
+	memcpy(drv->body.proxy.children, children, sizeof(*children) * children_count);
 }
 
-void cmp_drv_proxy_deinit(struct CmpDrvProxy *drv)
+void cmp_drv_deinit(struct CmpDrv *drv)
 {
-	(void)drv;
+	switch (drv->type) {
+	case CMP_DRV_LINEAR:
+		cmp_drv_linear_deinit((struct CmpDrvLinear*)drv);
+		break;
+	case CMP_DRV_I8D:
+		cmp_drv_i8d_deinit((struct CmpDrvI8d*)drv);
+		break;
+	case CMP_DRV_BALLISTIC:
+		cmp_drv_ballistic_deinit((struct CmpDrvBallistic*)drv);
+		break;
+	case CMP_DRV_PLATFORM:
+		cmp_drv_platform_deinit((struct CmpDrvPlatform*)drv);
+		break;
+	case CMP_DRV_WAYPOINT:
+		cmp_drv_waypoint_deinit((struct CmpDrvWaypoint*)drv);
+		break;
+	case CMP_DRV_PROXY:
+		cmp_drv_proxy_deinit((struct CmpDrvProxy*)drv);
+		break;
+	}
 }
 
-struct CmpDrv *cmp_drv_proxy_create(
-		struct CmpDrv *children[],
-		int children_count,
-		int init_child)
-
+void cmp_drv_update(struct CmpDrv *drv, double dt)
 {
-	struct CmpDrvProxy *result = malloc_or_die(sizeof(*result));
-	cmp_drv_proxy_init(result, children, children_count, init_child);
-	return (struct CmpDrv*)result;
+	switch (drv->type) {
+	case CMP_DRV_LINEAR:
+		cmp_drv_linear_update((struct CmpDrvLinear*)drv, dt);
+		break;
+	case CMP_DRV_I8D:
+		cmp_drv_i8d_update((struct CmpDrvI8d*)drv, dt);
+		break;
+	case CMP_DRV_BALLISTIC:
+		cmp_drv_ballistic_update((struct CmpDrvBallistic*)drv, dt);
+		break;
+	case CMP_DRV_PLATFORM:
+		cmp_drv_platform_update((struct CmpDrvPlatform*)drv, dt);
+		break;
+	case CMP_DRV_WAYPOINT:
+		cmp_drv_waypoint_update((struct CmpDrvWaypoint*)drv, dt);
+		break;
+	case CMP_DRV_PROXY:
+		cmp_drv_proxy_update((struct CmpDrvProxy*)drv, dt);
+		break;
+	}
 }
 
-int cmp_drv_proxy_get_child(struct CmpDrv *this)
+void cmp_drv_stop(struct CmpDrv *drv, bool x, bool y)
 {
-	struct CmpDrvProxy *derived = (struct CmpDrvProxy*)this;
+	switch (drv->type) {
+	case CMP_DRV_LINEAR:
+		cmp_drv_linear_stop((struct CmpDrvLinear*)drv, x, y);
+		break;
+	case CMP_DRV_I8D:
+		cmp_drv_i8d_stop((struct CmpDrvI8d*)drv, x, y);
+		break;
+	case CMP_DRV_BALLISTIC:
+		cmp_drv_ballistic_stop((struct CmpDrvBallistic*)drv, x, y);
+		break;
+	case CMP_DRV_PLATFORM:
+		cmp_drv_platform_stop((struct CmpDrvPlatform*)drv, x, y);
+		break;
+	case CMP_DRV_WAYPOINT:
+		cmp_drv_waypoint_stop((struct CmpDrvWaypoint*)drv, x, y);
+		break;
+	case CMP_DRV_PROXY:
+		cmp_drv_proxy_stop((struct CmpDrvProxy*)drv, x, y);
+		break;
+	}
+}
+
+void cmp_drv_stop_x(struct CmpDrv *drv)
+{
+	cmp_drv_stop(drv, true, false);
+}
+
+void cmp_drv_stop_y(struct CmpDrv *drv, bool x, bool y)
+{
+	cmp_drv_stop(drv, false, true);
+}
+
+struct Vel cmp_drv_vel(struct CmpDrv *drv)
+{
+	switch (drv->type) {
+	case CMP_DRV_LINEAR:
+		return cmp_drv_linear_vel((struct CmpDrvLinear*)drv);
+	case CMP_DRV_I8D:
+		return cmp_drv_i8d_vel((struct CmpDrvI8d*)drv);
+	case CMP_DRV_BALLISTIC:
+		return cmp_drv_ballistic_vel((struct CmpDrvBallistic*)drv);
+	case CMP_DRV_PLATFORM:
+		return cmp_drv_platform_vel((struct CmpDrvPlatform*)drv);
+	case CMP_DRV_WAYPOINT:
+		return cmp_drv_waypoint_vel((struct CmpDrvWaypoint*)drv);
+	case CMP_DRV_PROXY:
+		return cmp_drv_proxy_vel((struct CmpDrvProxy*)drv);
+	}
+	DIAG_ERROR("Should never get here.");
+	exit(1);
+}
+
+/* Public Waypoint hacks.
+ * ======================
+ */
+
+void cmp_drv_waypoint_on_end(struct CmpDrv *drv, CmpDrvCallback on_end, void *data)
+{
+	struct CmpDrvWaypoint *derived = (struct CmpDrvWaypoint*) drv;
+	derived->on_end = on_end;
+	derived->on_end_data = data;
+}
+
+void cmp_drv_waypoint_reset(struct CmpDrv *drv, double *points, int points_count)
+{
+	struct CmpDrvWaypoint *derived = (struct CmpDrvWaypoint*) drv;
+	free_or_die(derived->points);
+	derived->points = points;
+	derived->points_count = points_count;
+	derived->step = 0;
+	derived->step_degree = 0;
+}
+
+void cmp_drv_waypoint_points(struct CmpDrv *drv, double **points, int *points_count)
+{
+	struct CmpDrvWaypoint *derived = (struct CmpDrvWaypoint*) drv;
+	*points = derived->points;
+	*points_count = derived->points_count;
+}
+
+/* Public proxy driver hacks.
+ * ==========================
+ */
+
+int cmp_drv_proxy_get_child(struct CmpDrv *drv)
+{
+	struct CmpDrvProxy *derived = (struct CmpDrvProxy*)drv;
 	return derived->current_child;
 }
 
-void cmp_drv_proxy_set_child(struct CmpDrv *this, int child)
+void cmp_drv_proxy_set_child(struct CmpDrv *drv, int child)
 {
-	struct CmpDrvProxy *derived = (struct CmpDrvProxy*)this;
+	struct CmpDrvProxy *derived = (struct CmpDrvProxy*)drv;
 	derived->current_child = child;
 }

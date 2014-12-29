@@ -34,27 +34,27 @@ struct CmpApprAnimSpriteCommon *ball_anim_common;
 
 /* Entities. */
 struct Ball {
-    struct CmpAppr *appr;
-    struct CmpOri *ori;
-    struct CmpDrv *drv;
+    struct CmpAppr appr;
+    struct CmpOri ori;
+    struct CmpDrv drv;
     double bounce_period;
     double bounce_accumulator;
 };
 static struct Ball ball;
 
 struct Tank {
-    struct CmpAppr *appr;
-    struct CmpOri *ori;
-    struct CmpDrv *drv;
+    struct CmpAppr appr;
+    struct CmpOri ori;
+    struct CmpDrv drv;
     int x_drive;
     int y_drive;
 };
 static struct Tank tank;
 
 struct Bullet {
-    struct CmpAppr *appr;
-    struct CmpOri *ori;
-    struct CmpDrv *drv;
+    struct CmpAppr appr;
+    struct CmpOri ori;
+    struct CmpDrv drv;
 };
 struct { struct Bullet *data; int size, cap; } bullets;
 
@@ -115,9 +115,9 @@ static void demo_deinit_resources_complex(void)
 /* Ball logic. */
 static void demo_init_ball(struct Ball *b)
 {
-    b->appr = cmp_appr_anim_sprite_create(ball_anim_common, 3, -1);
-    b->ori = cmp_ori_create(100.0, 200.0, 0.0);
-    b->drv = cmp_drv_linear_create(false, 200.0, 0.0, 0.0);
+    cmp_appr_anim_sprite_init(&b->appr, ball_anim_common, 3, -1);
+	cmp_ori_init(&b->ori, 100.0, 200.0, 0.0);
+	cmp_drv_linear_init(&b->drv, false, 200.0, 0.0, 0.0);
 
     b->bounce_period =
         ball_anim_common->frames_count *
@@ -128,9 +128,9 @@ static void demo_init_ball(struct Ball *b)
 
 static void demo_deinit_ball(struct Ball *b)
 {
-    b->appr->free(b->appr);
-    b->drv->free(b->drv);
-    cmp_ori_free(b->ori);
+	cmp_drv_deinit(&b->drv);
+	cmp_appr_deinit(&b->appr);
+    cmp_ori_deinit(&b->ori);
 }
 
 static void demo_tick_ball(double dt)
@@ -138,11 +138,11 @@ static void demo_tick_ball(double dt)
     struct PosRot ball_pr;
     struct Vel ball_v;
 
-    ball.appr->update(ball.appr, dt);
-    cmp_drive(ball.ori, ball.drv, dt);
+	cmp_appr_update(&ball.appr, dt);
+    cmp_drive(&ball.ori, &ball.drv, dt);
 
-    ball_pr = cmp_ori_get(ball.ori);
-    ball_v = ball.drv->vel(ball.drv);
+    ball_pr = cmp_ori_get(&ball.ori);
+    ball_v = cmp_drv_vel(&ball.drv);
     if (ball_pr.x < 0.0 || ball_pr.x > screen_w) {
         ball_v.vx *= -1.0;
         play_sample(bounce_sample);
@@ -158,9 +158,9 @@ static void demo_tick_ball(double dt)
 /* Tank logic. */
 static void demo_init_tank(struct Tank *t)
 {
-    t->appr = cmp_appr_static_sprite_create(tank_sprite);
-    t->ori = cmp_ori_create(400.0, 400.0, 0);
-    t->drv = cmp_drv_i8d_create(true, 100, &t->x_drive, &t->y_drive);
+	cmp_appr_static_sprite_init(&t->appr, tank_sprite);
+	cmp_ori_init(&t->ori, 400.0, 400.0, 0);
+	cmp_drv_i8d_init(&t->drv, true, 100, &t->x_drive, &t->y_drive);
 
     t->x_drive = 0;
     t->y_drive = 0;
@@ -168,9 +168,9 @@ static void demo_init_tank(struct Tank *t)
 
 static void demo_deinit_tank(struct Tank *t)
 {
-    t->appr->free(t->appr);
-    t->drv->free(t->drv);
-    cmp_ori_free(t->ori);
+	cmp_drv_deinit(&t->drv);
+	cmp_appr_deinit(&t->appr);
+    cmp_ori_deinit(&t->ori);
 }
 
 static void demo_tick_tank(double dt)
@@ -191,7 +191,7 @@ static void demo_tick_tank(double dt)
         tank.y_drive += 1;
     }
 
-    cmp_drive(tank.ori, tank.drv, dt);
+    cmp_drive(&tank.ori, &tank.drv, dt);
 }
 
 /* Bullet logic. */
@@ -204,9 +204,9 @@ static void demo_init_bullets(void)
 
 static void demo_deinit_bullet(int i)
 {
-    bullets.data[i].appr->free(bullets.data[i].appr);
-    bullets.data[i].drv->free(bullets.data[i].drv);
-    cmp_ori_free(bullets.data[i].ori);
+	cmp_drv_deinit(&bullets.data[i].drv);
+	cmp_appr_deinit(&bullets.data[i].appr);
+    cmp_ori_deinit(&bullets.data[i].ori);
 }
 
 static void demo_deinit_bullets(void)
@@ -224,8 +224,8 @@ static void demo_tick_bullets(double dt)
     int margin = 20;
     for (i = 0; i < bullets.size; ++i) {
         struct PosRot pr;
-        cmp_drive(bullets.data[i].ori, bullets.data[i].drv, dt);
-        pr = cmp_ori_get(bullets.data[i].ori);
+        cmp_drive(&bullets.data[i].ori, &bullets.data[i].drv, dt);
+        pr = cmp_ori_get(&bullets.data[i].ori);
         if (pr.x < margin || pr.x > (screen_w - margin) ||
             pr.y < margin || pr.y > (screen_h - margin)) {
                 demo_deinit_bullet(i);
@@ -242,14 +242,18 @@ static void bullet_fire(void)
     double bullet_vel = 400.0;
     double dir_x, dir_y;
 
-    tank_pr = cmp_ori_get(tank.ori);
+    tank_pr = cmp_ori_get(&tank.ori);
     dir_x = cos(tank_pr.theta);
     dir_y = sin(tank_pr.theta);
 
-    bullet.appr = cmp_appr_static_sprite_create(bullet_sprite);
-    bullet.ori = cmp_ori_create(tank_pr.x, tank_pr.y, tank_pr.theta);
-    bullet.drv = cmp_drv_linear_create(
-            true, dir_x * bullet_vel, dir_y * bullet_vel, 0.0);
+	cmp_appr_static_sprite_init(&bullet.appr, bullet_sprite);
+	cmp_ori_init(&bullet.ori, tank_pr.x, tank_pr.y, tank_pr.theta);
+	cmp_drv_linear_init(
+		&bullet.drv,
+        true,
+		dir_x * bullet_vel,
+		dir_y * bullet_vel,
+		0.0);
 
     ARRAY_APPEND(bullets, bullet);
 
@@ -294,12 +298,12 @@ static void demo_tick(double dt)
     demo_tick_tank(dt);
     demo_tick_bullets(dt);
 
-    if (cmp_ori_distance(ball.ori, tank.ori) < 100.0) {
+    if (cmp_ori_distance(&ball.ori, &tank.ori) < 100.0) {
         goto termination;
     }
 
     for (i = 0; i < bullets.size; ++i) {
-        if (cmp_ori_distance(ball.ori, bullets.data[i].ori) < 100.0) {
+        if (cmp_ori_distance(&ball.ori, &bullets.data[i].ori) < 100.0) {
             goto termination;
         }
     }
@@ -316,10 +320,10 @@ static void demo_draw(double weight)
     int i;
 
     al_clear_to_color(al_map_rgb_f(0.25, 0.25, 0.25));
-    cmp_draw(ball.ori, ball.appr, 0.0, 0.0);
-    cmp_draw(tank.ori, tank.appr, 0.0, 0.0);
+    cmp_draw(&ball.ori, &ball.appr, 0.0, 0.0);
+    cmp_draw(&tank.ori, &tank.appr, 0.0, 0.0);
     for (i = 0; i < bullets.size; ++i) {
-        cmp_draw(bullets.data[i].ori, bullets.data[i].appr, 0.0, 0.0);
+        cmp_draw(&bullets.data[i].ori, &bullets.data[i].appr, 0.0, 0.0);
     }
     al_flip_display();
 }

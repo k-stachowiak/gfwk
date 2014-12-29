@@ -28,8 +28,8 @@ static bool arrow_tick(struct Arrow *arrow, double dt)
 	struct WorldPos wp;
 	struct ScreenPos sp;
 
-	arrow->drv.base.update(CMP_DRV(&arrow->drv), dt);
-	cmp_drive(&arrow->ori, CMP_DRV(&arrow->drv), dt);
+	cmp_drv_update(&arrow->drv, dt);
+	cmp_drive(&arrow->ori, &arrow->drv, dt);
 
 	pr = cmp_ori_get(&arrow->ori);
 	wp.x = pr.x;
@@ -75,7 +75,7 @@ static void sc_tick_hunter_input(struct Hunter *hunter, double dt)
 {
 	double rot_speed = 3.1415 / 2.0;
 	int rot = sys_keys[ALLEGRO_KEY_UP] - sys_keys[ALLEGRO_KEY_DOWN];
-	int hunter_appr = cmp_appr_proxy_get_child(CMP_APPR(&hunter->appr));
+	int hunter_appr = cmp_appr_proxy_get_child(&hunter->appr);
 
 	bool right_facing =
 		hunter_appr == HUNTER_APPR_WALK_RIGHT ||
@@ -100,22 +100,22 @@ static void sc_tick_hunter_input(struct Hunter *hunter, double dt)
 			if (left_facing) {
 				hunter->aim_angle = 3.1415 - hunter->aim_angle;
 			}
-			cmp_appr_proxy_set_child(CMP_APPR(&hunter->appr), HUNTER_APPR_WALK_RIGHT);
+			cmp_appr_proxy_set_child(&hunter->appr, HUNTER_APPR_WALK_RIGHT);
 
 		}
 		else if (hunter->inx == -1) {
 			if (right_facing) {
 				hunter->aim_angle = 3.1415 - hunter->aim_angle;
 			}
-			cmp_appr_proxy_set_child(CMP_APPR(&hunter->appr), HUNTER_APPR_WALK_LEFT);
+			cmp_appr_proxy_set_child(&hunter->appr, HUNTER_APPR_WALK_LEFT);
 
 		}
 		else {
 			if (left_facing) {
-				cmp_appr_proxy_set_child(CMP_APPR(&hunter->appr), HUNTER_APPR_STAND_LEFT);
+				cmp_appr_proxy_set_child(&hunter->appr, HUNTER_APPR_STAND_LEFT);
 			}
 			else {
-				cmp_appr_proxy_set_child(CMP_APPR(&hunter->appr), HUNTER_APPR_STAND_RIGHT);
+				cmp_appr_proxy_set_child(&hunter->appr, HUNTER_APPR_STAND_RIGHT);
 			}
 		}
 	}
@@ -123,9 +123,10 @@ static void sc_tick_hunter_input(struct Hunter *hunter, double dt)
 
 void sc_tick_hunter(struct Hunter *hunter, double dt)
 {
-	hunter->drv.base.update(CMP_DRV(&hunter->drv), dt);
-	hunter->appr.base.update(CMP_APPR(&hunter->appr), dt);
-	cmp_drive(&hunter->ori, CMP_DRV(&hunter->drv), dt);
+	cmp_drv_update(&hunter->drv, dt);
+	cmp_appr_update(&hunter->appr, dt);
+
+	cmp_drive(&hunter->ori, &hunter->drv, dt);
 	sc_tick_hunter_input(hunter, dt);
 }
 
@@ -137,21 +138,25 @@ void sc_tick_souls(struct SoulArray *souls, struct CmpAiTacticalStatus *ts, doub
 		struct Vel vel;
 		struct Soul *soul = souls->data + i;
 
-		soul->drv.base.update(CMP_DRV(&soul->drv), dt);
-		soul->appr.base.update(CMP_APPR(&soul->appr), dt);
-		soul->ai.base.update(CMP_AI(&soul->ai), ts, dt);
+		cmp_appr_update(&soul->appr, dt);
+		cmp_ai_update(
+			&soul->ai,
+			&soul->ori,
+			&soul->drv,
+			&soul->appr,
+			ts,
+			dt);
+		cmp_drv_update(&soul->drv, dt);
 
-		/* TODO: Cast the driver once in the begining of the function. */
-		vel = soul->drv.base.vel(CMP_DRV(&soul->drv));
+		vel = cmp_drv_vel(&soul->drv);
 
 		if (vel.vx > 0) {
-			cmp_appr_proxy_set_child(CMP_APPR(&soul->appr), SOUL_APPR_WALK_RIGHT);
+			cmp_appr_proxy_set_child(&soul->appr, SOUL_APPR_WALK_RIGHT);
 		}
 		else if (vel.vx < 0) {
-			cmp_appr_proxy_set_child(CMP_APPR(&soul->appr), SOUL_APPR_WALK_LEFT);
+			cmp_appr_proxy_set_child(&soul->appr, SOUL_APPR_WALK_LEFT);
 		}
 
-		cmp_think(CMP_AI(&soul->ai));
-		cmp_drive(&soul->ori, CMP_DRV(&soul->drv), dt);
+		cmp_drive(&soul->ori, &soul->drv, dt);
 	}
 }

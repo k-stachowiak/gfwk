@@ -18,8 +18,8 @@
  */
 
 static double *cmp_ai_tilepos_to_worldpos_ground(
-		struct TilePos *tile_pos_v,
-		int points_count)
+struct TilePos *tile_pos_v,
+	int points_count)
 {
 	int i;
 	double *world_pos_v = malloc_or_die(points_count * 2 * sizeof(*world_pos_v));
@@ -32,9 +32,9 @@ static double *cmp_ai_tilepos_to_worldpos_ground(
 }
 
 static void cmp_ai_prepend_pos(
-		double x, double y,
-		double **points,
-		int *points_count)
+	double x, double y,
+	double **points,
+	int *points_count)
 {
 	int old_count = *points_count;
 	int new_count = old_count + 1;
@@ -50,15 +50,12 @@ static void cmp_ai_prepend_pos(
 	*points_count = new_count;
 }
 
-static void cmp_ai_soul_idle_drv_end(struct CmpDrv *drv, void* ai_boxed)
+static void cmp_ai_soul_update_wp_drv(struct CmpAiSoul *ai, struct CmpDrv *drv)
 {
-	struct CmpAiSoul *ai = (struct CmpAiSoul*)ai_boxed;
-
-	struct CmpOri *ori = ai->ori;
 	struct Graph *lgph = ai->graph;
 	struct CmpDrvWaypoint *drv_wp = (struct CmpDrvWaypoint*)drv;
 
-	struct PosRot pr = cmp_ori_get(ori);
+	struct PosRot pr = ai->last_pr;
 	struct WorldPos wp = { pr.x, pr.y };
 
 	int src_index = lgph_find_nearest(lgph, wp),
@@ -81,26 +78,50 @@ static void cmp_ai_soul_idle_drv_end(struct CmpDrv *drv, void* ai_boxed)
 	free_or_die(tp_points);
 }
 
-/* Transition operations.
- * ======================
+/* State transitions.
+ * ==================
  */
 
-static void cmp_ai_soul_goto_idle(struct CmpAiSoul *this)
+static void cmp_ai_soul_goto_idle(
+		struct CmpAiSoul *ai,
+		struct CmpAppr *appr,
+		struct CmpDrv *drv)
 {
-	this->state = CMP_AI_SOUL_STATE_IDLE;
-	cmp_appr_proxy_set_child(this->appr, SOUL_APPR_WALK_RIGHT);
-	cmp_drv_proxy_set_child(this->drv, SOUL_DRV_WALK);
+	ai->state = CMP_AI_SOUL_STATE_IDLE;
+	cmp_appr_proxy_set_child(appr, SOUL_APPR_WALK_RIGHT);
+	cmp_drv_proxy_set_child(drv, SOUL_DRV_WALK);
+	cmp_ai_soul_update_wp_drv(ai, drv);
 }
 
-static void cmp_ai_soul_goto_ko(struct CmpAiSoul *this)
+static void cmp_ai_soul_goto_ko(
+		struct CmpAiSoul *ai,
+		struct CmpAppr *appr,
+		struct CmpDrv *drv)
 {
-	this->state = CMP_AI_SOUL_STATE_KO;
-	this->think_timer = 5.0;
+	ai->state = CMP_AI_SOUL_STATE_KO;
+	ai->think_timer = 5.0;
 
-	cmp_appr_proxy_set_child(this->appr, SOUL_APPR_CAUGHT);
-	cmp_drv_proxy_set_child(this->drv, SOUL_DRV_STAND);
+	cmp_appr_proxy_set_child(appr, SOUL_APPR_CAUGHT);
+	cmp_drv_proxy_set_child(drv, SOUL_DRV_STAND);
 }
 
+/* Event callbacks.
+ * ================
+ */
+
+static void cmp_ai_soul_on_pain(long id, PainType pt, void *data)
+{
+	if (pt == PT_ARROW) {
+		struct CmpAiSoul *ai = (struct CmpAiSoul *)data;
+		ai->next_state = CMP_AI_SOUL_STATE_KO;
+	}
+}
+
+static void cmp_ai_soul_on_wp_drv_end(struct CmpDrv *drv, void* data)
+{
+	struct CmpAiSoul *ai = (struct CmpAiSoul*)data;
+	cmp_ai_soul_update_wp_drv(ai, drv);
+}
 
 /* Update operation.
  * =================
@@ -110,104 +131,83 @@ static void cmp_ai_soul_update_panic(void)
 {
 }
 
-static void cmp_ai_soul_update_ko(struct CmpAiSoul *this, double dt)
+static void cmp_ai_soul_update_ko(
+		struct CmpAiSoul *ai,
+		struct CmpAppr *appr,
+		struct CmpDrv *drv,
+		double dt)
 {
-	if ((this->think_timer -= dt) > 0.0) {
-		return;
-	}
-
-	cmp_ai_soul_goto_idle(this);
-}
-
-static void cmp_ai_soul_update_hanging(void)
-{
-}
-
-static void cmp_ai_soul_update(
-        struct CmpAi *this,
-        struct CmpAiTacticalStatus *ts,
-        double dt)
-{
-    (void)ts;
-    struct CmpAiSoul *derived = (struct CmpAiSoul*)this;
-    switch (derived->state) {
-    case CMP_AI_SOUL_STATE_IDLE:
-		/* Handled asynchronously. */
-        break;
-    case CMP_AI_SOUL_STATE_PANIC:
-        cmp_ai_soul_update_panic();
-        break;
-    case CMP_AI_SOUL_STATE_KO:
-        cmp_ai_soul_update_ko(derived, dt);
-        break;
-    case CMP_AI_SOUL_STATE_HANGING:
-        cmp_ai_soul_update_hanging();
-        break;
-    }
-}
-
-/* Pain reaction.
- * ==============
- */
-
-static void cmp_ai_soul_on_pain(long id, PainType pt, void *ai_boxed)
-{	
-	if (pt == PT_ARROW) {
-		struct CmpAiSoul *ai = (struct CmpAiSoul *)ai_boxed;
-		cmp_ai_soul_goto_ko(ai);
+	if ((ai->think_timer -= dt) <= 0.0) {
+		ai->next_state = CMP_AI_SOUL_STATE_IDLE;
 	}
 }
 
-/* Lifetime management operations.
- * ===============================
- */
-
-static void cmp_ai_soul_free(struct CmpAi *this)
+static void cmp_ai_update_soul(
+		struct CmpAiSoul *ai,
+		struct CmpOri *ori,
+		struct CmpAppr *appr,
+		struct CmpDrv *drv,
+		double dt)
 {
-	struct CmpAiSoul *derived = (struct CmpAiSoul*)this;
-	cmp_ai_soul_deinit(derived);
-	free_or_die(this);
+	ai->last_pr = cmp_ori_get(ori);
+	if (ai->state == ai->next_state) {
+		switch (ai->state) {
+		case CMP_AI_SOUL_STATE_IDLE:
+			/* Handled asynchronously. */
+			break;
+		case CMP_AI_SOUL_STATE_PANIC:
+			cmp_ai_soul_update_panic();
+			break;
+		case CMP_AI_SOUL_STATE_KO:
+			cmp_ai_soul_update_ko(ai, appr, drv, dt);
+			break;
+		}
+	} else {
+		switch (ai->next_state) {
+		case CMP_AI_SOUL_STATE_IDLE:
+			cmp_ai_soul_goto_idle(ai, appr, drv);
+			break;
+		case CMP_AI_SOUL_STATE_KO:
+			cmp_ai_soul_goto_ko(ai, appr, drv);
+			break;
+		case CMP_AI_SOUL_STATE_PANIC:
+			break;
+		}
+	}
 }
+
+/* Public API.
+ * ===========
+ */
 
 void cmp_ai_soul_init(
-		struct CmpAiSoul *ai,
+		struct CmpAi *ai,
 		long id,
-		struct Graph *graph,
-		struct CmpOri *ori,
-		struct CmpDrv *drv,
-		struct CmpDrvWaypoint *drv_wp, /* TODO: Consider handling the details outside AI. */
-		struct CmpAppr *appr)
+		struct Graph *graph)
 {
-	ai->base.free = cmp_ai_soul_free;
-	ai->base.update = cmp_ai_soul_update;
-
-	ai->graph = graph;
-	ai->ori = ori;
-	ai->drv = drv;
-	ai->appr = appr;
-
-	cmp_ai_soul_idle_drv_end((struct CmpDrv *)drv_wp, (void*)ai);
-	cmp_drv_waypoint_on_end(drv_wp, cmp_ai_soul_idle_drv_end, (void*)ai);
-
-	cmp_ai_soul_goto_idle(ai);
-
-	sc_pain_callback_id_register(id, (void*)ai, cmp_ai_soul_on_pain);
+	ai->type = CMP_AI_SOUL;
+	ai->body.soul.state = CMP_AI_SOUL_STATE_INVALID;
+	ai->body.soul.next_state = CMP_AI_SOUL_STATE_IDLE;
+	ai->body.soul.graph = graph;
+	sc_pain_callback_id_register(id, (void*)(&ai->body.soul), cmp_ai_soul_on_pain);
 }
 
-void cmp_ai_soul_deinit(struct CmpAiSoul *ai)
+void cmp_ai_deinit(struct CmpAi *ai)
 {
 	(void)ai;
 }
 
-struct CmpAi *cmp_ai_soul_create(
-		long id,
-		struct Graph *graph,
+void cmp_ai_update(
+		struct CmpAi *ai,
 		struct CmpOri *ori,
 		struct CmpDrv *drv,
-		struct CmpDrvWaypoint *drv_wp,
-		struct CmpAppr *appr)
+		struct CmpAppr *appr,
+		struct CmpAiTacticalStatus* ts,
+		double dt)
 {
-	struct CmpAiSoul *result = malloc_or_die(sizeof(*result));
-	cmp_ai_soul_init(result, id, graph, ori, drv, drv_wp, appr);
-	return CMP_AI(result);
+	switch (ai->type) {
+	case CMP_AI_SOUL:
+		cmp_ai_update_soul(&ai->body.soul, ori, appr, drv, dt);
+		break;
+	}
 }

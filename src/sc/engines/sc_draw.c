@@ -56,7 +56,7 @@ void sc_draw_hunter(struct Hunter *hunter)
 	struct WorldPos zero_wp = { 0.0, 0.0 };
 	struct ScreenPos zero_sp = pos_world_to_screen(zero_wp);
 
-	cmp_draw(&hunter->ori, CMP_APPR(&hunter->appr), -zero_sp.x, -zero_sp.y);
+	cmp_draw(&hunter->ori, &hunter->appr, -zero_sp.x, -zero_sp.y);
 	draw_bitmap(sc_bow_bitmap, hunter_sp.x, hunter_sp.y, hunter->aim_angle);
 }
 
@@ -68,15 +68,13 @@ void sc_draw_souls(struct SoulArray *souls)
 
 	for (i = 0; i < souls->size; ++i) {
 		struct Soul *soul = souls->data + i;
-		cmp_draw(&soul->ori, CMP_APPR(&soul->appr), -zero_sp.x, -zero_sp.y);
+		cmp_draw(&soul->ori, &soul->appr, -zero_sp.x, -zero_sp.y);
 	}
 }
 
 void sc_draw_souls_dbg(struct SoulArray *souls)
 {
-	int i, j;
-	double *points;
-	int points_count;
+	int i;
 	ALLEGRO_COLOR color = al_map_rgb_f(1.0f, 0.7f, 0.4f);
 
 	for (i = 0; i < souls->size; ++i) {
@@ -88,26 +86,6 @@ void sc_draw_souls_dbg(struct SoulArray *souls)
 		struct ScreenPos soul_sp = pos_world_to_screen(soul_wp);
 
 		al_draw_circle(soul_sp.x, soul_sp.y, 4, color, 1);
-
-		cmp_drv_waypoint_points(&soul->drv_walk, &points, &points_count);
-
-		for (j = 0; j < (points_count - 1); ++j) {
-
-			struct WorldPos
-				wp1 = { points[2 * j + 0], points[2 * j + 1] },
-				wp2 = { points[2 * j + 2], points[2 * j + 3] };
-
-			struct ScreenPos
-				sp1 = pos_world_to_screen(wp1),
-				sp2 = pos_world_to_screen(wp2);
-
-			double x1 = sp1.x;
-			double y1 = sp1.y;
-			double x2 = sp2.x;
-			double y2 = sp2.y;
-
-			al_draw_line(x1, y1, x2, y2, color, 2.0);
-		}
 	}
 }
 
@@ -117,7 +95,7 @@ void sc_draw_arrows(struct ArrowArray *aa)
 	struct WorldPos zero_wp = { 0.0, 0.0 };
 	struct ScreenPos zero_sp = pos_world_to_screen(zero_wp);
 	for (i = 0; i < aa->size; ++i) {
-		cmp_draw(&aa->data[i].ori, CMP_APPR(&aa->data[i].appr), -zero_sp.x, -zero_sp.y);
+		cmp_draw(&aa->data[i].ori, &aa->data[i].appr, -zero_sp.x, -zero_sp.y);
 	}
 }
 

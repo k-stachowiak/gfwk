@@ -11,8 +11,8 @@
 
 struct Arrow {
 	long id;
-    struct CmpDrvBallistic drv;
-	struct CmpApprStaticSprite appr;
+    struct CmpDrv drv;
+	struct CmpAppr appr;
     struct CmpPain pain;
 	struct CmpOri ori;
 	struct CmpShape shape;

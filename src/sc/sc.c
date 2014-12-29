@@ -208,7 +208,7 @@ static void sc_soul_pain_callback(PainType pt_x, long id_x, PainType pt_y, void 
 		exit(1);
 	}
 
-	if (soul->ai.state != CMP_AI_SOUL_STATE_KO) {
+	if (soul->ai.body.soul.state != CMP_AI_SOUL_STATE_KO) {
 		return;
 	}
 

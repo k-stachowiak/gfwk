@@ -18,43 +18,22 @@ struct CmpApprAnimSpriteCommon {
     int frame_w;
 };
 
-void cmp_appr_anim_sprite_common_free(struct CmpApprAnimSpriteCommon* common);
 struct CmpApprAnimSpriteCommon *cmp_appr_anim_sprite_common_create(
-        void **frames, int frames_count,
-        int *frame_indices, double *frame_times, int frame_defs_count,
-        int frame_w);
+		void **frames, int frames_count,
+		int *frame_indices, double *frame_times, int frame_defs_count,
+		int frame_w);
 
-/* Base class.
- * ===========
- */
+void cmp_appr_anim_sprite_common_free(struct CmpApprAnimSpriteCommon* common);
 
-struct CmpAppr {
-    void (*free)(struct CmpAppr*);
-    void (*update)(struct CmpAppr*, double);
-    void *(*bitmap)(struct CmpAppr*);
-};
-
-#define CMP_APPR(T) (struct CmpAppr*)(T)
-
-/* Static sprite.
- * ==============
+/* Particular implementations.
+ * ===========================
  */
 
 struct CmpApprStaticSprite {
-	struct CmpAppr base;
 	void *bitmap;
 };
 
-void cmp_appr_static_sprite_init(struct CmpApprStaticSprite *appr, void *sprite);
-void cmp_appr_static_sprite_deinit(struct CmpApprStaticSprite *appr);
-struct CmpAppr *cmp_appr_static_sprite_create(void *sprite);
-
-/* Animated sprite.
- * ================
- */
-
 struct CmpApprAnimSprite {
-	struct CmpAppr base;
 	struct CmpApprAnimSpriteCommon *common;
 	int current_def;
 	int rep_count;
@@ -62,44 +41,50 @@ struct CmpApprAnimSprite {
 	bool done;
 };
 
-void cmp_appr_anim_sprite_init(
-		struct CmpApprAnimSprite *appr,
-		struct CmpApprAnimSpriteCommon *common,
-		int init_def,
-		int rep_count);
-
-void cmp_appr_anim_sprite_deinit(struct CmpApprAnimSprite *appr);
-
-struct CmpAppr *cmp_appr_anim_sprite_create(
-        struct CmpApprAnimSpriteCommon *common,
-        int init_def,
-        int rep_count);
-
-/* Proxy.
- * ======
- */
-
 struct CmpApprProxy {
-	struct CmpAppr base;
-	struct CmpAppr **children;
+	struct CmpAppr *children;
 	int children_count;
 	int current_child;
 };
 
+/* Root struct.
+ * ============
+ */
+
+enum CmpApprType {
+	CMP_APPR_STATIC_SPRITE,
+	CMP_APPR_ANIMATED_SPRITE,
+	CMP_APPR_PROXY
+};
+
+struct CmpAppr {
+	union {
+		struct CmpApprStaticSprite static_sprite;
+		struct CmpApprAnimSprite animated_sprite;
+		struct CmpApprProxy proxy;
+	} body;
+	enum CmpApprType type;
+};
+
+void cmp_appr_static_sprite_init(struct CmpAppr *appr, void *sprite);
+
+void cmp_appr_anim_sprite_init(
+		struct CmpAppr *appr,
+		struct CmpApprAnimSpriteCommon *common,
+		int init_def,
+		int rep_count);
+
 void cmp_appr_proxy_init(
-		struct CmpApprProxy *appr,
-		struct CmpAppr *children[],
+		struct CmpAppr *appr,
+		struct CmpAppr children[],
 		int children_count,
 		int init_child);
 
-void cmp_appr_proxy_deinit(struct CmpApprProxy *appr);
+void cmp_appr_deinit(struct CmpAppr *appr);
+void cmp_appr_update(struct CmpAppr* appr, double dt);
+void *cmp_appr_bitmap(struct CmpAppr* appr);
 
-struct CmpAppr *cmp_appr_proxy_create(
-		struct CmpAppr *children[],
-		int children_count,
-		int init_child);
-
-int cmp_appr_proxy_get_child(struct CmpAppr *this);
-void cmp_appr_proxy_set_child(struct CmpAppr *this, int child);
+int cmp_appr_proxy_get_child(struct CmpAppr *appr);
+void cmp_appr_proxy_set_child(struct CmpAppr *appr, int child);
 
 #endif
