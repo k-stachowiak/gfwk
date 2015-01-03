@@ -98,43 +98,6 @@ static void *cmp_appr_animated_sprite_bitmap(struct CmpApprAnimSprite *appr)
 	return appr->common->frames[appr->common->frame_indices[appr->current_def]];
 }
 
-/* Proxy appearance implementation.
- * ================================
- */
-
-static void cmp_appr_proxy_deinit(struct CmpApprProxy *appr)
-{
-	int i;
-	for (i = 0; i < appr->children_count; ++i) {
-		cmp_appr_deinit(appr->children + i);
-	}
-	free_or_die(appr->children);
-}
-
-static void cmp_appr_proxy_update(struct CmpApprProxy *appr, double dt)
-{
-	struct CmpAppr *child = appr->children + appr->current_child;
-	cmp_appr_update(child, dt);
-}
-
-static void *cmp_appr_proxy_bitmap(struct CmpApprProxy *appr)
-{
-	struct CmpAppr *child = appr->children + appr->current_child;
-	return cmp_appr_bitmap(child);
-}
-
-int cmp_appr_proxy_get_child(struct CmpAppr *this)
-{
-	struct CmpApprProxy *derived = (struct CmpApprProxy*)this;
-	return derived->current_child;
-}
-
-void cmp_appr_proxy_set_child(struct CmpAppr *this, int child)
-{
-	struct CmpApprProxy *derived = (struct CmpApprProxy*)this;
-	derived->current_child = child;
-}
-
 /* Public API.
  * ===========
  */
@@ -159,19 +122,6 @@ void cmp_appr_anim_sprite_init(
 	appr->body.animated_sprite.done = false;
 }
 
-void cmp_appr_proxy_init(
-		struct CmpAppr *appr,
-		struct CmpAppr children[],
-		int children_count,
-		int init_child)
-{
-	appr->type = CMP_APPR_PROXY;
-	appr->body.proxy.children_count = children_count;
-	appr->body.proxy.current_child = init_child;
-
-	memcpy(appr->body.proxy.children, children, sizeof(*children) * children_count);
-}
-
 void cmp_appr_deinit(struct CmpAppr *appr)
 {
 	switch (appr->type) {
@@ -180,9 +130,6 @@ void cmp_appr_deinit(struct CmpAppr *appr)
 		break;
 	case CMP_APPR_ANIMATED_SPRITE:
 		cmp_appr_animated_sprite_deinit((struct CmpApprAnimSprite*)appr);
-		break;
-	case CMP_APPR_PROXY:
-		cmp_appr_proxy_deinit((struct CmpApprProxy*)appr);
 		break;
 	}
 }
@@ -196,9 +143,6 @@ void cmp_appr_update(struct CmpAppr *appr, double dt)
 	case CMP_APPR_ANIMATED_SPRITE:
 		cmp_appr_animated_sprite_update((struct CmpApprAnimSprite*)appr, dt);
 		break;
-	case CMP_APPR_PROXY:
-		cmp_appr_proxy_update((struct CmpApprProxy*)appr, dt);
-		break;
 	}
 }
 
@@ -209,8 +153,6 @@ void *cmp_appr_bitmap(struct CmpAppr *appr)
 		return cmp_appr_static_sprite_bitmap((struct CmpApprStaticSprite*)appr);
 	case CMP_APPR_ANIMATED_SPRITE:
 		return cmp_appr_animated_sprite_bitmap((struct CmpApprAnimSprite*)appr);
-	case CMP_APPR_PROXY:
-		return cmp_appr_proxy_bitmap((struct CmpApprProxy*)appr);
 	}
 	DIAG_ERROR("Should never get here.");
 	exit(1);

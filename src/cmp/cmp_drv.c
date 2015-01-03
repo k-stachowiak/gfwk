@@ -237,7 +237,9 @@ static struct Vel cmp_drv_proxy_vel(struct CmpDrvProxy *drv)
 	return cmp_drv_vel(child);
 }
 
-/* NEW API. */
+/* Public API.
+ * ===========
+ */
 
 void cmp_drv_linear_init(
 		struct CmpDrv *drv,
@@ -313,13 +315,16 @@ void cmp_drv_proxy_init(
 		int children_count,
 		int init_child)
 {
+	int children_size = sizeof(*children) * children_count;
+
 	drv->type = CMP_DRV_PROXY;
 	drv->affect_rot = children[init_child].affect_rot;
 
 	drv->body.proxy.children_count = children_count;
 	drv->body.proxy.current_child = init_child;
 
-	memcpy(drv->body.proxy.children, children, sizeof(*children) * children_count);
+	drv->body.proxy.children = malloc_or_die(children_size);
+	memcpy(drv->body.proxy.children, children, children_size);
 }
 
 void cmp_drv_deinit(struct CmpDrv *drv)
@@ -399,7 +404,7 @@ void cmp_drv_stop_x(struct CmpDrv *drv)
 	cmp_drv_stop(drv, true, false);
 }
 
-void cmp_drv_stop_y(struct CmpDrv *drv, bool x, bool y)
+void cmp_drv_stop_y(struct CmpDrv *drv)
 {
 	cmp_drv_stop(drv, false, true);
 }

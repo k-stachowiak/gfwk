@@ -53,7 +53,6 @@ static void cmp_ai_prepend_pos(
 static void cmp_ai_soul_update_wp_drv(struct CmpAiSoul *ai, struct CmpDrv *drv)
 {
 	struct Graph *lgph = ai->graph;
-	struct CmpDrvWaypoint *drv_wp = (struct CmpDrvWaypoint*)drv;
 
 	struct PosRot pr = ai->last_pr;
 	struct WorldPos wp = { pr.x, pr.y };
@@ -73,7 +72,7 @@ static void cmp_ai_soul_update_wp_drv(struct CmpAiSoul *ai, struct CmpDrv *drv)
 	dbl_points = cmp_ai_tilepos_to_worldpos_ground(tp_points, points_count);
 	cmp_ai_prepend_pos(wp.x, wp.y, &dbl_points, &points_count);
 
-	cmp_drv_waypoint_reset(drv_wp, dbl_points, points_count);
+	cmp_drv_waypoint_reset(drv, dbl_points, points_count);
 
 	free_or_die(tp_points);
 }
@@ -88,7 +87,8 @@ static void cmp_ai_soul_goto_idle(
 		struct CmpDrv *drv)
 {
 	ai->state = CMP_AI_SOUL_STATE_IDLE;
-	cmp_appr_proxy_set_child(appr, SOUL_APPR_WALK_RIGHT);
+	soul_set_appr_stand_right(appr);
+
 	cmp_drv_proxy_set_child(drv, SOUL_DRV_WALK);
 	cmp_ai_soul_update_wp_drv(ai, drv);
 }
@@ -101,7 +101,7 @@ static void cmp_ai_soul_goto_ko(
 	ai->state = CMP_AI_SOUL_STATE_KO;
 	ai->think_timer = 5.0;
 
-	cmp_appr_proxy_set_child(appr, SOUL_APPR_CAUGHT);
+	soul_set_appr_caught(appr);
 	cmp_drv_proxy_set_child(drv, SOUL_DRV_STAND);
 }
 

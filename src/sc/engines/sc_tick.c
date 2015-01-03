@@ -75,20 +75,15 @@ static void sc_tick_hunter_input(struct Hunter *hunter, double dt)
 {
 	double rot_speed = 3.1415 / 2.0;
 	int rot = sys_keys[ALLEGRO_KEY_UP] - sys_keys[ALLEGRO_KEY_DOWN];
-	int hunter_appr = cmp_appr_proxy_get_child(&hunter->appr);
+	double dx, dy;
 
-	bool right_facing =
-		hunter_appr == HUNTER_APPR_WALK_RIGHT ||
-		hunter_appr == HUNTER_APPR_STAND_RIGHT;
+	cmp_ori_get_shift(&hunter->ori, &dx, &dy);
 
-	bool left_facing =
-		hunter_appr == HUNTER_APPR_WALK_LEFT ||
-		hunter_appr == HUNTER_APPR_STAND_LEFT;
+	bool right_facing = dx > 0.0;
 
 	if (right_facing) {
 		hunter->aim_angle -= rot * rot_speed * dt;
-	}
-	else {
+	} else {
 		hunter->aim_angle += rot * rot_speed * dt;
 	}
 
@@ -97,25 +92,23 @@ static void sc_tick_hunter_input(struct Hunter *hunter, double dt)
 
 	if (hunter->standing) {
 		if (hunter->inx == 1) {
-			if (left_facing) {
+			if (!right_facing) {
 				hunter->aim_angle = 3.1415 - hunter->aim_angle;
 			}
-			cmp_appr_proxy_set_child(&hunter->appr, HUNTER_APPR_WALK_RIGHT);
+			hunter_set_appr_walk_right(&hunter->appr);
 
 		}
 		else if (hunter->inx == -1) {
 			if (right_facing) {
 				hunter->aim_angle = 3.1415 - hunter->aim_angle;
 			}
-			cmp_appr_proxy_set_child(&hunter->appr, HUNTER_APPR_WALK_LEFT);
+			hunter_set_appr_walk_left(&hunter->appr);
 
-		}
-		else {
-			if (left_facing) {
-				cmp_appr_proxy_set_child(&hunter->appr, HUNTER_APPR_STAND_LEFT);
-			}
-			else {
-				cmp_appr_proxy_set_child(&hunter->appr, HUNTER_APPR_STAND_RIGHT);
+		} else {
+			if (!right_facing) {
+				hunter_set_appr_stand_right(&hunter->appr);
+			} else {
+				hunter_set_appr_stand_left(&hunter->appr);
 			}
 		}
 	}
@@ -135,8 +128,9 @@ void sc_tick_souls(struct SoulArray *souls, struct CmpAiTacticalStatus *ts, doub
 	int i;
 	for (i = 0; i < souls->size; ++i) {
 
-		struct Vel vel;
 		struct Soul *soul = souls->data + i;
+		double dx, dy;
+		cmp_ori_get_shift(&soul->ori, &dx, &dy);
 
 		cmp_appr_update(&soul->appr, dt);
 		cmp_ai_update(
@@ -148,13 +142,10 @@ void sc_tick_souls(struct SoulArray *souls, struct CmpAiTacticalStatus *ts, doub
 			dt);
 		cmp_drv_update(&soul->drv, dt);
 
-		vel = cmp_drv_vel(&soul->drv);
-
-		if (vel.vx > 0) {
-			cmp_appr_proxy_set_child(&soul->appr, SOUL_APPR_WALK_RIGHT);
-		}
-		else if (vel.vx < 0) {
-			cmp_appr_proxy_set_child(&soul->appr, SOUL_APPR_WALK_LEFT);
+		if (dx > 0.0) {
+			soul_set_appr_walk_right(&soul->appr);
+		} else if (dx < 0.0) {
+			soul_set_appr_walk_left(&soul->appr);
 		}
 
 		cmp_drive(&soul->ori, &soul->drv, dt);

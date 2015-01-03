@@ -41,27 +41,19 @@ struct CmpApprAnimSprite {
 	bool done;
 };
 
-struct CmpApprProxy {
-	struct CmpAppr *children;
-	int children_count;
-	int current_child;
-};
-
 /* Root struct.
  * ============
  */
 
 enum CmpApprType {
 	CMP_APPR_STATIC_SPRITE,
-	CMP_APPR_ANIMATED_SPRITE,
-	CMP_APPR_PROXY
+	CMP_APPR_ANIMATED_SPRITE
 };
 
 struct CmpAppr {
 	union {
 		struct CmpApprStaticSprite static_sprite;
 		struct CmpApprAnimSprite animated_sprite;
-		struct CmpApprProxy proxy;
 	} body;
 	enum CmpApprType type;
 };
@@ -74,17 +66,8 @@ void cmp_appr_anim_sprite_init(
 		int init_def,
 		int rep_count);
 
-void cmp_appr_proxy_init(
-		struct CmpAppr *appr,
-		struct CmpAppr children[],
-		int children_count,
-		int init_child);
-
 void cmp_appr_deinit(struct CmpAppr *appr);
 void cmp_appr_update(struct CmpAppr* appr, double dt);
 void *cmp_appr_bitmap(struct CmpAppr* appr);
-
-int cmp_appr_proxy_get_child(struct CmpAppr *appr);
-void cmp_appr_proxy_set_child(struct CmpAppr *appr, int child);
 
 #endif

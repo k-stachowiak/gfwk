@@ -11,14 +11,6 @@
 
 struct CmpAiTacticalStatus;
 
-enum SoulAppearance {
-	SOUL_APPR_STAND_RIGHT,
-	SOUL_APPR_STAND_LEFT,
-	SOUL_APPR_WALK_RIGHT,
-	SOUL_APPR_WALK_LEFT,
-	SOUL_APPR_CAUGHT,
-};
-
 enum SoulDriver {
 	SOUL_DRV_STAND,
 	SOUL_DRV_WALK
@@ -39,5 +31,11 @@ struct Soul {
 
 void soul_init(struct Soul *soul, long id, struct Graph *lgph, struct TilePos tp);
 void soul_deinit(struct Soul *soul);
+
+void soul_set_appr_stand_right(struct CmpAppr *appr);
+void soul_set_appr_stand_left(struct CmpAppr *appr);
+void soul_set_appr_walk_right(struct CmpAppr *appr);
+void soul_set_appr_walk_left(struct CmpAppr *appr);
+void soul_set_appr_caught(struct CmpAppr *appr);
 
 #endif

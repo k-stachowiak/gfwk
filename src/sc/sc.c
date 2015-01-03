@@ -169,8 +169,8 @@ static void sc_deinit_resources_complex(void)
     cmp_appr_anim_sprite_common_free(sc_soul_walk_left_common);
 }
 
-/* Client API.
- * ===========
+/* Callbacks capture and post-captem.
+ * ==================================
  */
 
 static void sc_arrow_pain_callback(PainType pt_x, long id_x, PainType pt_y, void *data)
@@ -231,6 +231,10 @@ static void sc_souls_collect(void)
 		}
 	}
 }
+
+/* Client API.
+ * ===========
+ */
 
 static void sc_init(void)
 {
