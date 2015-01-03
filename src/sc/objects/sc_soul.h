@@ -9,13 +9,6 @@
 #include "cmp_ai.h"
 #include "cmp_shape.h"
 
-struct CmpAiTacticalStatus;
-
-enum SoulDriver {
-	SOUL_DRV_STAND,
-	SOUL_DRV_WALK
-};
-
 struct Soul {
 	long id;
 	struct CmpDrv drv;
@@ -37,5 +30,8 @@ void soul_set_appr_stand_left(struct CmpAppr *appr);
 void soul_set_appr_walk_right(struct CmpAppr *appr);
 void soul_set_appr_walk_left(struct CmpAppr *appr);
 void soul_set_appr_caught(struct CmpAppr *appr);
+
+void soul_set_drv_stand(struct CmpDrv *drv);
+void soul_set_drv_walk(struct CmpDrv *drv);
 
 #endif

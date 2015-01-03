@@ -71,44 +71,73 @@ void sc_tick_arrows_stuck(struct ArrowArray *array, double dt)
 	}
 }
 
+static void sc_tick_hunter_analyze_state(
+		struct Hunter *hunter,
+		bool *stand, bool *right)
+{
+	switch (hunter_get_state(hunter)) {
+	case HUNTER_STATE_STAND_RIGHT:
+		*stand = true;
+		*right = true;
+		break;
+
+	case HUNTER_STATE_STAND_LEFT:
+		*stand = true;
+		*right = false;
+		break;
+
+	case HUNTER_STATE_WALK_RIGHT:
+		*stand = false;
+		*right = true;
+		break;
+
+	case HUNTER_STATE_WALK_LEFT:
+		*stand = false;
+		*right = false;
+		break;
+	}
+}
+
 static void sc_tick_hunter_input(struct Hunter *hunter, double dt)
 {
 	double rot_speed = 3.1415 / 2.0;
-	int rot = sys_keys[ALLEGRO_KEY_UP] - sys_keys[ALLEGRO_KEY_DOWN];
-	double dx, dy;
+	int rot;
+	bool stand;
+	bool right;
 
-	cmp_ori_get_shift(&hunter->ori, &dx, &dy);
+	rot = sys_keys[ALLEGRO_KEY_UP] - sys_keys[ALLEGRO_KEY_DOWN];
+	hunter->inx = sys_keys[ALLEGRO_KEY_RIGHT] - sys_keys[ALLEGRO_KEY_LEFT];
+	hunter->jump_req = sys_keys[ALLEGRO_KEY_Z];
 
-	bool right_facing = dx > 0.0;
+	sc_tick_hunter_analyze_state(hunter, &stand, &right);
 
-	if (right_facing) {
+	if (right) {
 		hunter->aim_angle -= rot * rot_speed * dt;
 	} else {
 		hunter->aim_angle += rot * rot_speed * dt;
 	}
 
-	hunter->inx = sys_keys[ALLEGRO_KEY_RIGHT] - sys_keys[ALLEGRO_KEY_LEFT];
-	hunter->jump_req = sys_keys[ALLEGRO_KEY_Z];
-
-	if (hunter->standing) {
-		if (hunter->inx == 1) {
-			if (!right_facing) {
-				hunter->aim_angle = 3.1415 - hunter->aim_angle;
-			}
-			hunter_set_appr_walk_right(&hunter->appr);
-
+	if (hunter->inx > 0) {
+		/* Driven right. */
+		if (stand || !right) {
+			hunter->aim_angle = 3.1415 - hunter->aim_angle;
+			hunter_set_state(hunter, HUNTER_STATE_WALK_RIGHT);
 		}
-		else if (hunter->inx == -1) {
-			if (right_facing) {
-				hunter->aim_angle = 3.1415 - hunter->aim_angle;
-			}
-			hunter_set_appr_walk_left(&hunter->appr);
 
-		} else {
-			if (!right_facing) {
-				hunter_set_appr_stand_right(&hunter->appr);
+	} else if (hunter->inx < 0) {
+		/* Driven left. */
+		if (stand || right) {
+			hunter->aim_angle = 3.1415 - hunter->aim_angle;
+			hunter_set_state(hunter, HUNTER_STATE_WALK_LEFT);
+		}
+
+	} else {
+		/* Not driven. */
+		if (!stand) {
+			if (right) {
+				hunter_set_state(hunter, HUNTER_STATE_STAND_RIGHT);
 			} else {
-				hunter_set_appr_stand_left(&hunter->appr);
+				hunter_set_state(hunter, HUNTER_STATE_STAND_LEFT);
 			}
 		}
 	}
@@ -118,7 +147,6 @@ void sc_tick_hunter(struct Hunter *hunter, double dt)
 {
 	cmp_drv_update(&hunter->drv, dt);
 	cmp_appr_update(&hunter->appr, dt);
-
 	cmp_drive(&hunter->ori, &hunter->drv, dt);
 	sc_tick_hunter_input(hunter, dt);
 }

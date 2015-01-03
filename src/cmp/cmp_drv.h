@@ -85,8 +85,7 @@ enum CmpDrvType {
 	CMP_DRV_I8D,
 	CMP_DRV_BALLISTIC,
 	CMP_DRV_PLATFORM,
-	CMP_DRV_WAYPOINT,
-	CMP_DRV_PROXY
+	CMP_DRV_WAYPOINT
 };
 
 struct CmpDrv {
@@ -96,7 +95,6 @@ struct CmpDrv {
 		struct CmpDrvBallistic ballistic;
 		struct CmpDrvPlatform platform;
 		struct CmpDrvWaypoint waypoint;
-		struct CmpDrvProxy proxy;
 	} body;
 	enum CmpDrvType type;
 	bool affect_rot;
@@ -128,12 +126,6 @@ void cmp_drv_platform_init(
 
 void cmp_drv_waypoint_init(struct CmpDrv *drv, double velocity);
 
-void cmp_drv_proxy_init(
-		struct CmpDrv *drv,
-		struct CmpDrv children[],
-		int children_count,
-		int init_child);
-
 void cmp_drv_deinit(struct CmpDrv *drv);
 
 void cmp_drv_update(struct CmpDrv *drv, double dt);
@@ -145,8 +137,5 @@ struct Vel cmp_drv_vel(struct CmpDrv*);
 void cmp_drv_waypoint_on_end(struct CmpDrv *drv, CmpDrvCallback on_end, void *data);
 void cmp_drv_waypoint_reset(struct CmpDrv *drv, double *points, int points_count);
 void cmp_drv_waypoint_points(struct CmpDrv *drv, double **points, int *points_count);
-
-int cmp_drv_proxy_get_child(struct CmpDrv *drv);
-void cmp_drv_proxy_set_child(struct CmpDrv *drv, int child);
 
 #endif

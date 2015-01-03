@@ -77,37 +77,9 @@ static void cmp_ai_soul_update_wp_drv(struct CmpAiSoul *ai, struct CmpDrv *drv)
 	free_or_die(tp_points);
 }
 
-/* State transitions.
- * ==================
- */
-
-static void cmp_ai_soul_goto_idle(
-		struct CmpAiSoul *ai,
-		struct CmpAppr *appr,
-		struct CmpDrv *drv)
-{
-	ai->state = CMP_AI_SOUL_STATE_IDLE;
-	soul_set_appr_stand_right(appr);
-
-	cmp_drv_proxy_set_child(drv, SOUL_DRV_WALK);
-	cmp_ai_soul_update_wp_drv(ai, drv);
-}
-
-static void cmp_ai_soul_goto_ko(
-		struct CmpAiSoul *ai,
-		struct CmpAppr *appr,
-		struct CmpDrv *drv)
-{
-	ai->state = CMP_AI_SOUL_STATE_KO;
-	ai->think_timer = 5.0;
-
-	soul_set_appr_caught(appr);
-	cmp_drv_proxy_set_child(drv, SOUL_DRV_STAND);
-}
-
 /* Event callbacks.
- * ================
- */
+* ================
+*/
 
 static void cmp_ai_soul_on_pain(long id, PainType pt, void *data)
 {
@@ -121,6 +93,34 @@ static void cmp_ai_soul_on_wp_drv_end(struct CmpDrv *drv, void* data)
 {
 	struct CmpAiSoul *ai = (struct CmpAiSoul*)data;
 	cmp_ai_soul_update_wp_drv(ai, drv);
+}
+
+/* State transitions.
+ * ==================
+ */
+
+static void cmp_ai_soul_goto_idle(
+		struct CmpAiSoul *ai,
+		struct CmpAppr *appr,
+		struct CmpDrv *drv)
+{
+	ai->state = CMP_AI_SOUL_STATE_IDLE;
+	soul_set_appr_stand_right(appr);
+	soul_set_drv_walk(drv);
+	cmp_drv_waypoint_on_end(drv, cmp_ai_soul_on_wp_drv_end, ai);
+	cmp_ai_soul_update_wp_drv(ai, drv);
+}
+
+static void cmp_ai_soul_goto_ko(
+		struct CmpAiSoul *ai,
+		struct CmpAppr *appr,
+		struct CmpDrv *drv)
+{
+	ai->state = CMP_AI_SOUL_STATE_KO;
+	ai->think_timer = 5.0;
+
+	soul_set_appr_caught(appr);
+	soul_set_drv_stand(drv);
 }
 
 /* Update operation.

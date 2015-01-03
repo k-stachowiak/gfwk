@@ -7,11 +7,9 @@
 void soul_init(struct Soul *soul, long id, struct Graph *lgph, struct TilePos soul_tp)
 {
     struct WorldPos wp = pos_tile_to_world_ground(soul_tp);
-	struct CmpDrv drv_array[2];
 
 	soul->id = id;
 
-	cmp_drv_proxy_init(&soul->drv, drv_array, 2, SOUL_DRV_WALK);
 	cmp_ori_init(&soul->ori, wp.x, wp.y, 0.0);
 	cmp_pain_init(&soul->pain, PT_SOUL);
 	cmp_shape_circle_init(&soul->shape, 25.0);
@@ -19,6 +17,7 @@ void soul_init(struct Soul *soul, long id, struct Graph *lgph, struct TilePos so
 	cmp_ai_soul_init(&soul->ai, id, lgph);
 
 	soul_set_appr_stand_right(&soul->appr);
+	soul_set_drv_walk(&soul->drv);
 
 	soul->health = 100;
     soul->box_w = 30.0;
@@ -63,4 +62,16 @@ void soul_set_appr_caught(struct CmpAppr *appr)
 {
 	cmp_appr_deinit(appr);
 	cmp_appr_static_sprite_init(appr, sc_soul_caught);
+}
+
+void soul_set_drv_stand(struct CmpDrv *drv)
+{
+	cmp_drv_deinit(drv);
+	cmp_drv_linear_init(drv, false, 0, 0, 0);
+}
+
+void soul_set_drv_walk(struct CmpDrv *drv)
+{
+	cmp_drv_deinit(drv);
+	cmp_drv_waypoint_init(drv, 100);
 }

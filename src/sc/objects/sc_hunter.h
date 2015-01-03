@@ -11,8 +11,14 @@
 #include "cmp_pain.h"
 #include "cmp_shape.h"
 
-struct Hunter {
+enum HunterState {
+	HUNTER_STATE_STAND_RIGHT,
+	HUNTER_STATE_STAND_LEFT,
+	HUNTER_STATE_WALK_RIGHT,
+	HUNTER_STATE_WALK_LEFT
+};
 
+struct Hunter {
 	long id;
 	bool has_soul;
 	struct CmpDrv drv;
@@ -20,7 +26,6 @@ struct Hunter {
 	struct CmpOri ori;
 	struct CmpPain pain;
 	struct CmpShape shape;
-
     double aim_angle;
     double box_w, box_h;
     int inx;
@@ -31,9 +36,7 @@ struct Hunter {
 void hunter_init(struct Hunter *hunter, long id);
 void hunter_deinit(struct Hunter *hunter);
 
-void hunter_set_appr_stand_right(struct CmpAppr *appr);
-void hunter_set_appr_stand_left(struct CmpAppr *appr);
-void hunter_set_appr_walk_right(struct CmpAppr *appr);
-void hunter_set_appr_walk_left(struct CmpAppr *appr);
+void hunter_set_state(struct Hunter *hunter, enum HunterState state);
+enum HunterState hunter_get_state(struct Hunter *hunter);
 
 #endif
