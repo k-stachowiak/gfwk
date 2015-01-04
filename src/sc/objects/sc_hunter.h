@@ -36,7 +36,7 @@ struct Hunter {
 void hunter_init(struct Hunter *hunter, long id);
 void hunter_deinit(struct Hunter *hunter);
 
-void hunter_set_state(struct Hunter *hunter, enum HunterState state);
-enum HunterState hunter_get_state(struct Hunter *hunter);
+void hunter_set_state(struct CmpAppr *appr, enum HunterState state);
+enum HunterState hunter_get_state(struct CmpAppr *appr);
 
 #endif

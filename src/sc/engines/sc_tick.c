@@ -75,7 +75,7 @@ static void sc_tick_hunter_analyze_state(
 		struct Hunter *hunter,
 		bool *stand, bool *right)
 {
-	switch (hunter_get_state(hunter)) {
+	switch (hunter_get_state(&hunter->appr)) {
 	case HUNTER_STATE_STAND_RIGHT:
 		*stand = true;
 		*right = true;
@@ -120,24 +120,28 @@ static void sc_tick_hunter_input(struct Hunter *hunter, double dt)
 	if (hunter->inx > 0) {
 		/* Driven right. */
 		if (stand || !right) {
+			hunter_set_state(&hunter->appr, HUNTER_STATE_WALK_RIGHT);
+		}
+		if (!right) {
 			hunter->aim_angle = 3.1415 - hunter->aim_angle;
-			hunter_set_state(hunter, HUNTER_STATE_WALK_RIGHT);
 		}
 
 	} else if (hunter->inx < 0) {
 		/* Driven left. */
 		if (stand || right) {
+			hunter_set_state(&hunter->appr, HUNTER_STATE_WALK_LEFT);
+		}
+		if (right) {
 			hunter->aim_angle = 3.1415 - hunter->aim_angle;
-			hunter_set_state(hunter, HUNTER_STATE_WALK_LEFT);
 		}
 
 	} else {
 		/* Not driven. */
 		if (!stand) {
 			if (right) {
-				hunter_set_state(hunter, HUNTER_STATE_STAND_RIGHT);
+				hunter_set_state(&hunter->appr, HUNTER_STATE_STAND_RIGHT);
 			} else {
-				hunter_set_state(hunter, HUNTER_STATE_STAND_LEFT);
+				hunter_set_state(&hunter->appr, HUNTER_STATE_STAND_LEFT);
 			}
 		}
 	}
@@ -155,27 +159,10 @@ void sc_tick_souls(struct SoulArray *souls, struct CmpAiTacticalStatus *ts, doub
 {
 	int i;
 	for (i = 0; i < souls->size; ++i) {
-
 		struct Soul *soul = souls->data + i;
-		double dx, dy;
-		cmp_ori_get_shift(&soul->ori, &dx, &dy);
-
 		cmp_appr_update(&soul->appr, dt);
-		cmp_ai_update(
-			&soul->ai,
-			&soul->ori,
-			&soul->drv,
-			&soul->appr,
-			ts,
-			dt);
+		cmp_ai_update(&soul->ai, &soul->ori, &soul->drv, &soul->appr, ts, dt);
 		cmp_drv_update(&soul->drv, dt);
-
-		if (dx > 0.0) {
-			soul_set_appr_walk_right(&soul->appr);
-		} else if (dx < 0.0) {
-			soul_set_appr_walk_left(&soul->appr);
-		}
-
 		cmp_drive(&soul->ori, &soul->drv, dt);
 	}
 }

@@ -50,7 +50,10 @@ static void cmp_ai_prepend_pos(
 	*points_count = new_count;
 }
 
-static void cmp_ai_soul_update_wp_drv(struct CmpAiSoul *ai, struct CmpDrv *drv)
+static void cmp_ai_soul_gen_path(
+		struct CmpAiSoul *ai,
+		double **points,
+		int *points_count)
 {
 	struct Graph *lgph = ai->graph;
 
@@ -65,14 +68,10 @@ static void cmp_ai_soul_update_wp_drv(struct CmpAiSoul *ai, struct CmpDrv *drv)
 		dst_pos = lgph->nodes[dst_index];
 
 	struct TilePos *tp_points;
-	double *dbl_points;
-	int points_count;
 
-	lgph_dijkstra(lgph, src_pos, dst_pos, &tp_points, &points_count);
-	dbl_points = cmp_ai_tilepos_to_worldpos_ground(tp_points, points_count);
-	cmp_ai_prepend_pos(wp.x, wp.y, &dbl_points, &points_count);
-
-	cmp_drv_waypoint_reset(drv, dbl_points, points_count);
+	lgph_dijkstra(lgph, src_pos, dst_pos, &tp_points, points_count);
+	*points = cmp_ai_tilepos_to_worldpos_ground(tp_points, *points_count);
+	cmp_ai_prepend_pos(wp.x, wp.y, points, points_count);
 
 	free_or_die(tp_points);
 }
@@ -92,7 +91,10 @@ static void cmp_ai_soul_on_pain(long id, PainType pt, void *data)
 static void cmp_ai_soul_on_wp_drv_end(struct CmpDrv *drv, void* data)
 {
 	struct CmpAiSoul *ai = (struct CmpAiSoul*)data;
-	cmp_ai_soul_update_wp_drv(ai, drv);
+	double *points;
+	int points_count;
+	cmp_ai_soul_gen_path(ai, &points, &points_count);
+	soul_start_walking(drv, points, points_count, cmp_ai_soul_on_wp_drv_end, ai);
 }
 
 /* State transitions.
@@ -104,11 +106,8 @@ static void cmp_ai_soul_goto_idle(
 		struct CmpAppr *appr,
 		struct CmpDrv *drv)
 {
+	cmp_ai_soul_on_wp_drv_end(drv, (void*)ai);
 	ai->state = CMP_AI_SOUL_STATE_IDLE;
-	soul_set_appr_stand_right(appr);
-	soul_set_drv_walk(drv);
-	cmp_drv_waypoint_on_end(drv, cmp_ai_soul_on_wp_drv_end, ai);
-	cmp_ai_soul_update_wp_drv(ai, drv);
 }
 
 static void cmp_ai_soul_goto_ko(
@@ -118,14 +117,41 @@ static void cmp_ai_soul_goto_ko(
 {
 	ai->state = CMP_AI_SOUL_STATE_KO;
 	ai->think_timer = 5.0;
-
-	soul_set_appr_caught(appr);
-	soul_set_drv_stand(drv);
+	soul_knock_out(appr, drv);
 }
 
 /* Update operation.
  * =================
  */
+
+static void cmp_ai_soul_update_idle(
+		struct CmpOri *ori,
+		struct CmpAppr *appr,
+		struct CmpDrv *drv)
+{
+	enum SoulDir walk_dir, appr_dir;
+	double dx, _;
+	
+	cmp_ori_get_shift(ori, &dx, &_);
+	walk_dir = (dx > 0) ? SOUL_DIR_RIGHT : SOUL_DIR_LEFT;
+
+	if (!soul_walking(appr)) {
+		soul_update_walking(appr, walk_dir);
+
+	} else {
+		appr_dir = soul_walking_dir(appr);
+
+		if (walk_dir == SOUL_DIR_RIGHT && appr_dir == SOUL_DIR_LEFT) {
+			soul_update_walking(appr, SOUL_DIR_RIGHT);
+		}
+
+		if (walk_dir == SOUL_DIR_LEFT && appr_dir == SOUL_DIR_RIGHT) {
+			soul_update_walking(appr, SOUL_DIR_LEFT);
+		}
+	}
+
+	/* Rest of the idle logic is handled asynchronously. */
+}
 
 static void cmp_ai_soul_update_panic(void)
 {
@@ -153,7 +179,7 @@ static void cmp_ai_update_soul(
 	if (ai->state == ai->next_state) {
 		switch (ai->state) {
 		case CMP_AI_SOUL_STATE_IDLE:
-			/* Handled asynchronously. */
+			cmp_ai_soul_update_idle(ori, appr, drv);
 			break;
 		case CMP_AI_SOUL_STATE_PANIC:
 			cmp_ai_soul_update_panic();

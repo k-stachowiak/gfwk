@@ -3,18 +3,29 @@
 #ifndef CMP_SHAPE_H
 #define CMP_SHAPE_H
 
-enum CmpShapeType {
-	CMP_SHAPE_CIRCLE,
-	CMP_SHAPE_SEGMENT
-};
+/* Circle shape.
+ * =============
+ */
 
 struct CmpShapeCircle {
 	double r;
 };
 
+/* Segment shape.
+ * ==============
+ */
 struct CmpShapeSegment {
-	/* x0, y0 are implicitly in (0, 0). */
+	/* x0, y0 are implicitly in (0, 0). So technically it's a vector. */
 	double x1, y1;
+};
+
+/* Root structure.
+* ===============
+*/
+
+enum CmpShapeType {
+	CMP_SHAPE_CIRCLE,
+	CMP_SHAPE_SEGMENT
 };
 
 struct CmpShape {
@@ -26,13 +37,7 @@ struct CmpShape {
 };
 
 void cmp_shape_circle_init(struct CmpShape *circle, double r);
-void cmp_shape_circle_deinit(struct CmpShape *circle);
-struct CmpShape *cmp_shape_circle_create(double r);
-
 void cmp_shape_segment_init(struct CmpShape *segment, double x1, double y1);
-void cmp_shape_segment_deinit(struct CmpShape *segment);
-struct CmpShape *cmp_shape_segment_create(double x1, double y1);
-
-void cmp_shape_free(struct CmpShape *shape);
+void cmp_shape_deinit(struct CmpShape *shape);
 
 #endif

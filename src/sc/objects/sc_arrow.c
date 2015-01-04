@@ -23,5 +23,5 @@ void arrow_deinit(struct Arrow *arrow)
 	cmp_appr_deinit(&arrow->appr);
     cmp_pain_deinit(&arrow->pain);
 	cmp_ori_deinit(&arrow->ori);
-	cmp_shape_segment_deinit(&arrow->shape);
+	cmp_shape_deinit(&arrow->shape);
 }
