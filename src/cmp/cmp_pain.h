@@ -1,4 +1,4 @@
-/* Copyright (C) 2014 Krzysztof Stachowiak */
+/* Copyright (C) 2014,2015 Krzysztof Stachowiak */
 
 #ifndef CMP_PAIN_H
 #define CMP_PAIN_H
@@ -15,9 +15,6 @@ struct CmpPain {
 
 void cmp_pain_init(struct CmpPain *pain, PainType type);
 void cmp_pain_deinit(struct CmpPain* pain);
-
-struct CmpPain *cmp_pain_create(PainType type);
-void cmp_pain_free(struct CmpPain *cmp_pain);
 
 void cmp_pain_reset(struct CmpPain *cmp_pain);
 void cmp_pain_queue_push(struct CmpPain *cmp_pain, PainType ct);

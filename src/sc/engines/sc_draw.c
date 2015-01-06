@@ -1,4 +1,4 @@
-/* Copyright (C) 2014 Krzysztof Stachowiak */
+/* Copyright (C) 2014,2015 Krzysztof Stachowiak */
 
 #include <stdio.h>
 
@@ -17,27 +17,21 @@
 #include "sc_soul.h"
 #include "sc_arrow.h"
 #include "sc_graph.h"
+#include "sc_booth.h"
 
 static void sc_draw_level_tile(struct TilePos tile_pos, char c)
 {
 	struct WorldPos world_pos;
 	struct ScreenPos screen_pos;
-	void *bitmap;
 
-	if (c == '#') {
-		bitmap = sc_tile;
-	}
-	else if (c == 's') {
-		bitmap = sc_soulbooth;
-	}
-	else {
+	if (c != '#') {
 		return;
 	}
 
 	world_pos = pos_tile_to_world(tile_pos);
 	screen_pos = pos_world_to_screen(world_pos);
 	draw_bitmap(
-		bitmap,
+		sc_tile,
 		screen_pos.x + sc_tile_w / 2,
 		screen_pos.y + sc_tile_w / 2,
 		0.0);
@@ -62,30 +56,15 @@ void sc_draw_hunter(struct Hunter *hunter)
 
 void sc_draw_souls(struct SoulArray *souls)
 {
+	int i;
 	struct WorldPos zero_wp = { 0.0, 0.0 };
 	struct ScreenPos zero_sp = pos_world_to_screen(zero_wp);
-	int i;
-
 	for (i = 0; i < souls->size; ++i) {
 		struct Soul *soul = souls->data + i;
-		cmp_draw(&soul->ori, &soul->appr, -zero_sp.x, -zero_sp.y);
-	}
-}
-
-void sc_draw_souls_dbg(struct SoulArray *souls)
-{
-	int i;
-	ALLEGRO_COLOR color = al_map_rgb_f(1.0f, 0.7f, 0.4f);
-
-	for (i = 0; i < souls->size; ++i) {
-
-		struct Soul *soul = souls->data + i;
-
-		struct PosRot soul_pr = cmp_ori_get(&soul->ori);
-		struct WorldPos soul_wp = { soul_pr.x, soul_pr.y };
-		struct ScreenPos soul_sp = pos_world_to_screen(soul_wp);
-
-		al_draw_circle(soul_sp.x, soul_sp.y, 4, color, 1);
+		cmp_draw(
+			&soul->ori,
+			&soul->appr,
+			-zero_sp.x, -zero_sp.y);
 	}
 }
 
@@ -95,7 +74,23 @@ void sc_draw_arrows(struct ArrowArray *aa)
 	struct WorldPos zero_wp = { 0.0, 0.0 };
 	struct ScreenPos zero_sp = pos_world_to_screen(zero_wp);
 	for (i = 0; i < aa->size; ++i) {
-		cmp_draw(&aa->data[i].ori, &aa->data[i].appr, -zero_sp.x, -zero_sp.y);
+		cmp_draw(
+			&aa->data[i].ori,
+			&aa->data[i].appr,
+			-zero_sp.x, -zero_sp.y);
+	}
+}
+
+void sc_draw_booths(struct BoothArray *booths)
+{
+	int i;
+	struct WorldPos zero_wp = { 0.0, 0.0 };
+	struct ScreenPos zero_sp = pos_world_to_screen(zero_wp);
+	for (i = 0; i < booths->size; ++i) {
+		cmp_draw(
+			&booths->data[i].ori,
+			&booths->data[i].appr,
+			-zero_sp.x, -zero_sp.y);
 	}
 }
 
@@ -126,6 +121,7 @@ void sc_draw_graph_dbg(struct Graph *lgph)
 			case ADJ_WALK:
 				color = al_map_rgb_f(0.5f, 1.0f, 0.5f);
 				break;
+
 			case ADJ_JUMP:
 				color = al_map_rgb_f(0.5f, 0.5f, 1.0f);
 				break;

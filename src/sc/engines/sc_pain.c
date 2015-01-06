@@ -1,4 +1,4 @@
-/* Copyright (C) 2014 Krzysztof Stachowiak */
+/* Copyright (C) 2014,2015 Krzysztof Stachowiak */
 
 #include <math.h>
 
@@ -17,6 +17,7 @@
 #include "sc_arrow.h"
 #include "sc_hunter.h"
 #include "sc_level.h"
+#include "sc_booth.h"
 
 /* Pain callbacks keyed with id.
  * =============================
@@ -53,7 +54,7 @@ static void sc_pain_callback_id_insert(long id, void *data, PainCallbackId callb
 }
 
 /* Pain callbacks keyed with type.
- * =============================
+ * ===============================
  */
 
 struct PainCallbackTypeNode {
@@ -89,8 +90,8 @@ static void sc_pain_callback_type_insert(
 	pain_callback_type_nodes = node;
 }
 
-/* Pain context - debug data...
- * ============================
+/* Pain context: raw data for analysis.
+ * ====================================
  */
 
 struct PainContext {
@@ -98,29 +99,32 @@ struct PainContext {
         struct Segment *data;
         int size, cap;
     } arrow_segs;
+
 	struct {
 		struct Circle *data;
 		int size, cap;
 	} soul_cirs;
+
 	struct {
 		struct Circle *data;
 		int size, cap;
 	} booth_cirs;
+
 	struct Circle hunter_cir;
+
 } pc_last;
 
-/* Main implementation.
- * ====================
+/* Pain interaction implementation.
+ * ================================
  */
 
 static void sc_pain_reset_context(
 		struct Hunter *hunter,
 		struct ArrowArray *arrows,
 		struct SoulArray *souls,
-		struct Level *level)
+		struct BoothArray *booths)
 {
 	int i;
-	struct TilePos tp;
 
 	ARRAY_FREE(pc_last.arrow_segs);
 	for (i = 0; i < arrows->size; ++i) {
@@ -139,14 +143,11 @@ static void sc_pain_reset_context(
 	}
 
 	ARRAY_FREE(pc_last.booth_cirs);
-	for (tp.x = 0; tp.x < level->width; ++tp.x) {
-		for (tp.y = 0; tp.y < level->height; ++tp.y) {
-			if (lvl_get_tile(level, tp.x, tp.y) == 's') {
-				struct WorldPos wp = pos_tile_to_world(tp);
-				struct Circle booth_cir = { wp.x, wp.y, 100 };
-				ARRAY_APPEND(pc_last.booth_cirs, booth_cir);
-			}
-		}
+	for (i = 0; i < booths->size; ++i) {
+		struct Booth *booth = booths->data + i;
+		struct Circle booth_cir;
+		sc_col_convert_circle_cmp(&booth->ori, &booth->shape.body.circle, &booth_cir);
+		ARRAY_APPEND(pc_last.booth_cirs, booth_cir);
 	}
 
 	sc_col_convert_circle_cmp(&hunter->ori, &hunter->shape.body.circle, &pc_last.hunter_cir);
@@ -155,7 +156,8 @@ static void sc_pain_reset_context(
 static void sc_pain_reset_conponents(
 		struct Hunter *hunter,
 		struct ArrowArray *arrows,
-		struct SoulArray *souls)
+		struct SoulArray *souls,
+		struct BoothArray *booths)
 {
 	int i;
 
@@ -168,17 +170,36 @@ static void sc_pain_reset_conponents(
 	for (i = 0; i < arrows->size; ++i) {
 		cmp_pain_reset(&arrows->data[i].pain);
 	}
+
+	for (i = 0; i < booths->size; ++i) {
+		cmp_pain_reset(&booths->data[i].pain);
+	}
 }
 
-static void sc_pain_tick_hunter(struct Hunter *hunter, struct SoulArray *souls)
+static void sc_pain_tick_hunter(
+		struct Hunter *hunter,
+		struct SoulArray *souls,
+		struct BoothArray *booths)
 {
 	int i;
+
 	struct Circle *hunter_cir = &pc_last.hunter_cir;
+
 	for (i = 0; i < souls->size; ++i) {
 		struct Soul *soul = souls->data + i;
 		struct Circle *soul_cir = pc_last.soul_cirs.data + i;
+
 		if (sc_col_circle_circle(*hunter_cir, *soul_cir)) {
 			cmp_deal_pain(&soul->pain, &hunter->pain);
+		}
+	}
+
+	for (i = 0; i < booths->size; ++i) {
+		struct Booth *booth = booths->data + i;
+		struct Circle *booth_cir = pc_last.booth_cirs.data + i;
+
+		if (sc_col_circle_circle(*hunter_cir, *booth_cir)) {
+			cmp_deal_pain(&booth->pain, &hunter->pain);
 		}
 	}
 }
@@ -187,11 +208,14 @@ static void sc_pain_tick_arrows(struct ArrowArray *arrows, struct SoulArray *sou
 {
     int i, j;
 	for (i = 0; i < arrows->size; ++i) {
+
 		struct Arrow *arrow = arrows->data + i;
 		struct Segment *arrow_seg = pc_last.arrow_segs.data + i;
+
 		for (j = 0; j < souls->size; ++j) {
 			struct Soul *soul = souls->data + j;
 			struct Circle *soul_cir = pc_last.soul_cirs.data + j;
+
 			if (sc_col_segment_circle(*arrow_seg, *soul_cir)) {
 				cmp_deal_pain(&soul->pain, &arrow->pain);
 			}
@@ -199,34 +223,21 @@ static void sc_pain_tick_arrows(struct ArrowArray *arrows, struct SoulArray *sou
 	}
 }
 
-static void sc_pain_tick_booths(struct Hunter *hunter)
-{
-	int i;
-	for (i = 0; i < pc_last.booth_cirs.size; ++i) {
-		if (sc_col_circle_circle(pc_last.hunter_cir, pc_last.booth_cirs.data[i])) {
-			/* - Implement booth object,
-			 * - initialize booths from the level object, and store in array,
-			 * - handle booths individually by the drawing engine,
-			 * - handle booths individually by the collision engine.
-			 */
-			printf("TODO in this line (%s:%d)", __FILE__, __LINE__);
-			exit(2);
-		}
-	}
-}
-
 static void sc_pain_tick_interaction(
+		struct Hunter *hunter,
 		struct ArrowArray *arrows,
 		struct SoulArray *souls,
-		struct Hunter *hunter,
-		struct Level *level)
+		struct BoothArray *booths)
 {
-	sc_pain_reset_context(hunter, arrows, souls);
-	sc_pain_reset_conponents(hunter, arrows, souls);
-	sc_pain_tick_hunter(hunter, souls);
+	sc_pain_reset_context(hunter, arrows, souls, booths);
+	sc_pain_reset_conponents(hunter, arrows, souls, booths);
+	sc_pain_tick_hunter(hunter, souls, booths);
 	sc_pain_tick_arrows(arrows, souls);
-	sc_pain_tick_booths(hunter, level);
 }
+
+/* Pain feedback implementation.
+ * =============================
+ */
 
 static void sc_pain_tick_feedback_common(
 		PainType this_pt, long id,
@@ -244,6 +255,14 @@ static void sc_pain_tick_feedback_common(
 			id_callback->callback(id_callback->id, other_pt, id_callback->data);
 		}
 	}
+}
+
+static void sc_pain_tick_feedback_hunter(struct Hunter *hunter)
+{
+	struct PainCallbackTypeNode *type_callback = sc_pain_callback_type_seek(PT_HUNTER);
+	struct CmpPain *pain = &hunter->pain;
+	long id = hunter->id;
+	sc_pain_tick_feedback_common(PT_HUNTER, id, pain, type_callback);
 }
 
 static void sc_pain_tick_feedback_arrows(struct ArrowArray *arrows)
@@ -270,23 +289,33 @@ static void sc_pain_tick_feedback_souls(struct SoulArray *souls)
 	}
 }
 
-static void sc_pain_tick_feedback_hunter(struct Hunter *hunter)
+static void sc_pain_tick_feedback_booths(struct BoothArray *booths)
 {
-	struct PainCallbackTypeNode *type_callback = sc_pain_callback_type_seek(PT_HUNTER);
-	struct CmpPain *pain = &hunter->pain;
-	long id = hunter->id;
-	sc_pain_tick_feedback_common(PT_HUNTER, id, pain, type_callback);
+	int i;
+	struct PainCallbackTypeNode *type_callback = sc_pain_callback_type_seek(PT_BOOTH);
+	for (i = 0; i < booths->size; ++i) {
+		struct Booth *booth = booths->data + i;
+		struct CmpPain *pain = &booth->pain;
+		long id = booth->id;
+		sc_pain_tick_feedback_common(PT_BOOTH, id, pain, type_callback);
+	}
 }
 
 static void sc_pain_tick_feedback(
+		struct Hunter *hunter,
 		struct ArrowArray *arrows,
 		struct SoulArray *souls,
-		struct Hunter *hunter)
+		struct BoothArray *booths)
 {
 	sc_pain_tick_feedback_hunter(hunter);
 	sc_pain_tick_feedback_arrows(arrows);
 	sc_pain_tick_feedback_souls(souls);
+	sc_pain_tick_feedback_booths(booths);
 }
+
+/* Public API.
+ * ===========
+ */
 
 void sc_pain_init(void)
 {
@@ -319,15 +348,19 @@ void sc_pain_draw_debug(void)
 	for (i = 0; i < pc_last.soul_cirs.size; ++i) {
 		sc_col_draw_circle(pc_last.soul_cirs.data[i], 1, 0.5, 1);
 	}
+	for (i = 0; i < pc_last.booth_cirs.size; ++i) {
+		sc_col_draw_circle(pc_last.booth_cirs.data[i], 1, 0.5, 1);
+	}
 }
 
 void sc_pain_tick(
+		struct Hunter *hunter,
 		struct ArrowArray *arrows,
 		struct SoulArray *souls,
-		struct Hunter *hunter)
+		struct BoothArray *booths)
 {
-	sc_pain_tick_interaction(arrows, souls, hunter);
-	sc_pain_tick_feedback(arrows, souls, hunter);
+	sc_pain_tick_interaction(hunter, arrows, souls, booths);
+	sc_pain_tick_feedback(hunter, arrows, souls, booths);
 }
 
 void sc_pain_callback_id_register(long id, void *data, PainCallbackId callback)

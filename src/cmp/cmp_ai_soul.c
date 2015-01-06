@@ -17,14 +17,14 @@
  * ===================================
  */
 
-static double *cmp_ai_tilepos_to_worldpos_ground(
-struct TilePos *tile_pos_v,
-	int points_count)
+static double *cmp_ai_tilepos_to_worldpos_mid(
+		struct TilePos *tile_pos_v,
+		int points_count)
 {
 	int i;
 	double *world_pos_v = malloc_or_die(points_count * 2 * sizeof(*world_pos_v));
 	for (i = 0; i < points_count; ++i) {
-		struct WorldPos wp = pos_tile_to_world_ground(tile_pos_v[i]);
+		struct WorldPos wp = pos_tile_to_world_mid(tile_pos_v[i]);
 		world_pos_v[2 * i + 0] = wp.x;
 		world_pos_v[2 * i + 1] = wp.y;
 	}
@@ -32,9 +32,9 @@ struct TilePos *tile_pos_v,
 }
 
 static void cmp_ai_prepend_pos(
-	double x, double y,
-	double **points,
-	int *points_count)
+		double x, double y,
+		double **points,
+		int *points_count)
 {
 	int old_count = *points_count;
 	int new_count = old_count + 1;
@@ -70,7 +70,7 @@ static void cmp_ai_soul_gen_path(
 	struct TilePos *tp_points;
 
 	lgph_dijkstra(lgph, src_pos, dst_pos, &tp_points, points_count);
-	*points = cmp_ai_tilepos_to_worldpos_ground(tp_points, *points_count);
+	*points = cmp_ai_tilepos_to_worldpos_mid(tp_points, *points_count);
 	cmp_ai_prepend_pos(wp.x, wp.y, points, points_count);
 
 	free_or_die(tp_points);

@@ -1,4 +1,4 @@
-/* Copyright (C) 2014 Krzysztof Stachowiak */
+/* Copyright (C) 2014,2015 Krzysztof Stachowiak */
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -19,6 +19,7 @@
 #include "sc_hunter.h"
 #include "sc_soul.h"
 #include "sc_arrow.h"
+#include "sc_booth.h"
 
 #include "sc_arms.h"
 #include "sc_draw.h"
@@ -169,6 +170,20 @@ static void sc_deinit_resources_complex(void)
     cmp_appr_anim_sprite_common_free(sc_soul_walk_left_common);
 }
 
+static void sc_init_booths(void)
+{
+	struct TilePos tp;
+	for (tp.x = 0; tp.x < lvl.width; ++tp.x) {
+		for (tp.y = 0; tp.y < lvl.height; ++tp.y) {
+			if (lvl_get_tile(&lvl, tp.x, tp.y) == 's') {
+				struct Booth booth;
+				booth_init(&booth, ++sc_entity_id, tp);
+				ARRAY_APPEND(booths, booth);
+			}
+		}
+	}
+}
+
 /* Callbacks capture and post-captem.
  * ==================================
  */
@@ -203,6 +218,8 @@ static void sc_soul_pain_callback(PainType pt_x, long id_x, PainType pt_y, void 
 {
 	struct Soul *soul = sc_soul_find_id(id_x);
 
+	(void)pt_x;
+
 	if (!soul) {
 		DIAG_ERROR("Soul of id %ld not found.", id_x);
 		exit(1);
@@ -235,6 +252,22 @@ static void sc_souls_collect(void)
 	}
 }
 
+static void sc_hunter_pain_callback(PainType pt_x, long id_x, PainType pt_y, void *data)
+{
+	struct Hunter *hunter_ptr = &hunter; /* If more hunters present - look up by id. */
+
+	if (pt_y != PT_BOOTH) {
+		return;
+	}
+
+	if (!hunter_ptr->has_soul) {
+		return;
+	}
+
+	DIAG_DEBUG("Pa-Ping!");
+	hunter_ptr->has_soul = false;
+}
+
 /* Client API.
  * ===========
  */
@@ -256,6 +289,7 @@ static void sc_init(void)
 
 	sc_pain_callback_type_register(PT_ARROW, NULL, sc_arrow_pain_callback);
 	sc_pain_callback_type_register(PT_SOUL, NULL, sc_soul_pain_callback);
+	sc_pain_callback_type_register(PT_HUNTER, NULL, sc_hunter_pain_callback);
 
     lvl_load(&lvl, "data/map");
     lgph = lvl_init_graph(&lvl);
@@ -264,8 +298,8 @@ static void sc_init(void)
 
 	ARRAY_FREE(arrows);
 	ARRAY_FREE(arrows_stuck);
-	ARRAY_FREE(souls);
 
+	ARRAY_FREE(souls);
 	ARRAY_APPEND(souls, soul_memory_template);
 	ARRAY_APPEND(souls, soul_memory_template);
 	ARRAY_APPEND(souls, soul_memory_template);
@@ -273,6 +307,8 @@ static void sc_init(void)
 	soul_init(souls.data + 0, ++sc_entity_id, &lgph, lgph.nodes[1]);
 	soul_init(souls.data + 1, ++sc_entity_id, &lgph, lgph.nodes[5]);
 	soul_init(souls.data + 2, ++sc_entity_id, &lgph, lgph.nodes[10]);
+
+	sc_init_booths();
 
     sc_cam_shift.x = 0.0;
     sc_cam_shift.y = 0.0;
@@ -288,6 +324,10 @@ static void sc_deinit(void)
 
 	for (i = 0; i < souls.size; ++i) {
 		soul_deinit(souls.data + i);
+	}
+
+	for (i = 0; i < booths.size; ++i) {
+		booth_deinit(booths.data + i);
 	}
 
     sc_deinit_resources_complex();
@@ -311,7 +351,7 @@ static void sc_tick(double dt)
 
 	sc_platform_collide(&hunter, &lvl);
 
-	sc_pain_tick(&arrows, &souls, &hunter);
+	sc_pain_tick(&hunter, &arrows, &souls, &booths);
 
 	sc_arrows_pain_stick();
 	sc_souls_collect();
@@ -326,12 +366,12 @@ static void sc_draw(double weight)
 	sc_draw_souls(&souls);
 	sc_draw_arrows(&arrows);
     sc_draw_arrows(&arrows_stuck);
+	sc_draw_booths(&booths);
 
     if (!sys_keys[ALLEGRO_KEY_F1]) {
 		sc_platform_draw_debug();
 		sc_pain_draw_debug();
 		sc_draw_graph_dbg(&lgph);
-        sc_draw_souls_dbg(&souls);
     }
 
     al_flip_display();

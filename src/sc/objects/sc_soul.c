@@ -10,7 +10,7 @@
 
 void soul_init(struct Soul *soul, long id, struct Graph *lgph, struct TilePos soul_tp)
 {
-    struct WorldPos wp = pos_tile_to_world_ground(soul_tp);
+	struct WorldPos wp = pos_tile_to_world_mid(soul_tp);
 
 	soul->id = id;
 	cmp_ori_init(&soul->ori, wp.x, wp.y, 0.0);

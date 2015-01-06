@@ -7,6 +7,7 @@
 #include "sc_hunter.h"
 #include "sc_soul.h"
 #include "sc_arrow.h"
+#include "sc_booth.h"
 #include "sc_level.h"
 #include "sc_graph.h"
 
@@ -48,6 +49,8 @@ struct ArrowArray arrows_stuck;
 
 struct SoulArray souls;
 
+struct BoothArray booths;
+
 struct WorldPos pos_tile_to_world(struct TilePos tile_pos)
 {
     struct WorldPos result = {
@@ -58,6 +61,14 @@ struct WorldPos pos_tile_to_world(struct TilePos tile_pos)
 }
 
 struct WorldPos pos_tile_to_world_ground(struct TilePos tile_pos)
+{
+	struct WorldPos result = pos_tile_to_world(tile_pos);
+	result.x += 0.5 * sc_tile_w;
+	result.y += 1.0 * sc_tile_w;
+	return result;
+}
+
+struct WorldPos pos_tile_to_world_mid(struct TilePos tile_pos)
 {
 	struct WorldPos result = pos_tile_to_world(tile_pos);
 	result.x += 0.5 * sc_tile_w;

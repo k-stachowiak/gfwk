@@ -9,6 +9,7 @@ struct ScreenPos { double x, y; };
 
 struct WorldPos pos_tile_to_world(struct TilePos tile_pos);
 struct WorldPos pos_tile_to_world_ground(struct TilePos tile_pos);
+struct WorldPos pos_tile_to_world_mid(struct TilePos tile_pos);
 struct ScreenPos pos_world_to_screen(struct WorldPos world_pos);
 
 /* Configuration cache. */
@@ -47,7 +48,8 @@ extern long sc_entity_id;
 enum SCPainType {
 	PT_HUNTER,
 	PT_SOUL,
-	PT_ARROW
+	PT_ARROW,
+	PT_BOOTH
 };
 
 extern struct Level lvl;
@@ -67,8 +69,16 @@ struct SoulArray {
 	int size, cap;
 };
 
-struct Soul *sc_soul_find_id(long id);
-
 extern struct SoulArray souls;
+
+struct Soul *sc_soul_find_id(long id);
+void sc_soul_remove_ptr(struct Soul *soul);
+
+struct BoothArray {
+	struct Booth *data;
+	int size, cap;
+};
+
+extern struct BoothArray booths;
 
 #endif
