@@ -16,6 +16,7 @@
 #include "sc_soul.h"
 #include "sc_arrow.h"
 #include "sc_hunter.h"
+#include "sc_level.h"
 
 /* Pain callbacks keyed with id.
  * =============================
@@ -101,6 +102,10 @@ struct PainContext {
 		struct Circle *data;
 		int size, cap;
 	} soul_cirs;
+	struct {
+		struct Circle *data;
+		int size, cap;
+	} booth_cirs;
 	struct Circle hunter_cir;
 } pc_last;
 
@@ -111,15 +116,13 @@ struct PainContext {
 static void sc_pain_reset_context(
 		struct Hunter *hunter,
 		struct ArrowArray *arrows,
-		struct SoulArray *souls)
+		struct SoulArray *souls,
+		struct Level *level)
 {
 	int i;
+	struct TilePos tp;
 
 	ARRAY_FREE(pc_last.arrow_segs);
-	ARRAY_FREE(pc_last.soul_cirs);
-
-	sc_col_convert_circle_cmp(&hunter->ori, &hunter->shape.body.circle, &pc_last.hunter_cir);
-
 	for (i = 0; i < arrows->size; ++i) {
 		struct Arrow *arrow = arrows->data + i;
 		struct Segment arrow_seg;
@@ -127,12 +130,26 @@ static void sc_pain_reset_context(
 		ARRAY_APPEND(pc_last.arrow_segs, arrow_seg);
 	}
 
+	ARRAY_FREE(pc_last.soul_cirs);
 	for (i = 0; i < souls->size; ++i) {
 		struct Soul *soul = souls->data + i;
 		struct Circle soul_cir;
 		sc_col_convert_circle_cmp(&soul->ori, &soul->shape.body.circle, &soul_cir);
 		ARRAY_APPEND(pc_last.soul_cirs, soul_cir);
 	}
+
+	ARRAY_FREE(pc_last.booth_cirs);
+	for (tp.x = 0; tp.x < level->width; ++tp.x) {
+		for (tp.y = 0; tp.y < level->height; ++tp.y) {
+			if (lvl_get_tile(level, tp.x, tp.y) == 's') {
+				struct WorldPos wp = pos_tile_to_world(tp);
+				struct Circle booth_cir = { wp.x, wp.y, 100 };
+				ARRAY_APPEND(pc_last.booth_cirs, booth_cir);
+			}
+		}
+	}
+
+	sc_col_convert_circle_cmp(&hunter->ori, &hunter->shape.body.circle, &pc_last.hunter_cir);
 }
 
 static void sc_pain_reset_conponents(
@@ -182,15 +199,33 @@ static void sc_pain_tick_arrows(struct ArrowArray *arrows, struct SoulArray *sou
 	}
 }
 
+static void sc_pain_tick_booths(struct Hunter *hunter)
+{
+	int i;
+	for (i = 0; i < pc_last.booth_cirs.size; ++i) {
+		if (sc_col_circle_circle(pc_last.hunter_cir, pc_last.booth_cirs.data[i])) {
+			/* - Implement booth object,
+			 * - initialize booths from the level object, and store in array,
+			 * - handle booths individually by the drawing engine,
+			 * - handle booths individually by the collision engine.
+			 */
+			printf("TODO in this line (%s:%d)", __FILE__, __LINE__);
+			exit(2);
+		}
+	}
+}
+
 static void sc_pain_tick_interaction(
 		struct ArrowArray *arrows,
 		struct SoulArray *souls,
-		struct Hunter *hunter)
+		struct Hunter *hunter,
+		struct Level *level)
 {
 	sc_pain_reset_context(hunter, arrows, souls);
 	sc_pain_reset_conponents(hunter, arrows, souls);
 	sc_pain_tick_hunter(hunter, souls);
 	sc_pain_tick_arrows(arrows, souls);
+	sc_pain_tick_booths(hunter, level);
 }
 
 static void sc_pain_tick_feedback_common(

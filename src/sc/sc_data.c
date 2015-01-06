@@ -88,3 +88,9 @@ struct Soul *sc_soul_find_id(long id)
 
 	return soul;
 }
+
+void sc_soul_remove_ptr(struct Soul *soul)
+{
+	*soul = *(souls.data + (souls.size - 1));
+	--souls.size;
+}

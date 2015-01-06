@@ -14,7 +14,8 @@ void sc_pain_draw_debug(void);
 void sc_pain_tick(
 		struct ArrowArray *arrows,
 		struct SoulArray *souls,
-		struct Hunter *hunter);
+		struct Hunter *hunter,
+		struct Level *level);
 
 void sc_pain_callback_id_register(long id, void *data, PainCallbackId callback);
 void sc_pain_callback_type_register(PainType type, void *data, PainCallbackType callback);

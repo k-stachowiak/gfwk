@@ -212,11 +212,12 @@ static void sc_soul_pain_callback(PainType pt_x, long id_x, PainType pt_y, void 
 		return;
 	}
 
-	if (pt_y != PT_HUNTER) {
+	if (pt_y != PT_HUNTER || hunter.has_soul) {
 		return;
 	}
 
 	ARRAY_APPEND(souls_to_collect, soul->id);
+	hunter.has_soul = true; /* Lock further collection immediately. */
 }
 
 static void sc_souls_collect(void)
@@ -229,6 +230,8 @@ static void sc_souls_collect(void)
 			DIAG_ERROR("Soul of id %ld not found.", soul_id);
 			exit(1);
 		}
+
+		sc_soul_remove_ptr(soul);
 	}
 }
 
