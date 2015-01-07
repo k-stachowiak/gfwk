@@ -27,6 +27,14 @@
 #include "sc_platform.h"
 #include "sc_pain.h"
 
+/*
+ TODO:
+ - Score.
+ - Map with circular routes for souls to runaway.
+ - Souls run away.
+ - Add guardians.
+ */
+
 /* Local state. */
 static bool sc_alive;
 static struct SysClient *sc_next;
